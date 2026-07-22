@@ -12,6 +12,9 @@ node_modules
 dist
 dist-ssr
 *.local
+/.extension-state/
+/registry.json
+/public/r/
 
 # Environment variables
 .env

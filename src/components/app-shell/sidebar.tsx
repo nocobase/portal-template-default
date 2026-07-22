@@ -135,6 +135,7 @@ function SidebarItemGroup({ item, selectedKey }: MenuItemProps) {
 
 function SidebarItemCollapsible({ item, selectedKey }: MenuItemProps) {
   const { name, children } = item;
+  const isSelected = isTreeItemSelected(item, selectedKey);
 
   const chevronIcon = (
     <ChevronRight
@@ -151,9 +152,19 @@ function SidebarItemCollapsible({ item, selectedKey }: MenuItemProps) {
   );
 
   return (
-    <Collapsible key={`collapsible-${name}`} className={cn("w-full", "group")}>
+    <Collapsible
+      key={`collapsible-${name}`}
+      defaultOpen={isSelected}
+      className={cn("w-full", "group")}
+    >
       <CollapsibleTrigger
-        render={<SidebarButton item={item} rightIcon={chevronIcon} />}
+        render={
+          <SidebarButton
+            item={item}
+            rightIcon={chevronIcon}
+            isSelected={isSelected}
+          />
+        }
       />
       <CollapsibleContent className={cn("ml-6", "flex", "flex-col", "gap-2")}>
         {children?.map((child: TreeMenuItem) => (
@@ -171,10 +182,13 @@ function SidebarItemCollapsible({ item, selectedKey }: MenuItemProps) {
 function SidebarItemDropdown({ item, selectedKey }: MenuItemProps) {
   const { children } = item;
   const Link = useLink();
+  const isSelected = isTreeItemSelected(item, selectedKey);
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<SidebarButton item={item} />} />
+      <DropdownMenuTrigger
+        render={<SidebarButton item={item} isSelected={isSelected} />}
+      />
       <DropdownMenuContent side="right" align="start">
         {children?.map((child: TreeMenuItem) => {
           const { key: childKey } = child;
@@ -262,6 +276,13 @@ function SidebarFooter() {
 
 function getDisplayName(item: TreeMenuItem) {
   return item.meta?.label ?? item.label ?? item.name;
+}
+
+function isTreeItemSelected(item: TreeMenuItem, selectedKey?: string) {
+  return (
+    item.key === selectedKey ||
+    Boolean(selectedKey?.startsWith(`${item.key}/`))
+  );
 }
 
 type IconProps = {

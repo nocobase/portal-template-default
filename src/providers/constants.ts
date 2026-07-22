@@ -32,44 +32,7 @@ const toProxyRelativeUrl = (url: string, target?: string) => {
   return url;
 };
 
-const getClientLocale = () =>
-  typeof navigator !== "undefined" ? navigator.language : undefined;
-
-const getClientTimezone = () => {
-  const offsetMinutes = -new Date().getTimezoneOffset();
-  const sign = offsetMinutes >= 0 ? "+" : "-";
-  const absoluteMinutes = Math.abs(offsetMinutes);
-  const hours = String(Math.floor(absoluteMinutes / 60)).padStart(2, "0");
-  const minutes = String(absoluteMinutes % 60).padStart(2, "0");
-
-  return `${sign}${hours}:${minutes}`;
-};
-
 export const API_URL = toProxyRelativeUrl(rawApiUrl, proxyTarget);
-export const AUTH_API_URL = API_URL;
-export const TOKEN_KEY = "refine-auth";
 export const NOCOBASE_TOKEN_KEY = "nocobase-auth-token";
 export const NOCOBASE_AUTHENTICATOR =
   import.meta.env.NOCOBASE_AUTHENTICATOR ?? "basic";
-
-export const getNocoBaseHeaders = ({
-  token,
-  includeAuthenticator = false,
-  includeContentType = false,
-}: {
-  token?: string;
-  includeAuthenticator?: boolean;
-  includeContentType?: boolean;
-} = {}) => {
-  const locale = getClientLocale();
-  const timezone = getClientTimezone();
-
-  return {
-    Accept: "application/json",
-    ...(includeContentType ? { "Content-Type": "application/json" } : {}),
-    ...(includeAuthenticator ? { "X-Authenticator": NOCOBASE_AUTHENTICATOR } : {}),
-    ...(locale ? { "X-Locale": locale } : {}),
-    ...(timezone ? { "X-Timezone": timezone } : {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};

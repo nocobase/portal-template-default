@@ -1,7 +1,4 @@
-import {
-  Refine,
-  Authenticated,
-} from "@refinedev/core";
+import { Refine, Authenticated, type ResourceProps } from "@refinedev/core";
 
 import { BrowserRouter, Route, Routes, Outlet } from "react-router";
 import routerProvider, {
@@ -33,9 +30,47 @@ import { Toaster } from "./components/notifications/toaster";
 import { ThemeProvider } from "./components/theme/theme-provider";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { BrandLogo } from "./components/app-shell/brand";
+import {
+  AppExtensionProviders,
+  extensionResources,
+  extensionRouteElements,
+} from "./app/extensions";
 import "./App.css";
 import { authProvider } from "./providers/auth";
 import { FileText, Tags } from "lucide-react";
+
+const coreResources: ResourceProps[] = [
+  {
+    name: "blog_posts",
+    list: "/blog-posts",
+    create: "/blog-posts/create",
+    edit: "/blog-posts/edit/:id",
+    show: "/blog-posts/show/:id",
+    meta: {
+      label: "Blog posts",
+      icon: <FileText />,
+      description:
+        "Create and publish content on a reliable NocoBase data foundation.",
+      canCreate: true,
+      canDelete: true,
+    },
+  },
+  {
+    name: "categories",
+    list: "/categories",
+    create: "/categories/create",
+    edit: "/categories/edit/:id",
+    show: "/categories/show/:id",
+    meta: {
+      label: "Categories",
+      icon: <Tags />,
+      description:
+        "Organize reusable structures while NocoBase keeps the underlying data consistent.",
+      canCreate: true,
+      canDelete: true,
+    },
+  },
+];
 
 function App() {
   return (
@@ -47,38 +82,7 @@ function App() {
             notificationProvider={useNotificationProvider()}
             routerProvider={routerProvider}
             authProvider={authProvider}
-            resources={[
-              {
-                name: "blog_posts",
-                list: "/blog-posts",
-                create: "/blog-posts/create",
-                edit: "/blog-posts/edit/:id",
-                show: "/blog-posts/show/:id",
-                meta: {
-                  label: "Blog posts",
-                  icon: <FileText />,
-                  description:
-                    "Create and publish content on a reliable NocoBase data foundation.",
-                  canCreate: true,
-                  canDelete: true,
-                },
-              },
-              {
-                name: "categories",
-                list: "/categories",
-                create: "/categories/create",
-                edit: "/categories/edit/:id",
-                show: "/categories/show/:id",
-                meta: {
-                  label: "Categories",
-                  icon: <Tags />,
-                  description:
-                    "Organize reusable structures while NocoBase keeps the underlying data consistent.",
-                  canCreate: true,
-                  canDelete: true,
-                },
-              },
-            ]}
+            resources={[...coreResources, ...extensionResources]}
             options={{
               syncWithLocation: true,
               warnWhenUnsavedChanges: true,
@@ -96,9 +100,11 @@ function App() {
                     key="authenticated-inner"
                     fallback={<CatchAllNavigate to="/login" />}
                   >
-                    <Layout>
-                      <Outlet />
-                    </Layout>
+                    <AppExtensionProviders>
+                      <Layout>
+                        <Outlet />
+                      </Layout>
+                    </AppExtensionProviders>
                   </Authenticated>
                 }
               >
@@ -118,6 +124,7 @@ function App() {
                   <Route path="edit/:id" element={<CategoryEdit />} />
                   <Route path="show/:id" element={<CategoryShow />} />
                 </Route>
+                {extensionRouteElements}
                 <Route path="*" element={<ErrorComponent />} />
               </Route>
               <Route

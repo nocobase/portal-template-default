@@ -53,6 +53,23 @@ export default defineConfig(({ mode }) => {
               target: proxyTarget,
               changeOrigin: true,
               secure: false,
+              configure(proxy) {
+                proxy.on("proxyReq", (proxyRequest, request) => {
+                  if (!request.url?.includes("aiConversations:")) return;
+                  proxyRequest.setHeader("accept-encoding", "identity");
+                  proxyRequest.setHeader("cache-control", "no-cache");
+                });
+                proxy.on("proxyRes", (proxyResponse) => {
+                  const contentType = String(
+                    proxyResponse.headers["content-type"] ?? ""
+                  );
+                  if (!contentType.includes("text/event-stream")) return;
+                  delete proxyResponse.headers["content-length"];
+                  proxyResponse.headers["cache-control"] =
+                    "no-cache, no-transform";
+                  proxyResponse.headers["x-accel-buffering"] = "no";
+                });
+              },
               headers: proxyOrigin
                 ? {
                     origin: proxyOrigin,

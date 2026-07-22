@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "extensions": {
+    "nocobase-ai": {
+      "resolved": [
+        "./public/r/ai-runtime.json",
+        "./public/r/ai-chat.json",
+        "./public/r/ai.json"
+      ],
+      "source": "registry/nocobase-ai"
+    }
+  }
+}

@@ -1,0 +1,174 @@
+import { useCallback, useRef, useState } from "react";
+import { useAI } from "./ai-provider";
+import type { AIChatAttachment } from "./types";
+
+const EMPTY_ATTACHMENTS: AIChatAttachment[] = [];
+
+export function useChatAttachments(activeConversationId: string) {
+  const ai = useAI();
+  const [drafts, setDrafts] = useState<Record<string, AIChatAttachment[]>>({});
+  const draftsRef = useRef(drafts);
+  draftsRef.current = drafts;
+
+  const setConversationAttachments = useCallback(
+    (
+      conversationId: string,
+      value:
+        | AIChatAttachment[]
+        | ((current: AIChatAttachment[]) => AIChatAttachment[])
+    ) => {
+      setDrafts((current) => ({
+        ...current,
+        [conversationId]:
+          typeof value === "function"
+            ? value(current[conversationId] ?? [])
+            : value,
+      }));
+    },
+    []
+  );
+
+  const uploadFiles = useCallback(
+    async (files: File[]) => {
+      if (!files.length) return;
+      const conversationId = activeConversationId;
+      const pending = files.map((file) => ({
+        uid: `upload-${crypto.randomUUID()}`,
+        filename: file.name || `pasted-image-${Date.now()}`,
+        status: "uploading" as const,
+        size: file.size,
+        mimetype: file.type,
+        preview: file.type.startsWith("image/")
+          ? URL.createObjectURL(file)
+          : undefined,
+        progress: 0,
+        file,
+      }));
+      setConversationAttachments(conversationId, (current) => [
+        ...current,
+        ...pending,
+      ]);
+
+      await Promise.all(
+        pending.map(async (attachment) => {
+          try {
+            const response = await ai.uploadFile(attachment.file);
+            const meta =
+              response.meta && typeof response.meta === "object"
+                ? (response.meta as Record<string, unknown>)
+                : undefined;
+            const source =
+              meta?.source && typeof meta.source === "object"
+                ? meta.source
+                : response.source;
+            setConversationAttachments(conversationId, (current) =>
+              current.map((item) =>
+                item.uid === attachment.uid
+                  ? {
+                      ...response,
+                      uid: String(response.id ?? attachment.uid),
+                      filename: String(
+                        response.filename ??
+                          response.title ??
+                          attachment.filename
+                      ),
+                      status: "done",
+                      size:
+                        typeof response.size === "number"
+                          ? response.size
+                          : attachment.size,
+                      mimetype:
+                        typeof response.mimetype === "string"
+                          ? response.mimetype
+                          : attachment.mimetype,
+                      url:
+                        typeof response.url === "string"
+                          ? response.url
+                          : undefined,
+                      preview:
+                        typeof response.preview === "string"
+                          ? response.preview
+                          : attachment.preview,
+                      progress: 100,
+                      source,
+                    }
+                  : item
+              )
+            );
+          } catch (error) {
+            setConversationAttachments(conversationId, (current) =>
+              current.map((item) =>
+                item.uid === attachment.uid
+                  ? {
+                      ...item,
+                      status: "error",
+                      error:
+                        error instanceof Error
+                          ? error.message
+                          : "File upload failed",
+                    }
+                  : item
+              )
+            );
+          }
+        })
+      );
+    },
+    [activeConversationId, ai, setConversationAttachments]
+  );
+
+  const removeAttachment = useCallback(
+    (uid: string) => {
+      setConversationAttachments(activeConversationId, (current) => {
+        const removed = current.find((attachment) => attachment.uid === uid);
+        if (removed?.preview?.startsWith("blob:")) {
+          URL.revokeObjectURL(removed.preview);
+        }
+        return current.filter((attachment) => attachment.uid !== uid);
+      });
+    },
+    [activeConversationId, setConversationAttachments]
+  );
+
+  const moveAttachments = useCallback((from: string, to: string) => {
+    setDrafts((current) => {
+      if (!current[from]) return current;
+      const next = { ...current, [to]: current[from] };
+      delete next[from];
+      return next;
+    });
+  }, []);
+
+  const removeConversationAttachments = useCallback(
+    (conversationId: string) => {
+      setDrafts((current) => {
+        if (!current[conversationId]) return current;
+        const next = { ...current };
+        delete next[conversationId];
+        return next;
+      });
+    },
+    []
+  );
+
+  const clearAttachments = useCallback(() => setDrafts({}), []);
+  const getConversationAttachments = useCallback(
+    (conversationId: string) => draftsRef.current[conversationId] ?? [],
+    []
+  );
+  const attachments = drafts[activeConversationId] ?? EMPTY_ATTACHMENTS;
+
+  return {
+    attachments,
+    uploadingAttachments: attachments.some(
+      (attachment) => attachment.status === "uploading"
+    ),
+    uploadFiles,
+    removeAttachment,
+    setConversationAttachments,
+    moveAttachments,
+    removeConversationAttachments,
+    clearAttachments,
+    getConversationAttachments,
+  };
+}

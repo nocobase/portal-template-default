@@ -1,10 +1,10 @@
 import type { AuthProvider } from "@refinedev/core";
 
+import { nocobaseClient } from "@/lib/nocobase/client";
 import {
-  AUTH_API_URL,
-  getNocoBaseHeaders,
-  NOCOBASE_TOKEN_KEY,
-} from "./constants";
+  getNocoBaseErrorMessage,
+  NocoBaseHttpError,
+} from "@/lib/nocobase/error";
 
 type NocoBaseUser = {
   id: number | string;
@@ -29,18 +29,9 @@ const CURRENT_USER_CACHE_MS = 30_000;
 let currentUserCache: CurrentUserCache | undefined;
 let currentUserRequest: Promise<NocoBaseUser> | undefined;
 
-const authUrl = (action: "signIn" | "signOut" | "check") =>
-  `${AUTH_API_URL.replace(/\/$/, "")}/auth:${action}`;
-
 const getErrorMessage = (payload: unknown, fallback: string) => {
-  if (typeof payload !== "object" || payload === null) return fallback;
-  const error = payload as { message?: string; errors?: Array<{ message?: string }> };
-  return error.errors?.[0]?.message ?? error.message ?? fallback;
-};
-
-const saveRenewedToken = (response: Response) => {
-  const token = response.headers.get("x-new-token");
-  if (token) localStorage.setItem(NOCOBASE_TOKEN_KEY, token);
+  if (payload instanceof NocoBaseHttpError) return payload.message;
+  return getNocoBaseErrorMessage(payload, fallback);
 };
 
 const clearCurrentUserCache = () => {
@@ -49,26 +40,23 @@ const clearCurrentUserCache = () => {
 };
 
 const getCurrentUser = async (): Promise<NocoBaseUser> => {
-  const token = localStorage.getItem(NOCOBASE_TOKEN_KEY);
+  const token = nocobaseClient.getToken();
   if (!token) throw new Error("No NocoBase token");
 
-  if (currentUserCache?.token === token && currentUserCache.expiresAt > Date.now()) {
-    return currentUserCache.user;
+  const cached = currentUserCache;
+  if (cached && cached.token === token && cached.expiresAt > Date.now()) {
+    return cached.user;
   }
 
   if (currentUserRequest) return currentUserRequest;
 
   currentUserRequest = (async () => {
-    const response = await fetch(authUrl("check"), {
-      headers: getNocoBaseHeaders({ token, includeAuthenticator: true }),
+    const user = await nocobaseClient.action<NocoBaseUser>("auth", "check", {
+      token,
+      includeAuthenticator: true,
     });
-    const payload = await response.json().catch(() => undefined);
-    if (!response.ok) throw new Error(getErrorMessage(payload, "NocoBase session is invalid"));
-
-    saveRenewedToken(response);
-    const user = (payload?.data ?? payload) as NocoBaseUser;
     currentUserCache = {
-      token: localStorage.getItem(NOCOBASE_TOKEN_KEY) ?? token,
+      token: nocobaseClient.getToken() ?? token,
       user,
       expiresAt: Date.now() + CURRENT_USER_CACHE_MS,
     };
@@ -89,7 +77,8 @@ export const authProvider: AuthProvider = {
         success: false,
         error: {
           name: "UnsupportedAuthenticator",
-          message: "Configure this provider as a NocoBase authenticator before using social sign-in.",
+          message:
+            "Configure this provider as a NocoBase authenticator before using social sign-in.",
         },
       };
     }
@@ -98,61 +87,63 @@ export const authProvider: AuthProvider = {
     if (!account || !password) {
       return {
         success: false,
-        error: { name: "LoginError", message: "Please enter your account and password." },
+        error: {
+          name: "LoginError",
+          message: "Please enter your account and password.",
+        },
       };
     }
 
     try {
-      const response = await fetch(authUrl("signIn"), {
-        method: "POST",
-        headers: getNocoBaseHeaders({
+      const result = await nocobaseClient.action<NocoBaseSignInResponse>(
+        "auth",
+        "signIn",
+        {
+          method: "POST",
           includeAuthenticator: true,
-          includeContentType: true,
-        }),
-        body: JSON.stringify({ account, password }),
-      });
-      const payload = await response.json().catch(() => undefined);
-      if (!response.ok) {
-        return {
-          success: false,
-          error: { name: "LoginError", message: getErrorMessage(payload, "Unable to sign in.") },
-        };
-      }
-
-      const result = (payload?.data ?? payload) as NocoBaseSignInResponse;
+          body: { account, password },
+        }
+      );
       if (!result.token) {
         return {
           success: false,
-          error: { name: "LoginError", message: "NocoBase did not return an access token." },
+          error: {
+            name: "LoginError",
+            message: "NocoBase did not return an access token.",
+          },
         };
       }
 
-      localStorage.setItem(NOCOBASE_TOKEN_KEY, result.token);
+      nocobaseClient.setToken(result.token);
       clearCurrentUserCache();
       return { success: true, redirectTo: "/" };
-    } catch {
+    } catch (error) {
       return {
         success: false,
         error: {
-          name: "NetworkError",
-          message:
-            "Unable to reach the NocoBase server. If this is a remote NocoBase from localhost, enable backend CORS for X-Authenticator or use the Vite proxy.",
+          name:
+            error instanceof NocoBaseHttpError ? "LoginError" : "NetworkError",
+          message: getErrorMessage(
+            error,
+            "Unable to reach the NocoBase server. If this is a remote NocoBase from localhost, enable backend CORS for X-Authenticator or use the Vite proxy."
+          ),
         },
       };
     }
   },
 
   logout: async () => {
-    const token = localStorage.getItem(NOCOBASE_TOKEN_KEY);
+    const token = nocobaseClient.getToken();
     try {
       if (token) {
-        await fetch(authUrl("signOut"), {
+        await nocobaseClient.action("auth", "signOut", {
           method: "POST",
-          headers: getNocoBaseHeaders({ token, includeAuthenticator: true }),
+          token,
+          includeAuthenticator: true,
         });
       }
     } finally {
-      localStorage.removeItem(NOCOBASE_TOKEN_KEY);
+      nocobaseClient.setToken(null);
       clearCurrentUserCache();
     }
 
@@ -164,7 +155,7 @@ export const authProvider: AuthProvider = {
       await getCurrentUser();
       return { authenticated: true };
     } catch {
-      localStorage.removeItem(NOCOBASE_TOKEN_KEY);
+      nocobaseClient.setToken(null);
       clearCurrentUserCache();
       return { authenticated: false, redirectTo: "/login" };
     }
@@ -175,7 +166,8 @@ export const authProvider: AuthProvider = {
   getIdentity: async () => {
     try {
       const user = await getCurrentUser();
-      const fullName = user.nickname ?? user.username ?? user.email ?? "NocoBase user";
+      const fullName =
+        user.nickname ?? user.username ?? user.email ?? "NocoBase user";
       return {
         id: user.id,
         firstName: fullName,
@@ -190,11 +182,12 @@ export const authProvider: AuthProvider = {
   },
 
   onError: async (error) => {
-    const status = (error as { status?: number; statusCode?: number }).status ??
+    const status =
+      (error as { status?: number; statusCode?: number }).status ??
       (error as { status?: number; statusCode?: number }).statusCode;
 
     if (status === 401 || status === 403) {
-      localStorage.removeItem(NOCOBASE_TOKEN_KEY);
+      nocobaseClient.setToken(null);
       clearCurrentUserCache();
       return { logout: true, redirectTo: "/login" };
     }
