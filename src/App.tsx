@@ -72,9 +72,11 @@ const coreResources: ResourceProps[] = [
   },
 ];
 
+const basename = import.meta.env.BASE_URL.replace(/\/+$/, "");
+
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basename || undefined}>
       <ThemeProvider>
         <TooltipProvider>
           <Refine
@@ -86,7 +88,7 @@ function App() {
             options={{
               syncWithLocation: true,
               warnWhenUnsavedChanges: true,
-              projectId: "72Ag5T-38hVrZ-1G44i8",
+              disableTelemetry: true,
               title: {
                 text: "NocoBase",
                 icon: <BrandLogo className="size-14 rounded-2xl" />,

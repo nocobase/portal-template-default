@@ -24,6 +24,12 @@ const getProxyPath = (apiUrl?: string) => {
   }
 };
 
+const normalizeBase = (base?: string) => {
+  const normalized = String(base || "/").trim();
+  if (!normalized || normalized === "/") return "/";
+  return `/${normalized.replace(/^\/+|\/+$/g, "")}/`;
+};
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -39,6 +45,7 @@ export default defineConfig(({ mode }) => {
     : undefined;
 
   return {
+    base: normalizeBase(env.NOCOBASE_PORTAL_BASE),
     envPrefix: ["VITE_", "NOCOBASE_"],
     plugins: [react(), tailwindcss()],
     resolve: {

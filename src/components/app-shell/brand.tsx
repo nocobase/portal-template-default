@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { assetUrl, cn } from "@/lib/utils";
 
 type BrandLogoProps = {
   className?: string;
@@ -13,12 +13,12 @@ export function BrandLogo({ className }: BrandLogoProps) {
       )}
     >
       <img
-        src="/logo-mark.png"
+        src={assetUrl("/logo-mark.png")}
         alt=""
         className="size-full object-contain dark:hidden"
       />
       <img
-        src="/logo-mark-dark.png"
+        src={assetUrl("/logo-mark-dark.png")}
         alt=""
         className="hidden size-full object-contain dark:block"
       />
@@ -35,12 +35,12 @@ export function BrandWordmark({ className }: BrandLogoProps) {
       )}
     >
       <img
-        src="/logo.png"
+        src={assetUrl("/logo.png")}
         alt="NocoBase"
         className="h-full w-auto object-contain dark:hidden"
       />
       <img
-        src="/logo-dark.png"
+        src={assetUrl("/logo-dark.png")}
         alt="NocoBase"
         className="hidden h-full w-auto object-contain dark:block"
       />

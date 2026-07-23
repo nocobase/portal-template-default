@@ -1,5 +1,7 @@
 # nocobase-admin-starter
 
+![2026-07-22-08-48-12](https://static-docs.nocobase.com/2026-07-22-08-48-12.png)
+
 ## NocoBase configuration
 
 Copy `.env.example` to `.env.local` and set the NocoBase API URL. The default `basic` authenticator uses the NocoBase username or email and password login. For local development, a temporary access token can be supplied through `NOCOBASE_API_TOKEN`; do not commit it. The data provider sends it as `Authorization: Bearer <token>`.
