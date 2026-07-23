@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import {
-  useAIChat,
+  useAIChatBase,
+  useAIChatMessages,
+  useAIChatStatus,
   type AIChatMessage,
   type AIToolCallDecision,
 } from "../../providers";
@@ -15,10 +17,9 @@ export function ChatMessages({
 }: {
   onToolCallDecision?: (decision: AIToolCallDecision) => void | Promise<void>;
 }) {
+  const { messages } = useAIChatMessages();
+  const { status, error } = useAIChatStatus();
   const {
-    messages,
-    status,
-    error,
     messagesLoading,
     historyError,
     interactionError,
@@ -26,7 +27,7 @@ export function ChatMessages({
     decideToolCall,
     startEditingMessage,
     focusComposer,
-  } = useAIChat();
+  } = useAIChatBase();
 
   return (
     <AIChatMessageList

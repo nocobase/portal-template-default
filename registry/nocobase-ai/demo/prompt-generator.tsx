@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { AIChatProvider, useAIChat } from "../providers";
+import { AIChatProvider, useAIChatBase } from "../providers";
 import { Check, Copy, Globe2, MousePointer2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ChatContainer } from "./container-showcase";
@@ -87,7 +87,7 @@ export function PromptGenerator() {
 }
 
 function PromptGeneratorContent() {
-  const { id: chatId, addWorkContext, focusComposer } = useAIChat();
+  const { id: chatId, addWorkContext, focusComposer } = useAIChatBase();
   const { registeredCount, startPicking } = useAIPageElementPicker();
   const [target, setTarget] = useState("the current page's main content area");
   const [placement, setPlacement] = useState<ChatContainer>("embedded");

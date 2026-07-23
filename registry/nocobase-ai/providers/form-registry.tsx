@@ -158,7 +158,7 @@ const validateFieldValue = (field: AIFormField, value: unknown) => {
 export function createFormFillerInvoker(
   registry: AIFormRegistry
 ): AIToolInvoker {
-  return async (input) => {
+  return async (input, context) => {
     if (!input || typeof input !== "object" || Array.isArray(input)) {
       return {
         status: "error",
@@ -173,6 +173,14 @@ export function createFormFillerInvoker(
       return {
         status: "error",
         content: "The target form identifier is missing.",
+        appliedFields: [],
+        skippedFields: [],
+      };
+    }
+    if (context.allowedFormIds?.includes(form) !== true) {
+      return {
+        status: "error",
+        content: `The target form "${form}" is not available in this conversation context.`,
         appliedFields: [],
         skippedFields: [],
       };

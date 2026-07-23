@@ -7,7 +7,13 @@ export {
 export { AIChatProvider, type AIChatProviderProps } from "./chat-provider";
 export {
   useAIChat,
+  useAIChatBase,
+  useAIChatMessages,
+  useAIChatStatus,
+  type AIChatBaseContextValue,
   type AIChatContextValue,
+  type AIChatMessagesContextValue,
+  type AIChatStatusContextValue,
 } from "./chat-context";
 export {
   createAIChatController,
@@ -46,6 +52,7 @@ export {
   AIPageContextScope,
   createAIPageContextReference,
   getAIWorkContextRequiredTools,
+  getAIWorkContextToolScope,
   mergeAIRequiredTools,
   useAIPageContextScope,
   useAIPageContextResolver,

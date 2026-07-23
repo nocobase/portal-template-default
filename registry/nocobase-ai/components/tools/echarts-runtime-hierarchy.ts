@@ -9,9 +9,9 @@ import {
   TreeChart,
   TreemapChart,
 } from "echarts/charts";
-import { use } from "echarts/core";
+import { use as registerEChartsModules } from "echarts/core";
 
-use([
+registerEChartsModules([
   FunnelChart,
   GaugeChart,
   GraphChart,

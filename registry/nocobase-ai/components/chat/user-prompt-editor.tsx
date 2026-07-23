@@ -15,10 +15,10 @@ import {
 } from "@/components/ui/tooltip";
 import { MessageSquareText } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useAIChat } from "../../providers";
+import { useAIChatBase } from "../../providers";
 
 export function UserPromptEditor() {
-  const { currentEmployee, saveUserPrompt } = useAIChat();
+  const { currentEmployee, saveUserPrompt } = useAIChatBase();
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [saving, setSaving] = useState(false);

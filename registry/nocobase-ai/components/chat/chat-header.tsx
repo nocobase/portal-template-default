@@ -4,7 +4,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useAIChat } from "../../providers";
+import { useAIChatBase } from "../../providers";
 import { Menu, PanelLeftClose, PlusCircle } from "lucide-react";
 import type { ReactNode } from "react";
 import { UserPromptEditor } from "./user-prompt-editor";
@@ -26,7 +26,7 @@ export function ChatHeader({
     conversationListOpen,
     setConversationListOpen,
     startNewConversation,
-  } = useAIChat();
+  } = useAIChatBase();
   const unreadCount = conversations.filter(
     (conversation) => conversation.unread
   ).length;

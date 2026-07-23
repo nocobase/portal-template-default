@@ -2,7 +2,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { History, LoaderCircle } from "lucide-react";
 import { useState, type ReactNode } from "react";
-import { useAIChat, type AIToolCallDecision } from "../../providers";
+import {
+  useAIChatBase,
+  useAIChatStatus,
+  type AIToolCallDecision,
+} from "../../providers";
 import { ChatComposer, type AIChatComposerAction } from "./chat-composer";
 import { AIChatHistoryDialog } from "./chat-history-dialog";
 import { ChatHeader } from "./chat-header";
@@ -32,7 +36,8 @@ export function AIChatCompact({
   disclaimer,
   onToolCallDecision,
 }: AIChatCompactProps) {
-  const { status, currentEmployee } = useAIChat();
+  const { currentEmployee } = useAIChatBase();
+  const { status } = useAIChatStatus();
   const [historyOpen, setHistoryOpen] = useState(false);
   const busy = status === "submitted" || status === "streaming";
 

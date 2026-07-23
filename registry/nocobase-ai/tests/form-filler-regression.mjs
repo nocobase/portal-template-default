@@ -32,11 +32,15 @@ try {
   });
   const invoke = createFormFillerInvoker(registry);
 
+  const allowedContext = { allowedFormIds: ["lead-form"] };
   assert.deepEqual(
-    await invoke({
-      form: "lead-form",
-      data: { company: "Acme", priority: "high" },
-    }),
+    await invoke(
+      {
+        form: "lead-form",
+        data: { company: "Acme", priority: "high" },
+      },
+      allowedContext
+    ),
     {
       status: "success",
       content:
@@ -48,10 +52,13 @@ try {
   assert.deepEqual(applied, [{ company: "Acme", priority: "high" }]);
 
   assert.deepEqual(
-    await invoke({
-      form: "lead-form",
-      data: { company: 42, owner: "Ada", unknown: true },
-    }),
+    await invoke(
+      {
+        form: "lead-form",
+        data: { company: 42, owner: "Ada", unknown: true },
+      },
+      allowedContext
+    ),
     {
       status: "error",
       content: 'No valid editable fields were provided for "Lead form".',
@@ -90,10 +97,27 @@ try {
 
   unregister();
   assert.deepEqual(
-    await invoke({ form: "lead-form", data: { company: "Acme" } }),
+    await invoke(
+      { form: "lead-form", data: { company: "Acme" } },
+      allowedContext
+    ),
     {
       status: "error",
       content: 'The target form "lead-form" is not available on this page.',
+      appliedFields: [],
+      skippedFields: [],
+    }
+  );
+
+  assert.deepEqual(
+    await invoke(
+      { form: "lead-form", data: { company: "Acme" } },
+      { allowedFormIds: [] }
+    ),
+    {
+      status: "error",
+      content:
+        'The target form "lead-form" is not available in this conversation context.',
       appliedFields: [],
       skippedFields: [],
     }

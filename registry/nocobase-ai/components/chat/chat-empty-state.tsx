@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { useAIChat } from "../../providers";
+import { useAIChatBase } from "../../providers";
 import { ArrowUpRight, Send, TextCursorInput } from "lucide-react";
 import { AIEmployeeAvatar } from "./ai-employee-avatar";
 
 export function ChatEmptyState() {
-  const { currentEmployee, availableTasks, runTask } = useAIChat();
+  const { currentEmployee, availableTasks, runTask } = useAIChatBase();
 
   return (
     <div className="flex min-h-full items-center justify-center px-6 py-12">

@@ -43,14 +43,15 @@ try {
   });
 
   const invokers = createFrontendToolInvokers(registry);
+  const allowedContext = { allowedFrontendToolIds: [manifest.id] };
   assert.deepEqual(
-    await invokers.loadFrontendTool({ toolId: manifest.id }, {}),
+    await invokers.loadFrontendTool({ toolId: manifest.id }, allowedContext),
     manifest
   );
   assert.deepEqual(
     await invokers.executeFrontendTool(
       { toolId: manifest.id, args: { discountPercent: 12 } },
-      {}
+      allowedContext
     ),
     { updated: true }
   );
@@ -84,7 +85,9 @@ try {
   assert.deepEqual(
     await invokers.executeFrontendTool(
       { toolId: "quote-card:invalid_result", args: {} },
-      {}
+      {
+        allowedFrontendToolIds: ["quote-card:invalid_result"],
+      }
     ),
     {
       status: "error",
@@ -96,11 +99,26 @@ try {
 
   unregister();
   assert.deepEqual(
-    await invokers.executeFrontendTool({ toolId: manifest.id, args: {} }, {}),
+    await invokers.executeFrontendTool(
+      { toolId: manifest.id, args: {} },
+      allowedContext
+    ),
     {
       status: "error",
       content:
         'Frontend Tool "quote-card:update_quote_discount" is unavailable',
+    }
+  );
+
+  assert.deepEqual(
+    await invokers.executeFrontendTool(
+      { toolId: manifest.id, args: {} },
+      { allowedFrontendToolIds: [] }
+    ),
+    {
+      status: "error",
+      content:
+        'Frontend Tool "quote-card:update_quote_discount" is not available in this conversation context',
     }
   );
 

@@ -9,12 +9,15 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, FileCode2, LoaderCircle, Printer } from "lucide-react";
 import {
+  createContext,
   lazy,
+  type PropsWithChildren,
   Suspense,
+  useCallback,
+  useContext,
   useEffect,
   useMemo,
   useState,
-  useSyncExternalStore,
 } from "react";
 import {
   buildBusinessReportHtml,
@@ -37,11 +40,7 @@ const closedSnapshot: BusinessReportDialogSnapshot = {
   open: false,
   ready: false,
 };
-let snapshot = closedSnapshot;
-const listeners = new Set<() => void>();
 const EChartsPreview = lazy(() => import("./echarts-preview"));
-
-const emit = () => listeners.forEach((listener) => listener());
 
 const sameCharts = (
   left: BusinessReportData["charts"],
@@ -58,38 +57,65 @@ const sameReport = (
   left.fileName === right.fileName &&
   sameCharts(left.charts, right.charts);
 
-export const openBusinessReportDialog = (
-  toolCallId: string,
-  report: BusinessReportData,
-  ready: boolean
-) => {
-  snapshot = { open: true, toolCallId, report, ready };
-  emit();
+type BusinessReportDialogController = {
+  open: (toolCallId: string, report: BusinessReportData, ready: boolean) => void;
+  update: (
+    toolCallId: string,
+    report: BusinessReportData,
+    ready: boolean
+  ) => void;
 };
 
-export const updateBusinessReportDialog = (
-  toolCallId: string,
-  report: BusinessReportData,
-  ready: boolean
-) => {
-  if (snapshot.toolCallId !== toolCallId) return;
-  if (snapshot.ready === ready && sameReport(snapshot.report, report)) return;
-  snapshot = { ...snapshot, report, ready };
-  emit();
-};
+const BusinessReportDialogContext =
+  createContext<BusinessReportDialogController | null>(null);
 
-const setOpen = (open: boolean) => {
-  if (snapshot.open === open) return;
-  snapshot = { ...snapshot, open };
-  emit();
-};
+export function useBusinessReportDialog() {
+  const value = useContext(BusinessReportDialogContext);
+  if (!value) {
+    throw new Error(
+      "useBusinessReportDialog must be used inside BusinessReportDialogProvider"
+    );
+  }
+  return value;
+}
 
-const subscribe = (listener: () => void) => {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-};
-
-const getSnapshot = () => snapshot;
+export function BusinessReportDialogProvider({
+  children,
+}: PropsWithChildren) {
+  const [state, setState] = useState(closedSnapshot);
+  const open = useCallback(
+    (toolCallId: string, report: BusinessReportData, ready: boolean) =>
+      setState({ open: true, toolCallId, report, ready }),
+    []
+  );
+  const update = useCallback(
+    (toolCallId: string, report: BusinessReportData, ready: boolean) =>
+      setState((current) => {
+        if (current.toolCallId !== toolCallId) return current;
+        if (current.ready === ready && sameReport(current.report, report)) {
+          return current;
+        }
+        return { ...current, report, ready };
+      }),
+    []
+  );
+  const controller = useMemo(() => ({ open, update }), [open, update]);
+  return (
+    <BusinessReportDialogContext.Provider value={controller}>
+      {children}
+      <BusinessReportDialogHost
+        state={state}
+        onOpenChange={(nextOpen) =>
+          setState((current) =>
+            current.open === nextOpen
+              ? current
+              : { ...current, open: nextOpen }
+          )
+        }
+      />
+    </BusinessReportDialogContext.Provider>
+  );
+}
 
 function ChartPreview({ options }: { options: Record<string, unknown> }) {
   return (
@@ -105,8 +131,13 @@ function ChartPreview({ options }: { options: Record<string, unknown> }) {
   );
 }
 
-export function BusinessReportDialogHost() {
-  const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+function BusinessReportDialogHost({
+  state,
+  onOpenChange,
+}: {
+  state: BusinessReportDialogSnapshot;
+  onOpenChange: (open: boolean) => void;
+}) {
   const report = state.report;
   const [activeTab, setActiveTab] = useState("preview");
   const [htmlPreview, setHtmlPreview] = useState("");
@@ -185,7 +216,7 @@ export function BusinessReportDialogHost() {
   const fileName = getBusinessReportFileName(report);
 
   return (
-    <Dialog open={state.open} onOpenChange={setOpen}>
+    <Dialog open={state.open} onOpenChange={onOpenChange}>
       <DialogContent className="h-[86svh] w-[min(980px,calc(100vw-2rem))] max-w-[980px] grid-rows-[auto_1fr_auto] overflow-hidden p-0 sm:max-w-[980px]">
         <div className="border-b px-5 py-4">
           <DialogTitle>{report.title}</DialogTitle>

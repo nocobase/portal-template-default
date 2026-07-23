@@ -1,8 +1,29 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAI } from "./ai-provider";
 import type { AIChatAttachment } from "./types";
 
 const EMPTY_ATTACHMENTS: AIChatAttachment[] = [];
+
+const disposeRemovedAttachmentPreviews = (
+  current: AIChatAttachment[],
+  next: AIChatAttachment[]
+) => {
+  const retainedPreviews = new Set(
+    next.map((attachment) => attachment.preview).filter(Boolean)
+  );
+  for (const attachment of current) {
+    if (
+      attachment.preview?.startsWith("blob:") &&
+      !retainedPreviews.has(attachment.preview)
+    ) {
+      URL.revokeObjectURL(attachment.preview);
+    }
+  }
+};
+
+const disposeAttachmentDrafts = (
+  drafts: Record<string, AIChatAttachment[]>
+) => Object.values(drafts).forEach((items) => disposeRemovedAttachmentPreviews(items, []));
 
 export function useChatAttachments(activeConversationId: string) {
   const ai = useAI();
@@ -17,13 +38,12 @@ export function useChatAttachments(activeConversationId: string) {
         | AIChatAttachment[]
         | ((current: AIChatAttachment[]) => AIChatAttachment[])
     ) => {
-      setDrafts((current) => ({
-        ...current,
-        [conversationId]:
-          typeof value === "function"
-            ? value(current[conversationId] ?? [])
-            : value,
-      }));
+      setDrafts((current) => {
+        const previous = current[conversationId] ?? [];
+        const next = typeof value === "function" ? value(previous) : value;
+        disposeRemovedAttachmentPreviews(previous, next);
+        return { ...current, [conversationId]: next };
+      });
     },
     []
   );
@@ -88,6 +108,9 @@ export function useChatAttachments(activeConversationId: string) {
                       preview:
                         typeof response.preview === "string"
                           ? response.preview
+                          : attachment.mimetype?.startsWith("image/") &&
+                            typeof response.url === "string"
+                          ? response.url
                           : attachment.preview,
                       progress: 100,
                       source,
@@ -120,10 +143,6 @@ export function useChatAttachments(activeConversationId: string) {
   const removeAttachment = useCallback(
     (uid: string) => {
       setConversationAttachments(activeConversationId, (current) => {
-        const removed = current.find((attachment) => attachment.uid === uid);
-        if (removed?.preview?.startsWith("blob:")) {
-          URL.revokeObjectURL(removed.preview);
-        }
         return current.filter((attachment) => attachment.uid !== uid);
       });
     },
@@ -143,6 +162,7 @@ export function useChatAttachments(activeConversationId: string) {
     (conversationId: string) => {
       setDrafts((current) => {
         if (!current[conversationId]) return current;
+        disposeRemovedAttachmentPreviews(current[conversationId], []);
         const next = { ...current };
         delete next[conversationId];
         return next;
@@ -151,12 +171,24 @@ export function useChatAttachments(activeConversationId: string) {
     []
   );
 
-  const clearAttachments = useCallback(() => setDrafts({}), []);
+  const clearAttachments = useCallback(
+    () =>
+      setDrafts((current) => {
+        disposeAttachmentDrafts(current);
+        return {};
+      }),
+    []
+  );
   const getConversationAttachments = useCallback(
     (conversationId: string) => draftsRef.current[conversationId] ?? [],
     []
   );
   const attachments = drafts[activeConversationId] ?? EMPTY_ATTACHMENTS;
+
+  useEffect(
+    () => () => disposeAttachmentDrafts(draftsRef.current),
+    []
+  );
 
   return {
     attachments,

@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AIChatProvider, useAIChat } from "../providers";
+import { AIChatProvider, useAIChatBase } from "../providers";
 import { Globe2, MousePointer2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ContainerShowcase, type ChatContainer } from "./container-showcase";
@@ -121,7 +121,7 @@ function AIChatPageContent() {
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
-  const { id: chatId, addWorkContext, focusComposer } = useAIChat();
+  const { id: chatId, addWorkContext, focusComposer } = useAIChatBase();
   const { registeredCount, startPicking } = useAIPageElementPicker();
 
   const composerActions = useMemo<AIChatComposerAction[]>(

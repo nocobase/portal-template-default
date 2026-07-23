@@ -55,13 +55,15 @@ You can run the same missing-only installation explicitly with:
 pnpm registry:install
 ```
 
-This repository currently authors three incremental NocoBase AI entries:
+This repository currently authors four incremental NocoBase AI entries:
 
 - `ai-runtime` provides AI services, providers, transports, and
   controllers. Its NocoBase requests use the starter's shared
   `src/lib/nocobase/client.ts` client.
 - `ai-chat` adds the reusable chat components and depends on the
   runtime entry.
+- `ai-react-hook-form` adds the optional React Hook Form adapter for the fixed
+  Form filler Tool.
 - `ai` adds the Refine extension integration and Demo pages and depends on the
   chat entry.
 

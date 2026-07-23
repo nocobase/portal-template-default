@@ -62,10 +62,48 @@ export type AIChatContextValue = {
   focusComposer: () => void;
 };
 
-export const AIChatContext = createContext<AIChatContextValue | null>(null);
+export type AIChatMessagesContextValue = Pick<AIChatContextValue, "messages">;
+export type AIChatStatusContextValue = Pick<
+  AIChatContextValue,
+  "status" | "error"
+>;
+export type AIChatBaseContextValue = Omit<
+  AIChatContextValue,
+  keyof AIChatMessagesContextValue | keyof AIChatStatusContextValue
+>;
+
+export const AIChatContext = createContext<AIChatBaseContextValue | null>(null);
+export const AIChatMessagesContext =
+  createContext<AIChatMessagesContextValue | null>(null);
+export const AIChatStatusContext =
+  createContext<AIChatStatusContextValue | null>(null);
+
+export function useAIChatBase() {
+  const value = useContext(AIChatContext);
+  if (!value) throw new Error("useAIChatBase must be used inside AIChatProvider");
+  return value;
+}
+
+export function useAIChatMessages() {
+  const value = useContext(AIChatMessagesContext);
+  if (!value) {
+    throw new Error("useAIChatMessages must be used inside AIChatProvider");
+  }
+  return value;
+}
+
+export function useAIChatStatus() {
+  const value = useContext(AIChatStatusContext);
+  if (!value) {
+    throw new Error("useAIChatStatus must be used inside AIChatProvider");
+  }
+  return value;
+}
 
 export function useAIChat() {
-  const value = useContext(AIChatContext);
-  if (!value) throw new Error("useAIChat must be used inside AIChatProvider");
-  return value;
+  return {
+    ...useAIChatBase(),
+    ...useAIChatMessages(),
+    ...useAIChatStatus(),
+  };
 }

@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AIChatProvider, useAIChat } from "../providers";
+import { AIChatProvider, useAIChatBase } from "../providers";
 import { Globe2, MousePointer2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -33,7 +33,7 @@ function PageElementShowcaseContent() {
   const [contactEmail, setContactEmail] = useState("ops@northwind.test");
   const [priority, setPriority] = useState("high");
   const [webSearch, setWebSearch] = useState(false);
-  const { id: chatId, addWorkContext, focusComposer } = useAIChat();
+  const { id: chatId, addWorkContext, focusComposer } = useAIChatBase();
   const { registeredCount, startPicking } = useAIPageElementPicker();
 
   const composerActions = useMemo<AIChatComposerAction[]>(

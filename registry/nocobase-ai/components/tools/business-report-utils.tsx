@@ -121,7 +121,7 @@ export function downloadBusinessReportFile(
   link.href = url;
   link.download = filename;
   link.click();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 export async function renderBusinessReportMarkdownToHtml(markdown: string) {
@@ -149,8 +149,9 @@ async function renderChartImage(options: Record<string, unknown>) {
   host.style.height = "360px";
   host.style.pointerEvents = "none";
   document.body.appendChild(host);
+  let chart: ReturnType<typeof echarts.init> | undefined;
   try {
-    const chart = echarts.init(host, "default", { renderer: "canvas" });
+    chart = echarts.init(host, "default", { renderer: "canvas" });
     chart.setOption(
       {
         ...options,
@@ -168,9 +169,9 @@ async function renderChartImage(options: Record<string, unknown>) {
       backgroundColor: "#ffffff",
       excludeComponents: ["toolbox"],
     });
-    chart.dispose();
     return source;
   } finally {
+    chart?.dispose();
     host.remove();
   }
 }

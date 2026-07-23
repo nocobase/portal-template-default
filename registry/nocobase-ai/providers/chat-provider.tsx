@@ -9,7 +9,14 @@ import {
   type PropsWithChildren,
 } from "react";
 import { aiChatReducer, createAIChatState } from "./chat-reducer";
-import { AIChatContext, type AIChatContextValue } from "./chat-context";
+import {
+  AIChatContext,
+  AIChatMessagesContext,
+  AIChatStatusContext,
+  type AIChatBaseContextValue,
+  type AIChatMessagesContextValue,
+  type AIChatStatusContextValue,
+} from "./chat-context";
 import {
   createAIChatTaskRuntime,
   findAIChatTaskModel,
@@ -98,6 +105,10 @@ export function AIChatProvider({
     >(undefined);
   const [historyError, setHistoryError] = useState<Error>();
   const [interactionError, setInteractionError] = useState<Error>();
+  const interactionVersionRef = useRef(0);
+  const invalidatePendingInteraction = useCallback(() => {
+    interactionVersionRef.current += 1;
+  }, []);
   const setConversationList = useCallback(
     (conversations: AIConversation[]) =>
       dispatch({ type: "set-conversations", conversations }),
@@ -106,7 +117,6 @@ export function AIChatProvider({
   const {
     loading: conversationsLoading,
     search: conversationSearch,
-    searchRef: conversationSearchRef,
     refresh: refreshConversationCatalog,
     searchConversations,
     updateCatalog: updateConversationCatalog,
@@ -248,7 +258,20 @@ export function AIChatProvider({
   const sendText = useCallback(
     async (rawValue: string) => {
       const value = rawValue.trim();
-      const currentId = stateRef.current.activeConversationId;
+      const operationVersion = interactionVersionRef.current + 1;
+      interactionVersionRef.current = operationVersion;
+      const currentState = stateRef.current;
+      const currentId = currentState.activeConversationId;
+      const employee =
+        ai.employees.find(
+          (item) => item.username === currentState.selectedEmployeeUsername
+        ) ?? ai.employees[0];
+      const model =
+        findAIModel(ai.models, currentState.selectedModel) ?? ai.models[0];
+      const conversation = currentState.conversations.find(
+        (item) => item.id === currentId
+      );
+      if (!employee || !model) return;
       const currentAttachments = getConversationAttachments(currentId);
       const unresolvedWorkContext = getConversationWorkContext(currentId);
       if (
@@ -260,8 +283,8 @@ export function AIChatProvider({
             (attachment) => attachment.status === "done"
           ) &&
           !unresolvedWorkContext.length) ||
-        chat.status === "streaming" ||
-        chat.status === "submitted"
+        activeChat.status === "streaming" ||
+        activeChat.status === "submitted"
       )
         return;
 
@@ -272,6 +295,7 @@ export function AIChatProvider({
           ? await resolvePageContext(unresolvedWorkContext)
           : unresolvedWorkContext;
       } catch (error) {
+        if (interactionVersionRef.current !== operationVersion) return;
         setInteractionError(
           error instanceof Error
             ? error
@@ -279,7 +303,17 @@ export function AIChatProvider({
         );
         return;
       }
-      if (stateRef.current.activeConversationId !== currentId) return;
+      const latestState = stateRef.current;
+      if (
+        interactionVersionRef.current !== operationVersion ||
+        latestState.activeConversationId !== currentId ||
+        latestState.selectedEmployeeUsername !== employee.username ||
+        latestState.selectedModel !== getAIModelKey(model) ||
+        getConversationAttachments(currentId) !== currentAttachments ||
+        getConversationWorkContext(currentId) !== unresolvedWorkContext
+      ) {
+        return;
+      }
 
       const completedAttachments = currentAttachments.filter(
         (attachment) => attachment.status === "done"
@@ -300,8 +334,8 @@ export function AIChatProvider({
             }
           : undefined;
       runtimeContextsRef.current.set(currentId, {
-        employeeUsername: currentEmployee.username,
-        model: getAIModelKey(currentModel),
+        employeeUsername: employee.username,
+        model: getAIModelKey(model),
         task: runtimeTask,
       });
       const title =
@@ -309,13 +343,13 @@ export function AIChatProvider({
         completedAttachments[0]?.filename ||
         currentWorkContext[0]?.title ||
         "New conversation";
-      if (!activeConversation) {
+      if (!conversation) {
         dispatch({
           type: "add-conversation",
           conversation: {
             id: currentId,
             title: title.slice(0, 42),
-            employeeUsername: currentEmployee.username,
+            employeeUsername: employee.username,
             updatedAt: new Date().toISOString(),
           },
         });
@@ -327,7 +361,7 @@ export function AIChatProvider({
       const activeEditingMessageId = editingMessageId;
       setEditingMessageId(undefined);
       editingSnapshotRef.current = undefined;
-      await chat.sendMessage({
+      await activeChat.sendMessage({
         parts: [
           ...(value ? [{ type: "text" as const, text: value }] : []),
           ...completedAttachments
@@ -341,7 +375,7 @@ export function AIChatProvider({
         ],
         metadata: {
           createdAt: new Date().toISOString(),
-          employeeUsername: currentEmployee.username,
+          employeeUsername: employee.username,
           editingMessageId: activeEditingMessageId,
           attachments: completedAttachments,
           workContext: currentWorkContext,
@@ -349,15 +383,14 @@ export function AIChatProvider({
       });
     },
     [
+      ai.employees,
+      ai.models,
       activeChat,
-      activeConversation,
-      chat,
-      currentEmployee.username,
-      currentModel,
       editingMessageId,
       getConversationAttachments,
       getConversationWorkContext,
       resolvePageContext,
+      runtimeContextsRef,
       setConversationAttachments,
       setConversationWorkContext,
     ]
@@ -378,7 +411,6 @@ export function AIChatProvider({
     processAutomaticToolApprovals,
   } = useChatMessageActions({
     ai,
-    chat,
     activeChat,
     stateRef,
     chatSurfaceOpenRef,
@@ -424,12 +456,13 @@ export function AIChatProvider({
   conversationFinishedHandlerRef.current = handleConversationFinished;
 
   const startNewConversation = useCallback(() => {
+    invalidatePendingInteraction();
     const snapshot = editingSnapshotRef.current;
     if (
       snapshot &&
       snapshot.conversationId === stateRef.current.activeConversationId
     ) {
-      chat.setMessages(snapshot.messages);
+      activeChat.messages = snapshot.messages;
       setConversationAttachments(snapshot.conversationId, snapshot.attachments);
       setConversationWorkContext(snapshot.conversationId, snapshot.workContext);
     }
@@ -448,9 +481,10 @@ export function AIChatProvider({
     dispatch({ type: "start-new-conversation" });
     requestComposerFocus();
   }, [
-    chat,
+    activeChat,
     getConfiguredTaskSet,
     invalidateConversationHistory,
+    invalidatePendingInteraction,
     removeChatRuntime,
     setConversationAttachments,
     setConversationWorkContext,
@@ -458,6 +492,8 @@ export function AIChatProvider({
 
   const triggerTask = useCallback(
     async (options: AIEmployeeTaskTrigger) => {
+      const operationVersion = interactionVersionRef.current + 1;
+      interactionVersionRef.current = operationVersion;
       cancelEditingMessage();
       const employee = findTriggeredAIEmployee(
         ai.employees,
@@ -486,6 +522,7 @@ export function AIChatProvider({
           ? await resolvePageContext(contextItems)
           : contextItems;
       } catch (error) {
+        if (interactionVersionRef.current !== operationVersion) return;
         setInteractionError(
           error instanceof Error
             ? error
@@ -493,6 +530,7 @@ export function AIChatProvider({
         );
         return;
       }
+      if (interactionVersionRef.current !== operationVersion) return;
       taskRuntimeRef.current = createAIChatTaskRuntime(task, workContext);
 
       removeChatRuntime(AI_DRAFT_CONVERSATION_ID);
@@ -596,6 +634,9 @@ export function AIChatProvider({
 
   const removeConversation = useCallback(
     async (conversationId: string) => {
+      if (stateRef.current.activeConversationId === conversationId) {
+        invalidatePendingInteraction();
+      }
       try {
         await ai.destroyConversation(conversationId);
       } catch (error) {
@@ -635,6 +676,7 @@ export function AIChatProvider({
       clearAutomaticToolApproval,
       getConfiguredTaskSet,
       invalidateConversationHistory,
+      invalidatePendingInteraction,
       removeConversationAttachments,
       removeConversationWorkContext,
       removeChatRuntime,
@@ -663,12 +705,9 @@ export function AIChatProvider({
     [ai, updateConversationCatalog]
   );
 
-  const value = useMemo<AIChatContextValue>(
+  const value = useMemo<AIChatBaseContextValue>(
     () => ({
       id,
-      messages: chat.messages,
-      status: chat.status,
-      error: chat.error,
       employees: ai.employees,
       models: ai.models,
       currentEmployee,
@@ -695,12 +734,13 @@ export function AIChatProvider({
       addWorkContext,
       removeWorkContext,
       send,
-      stop: chat.stop,
-      regenerate: chat.regenerate,
+      stop: () => activeChat.stop(),
+      regenerate: () => activeChat.regenerate(),
       retryMessage,
       decideToolCall,
       startNewConversation,
       selectConversation: (conversationId) => {
+        invalidatePendingInteraction();
         cancelEditingMessage();
         setInteractionError(undefined);
         taskRuntimeRef.current = undefined;
@@ -736,6 +776,7 @@ export function AIChatProvider({
       setConversationListOpen: (open) =>
         dispatch({ type: "set-conversation-list-open", open }),
       selectEmployee: (username) => {
+        invalidatePendingInteraction();
         cancelEditingMessage();
         setInteractionError(undefined);
         removeChatRuntime(AI_DRAFT_CONVERSATION_ID);
@@ -749,7 +790,10 @@ export function AIChatProvider({
         dispatch({ type: "start-new-conversation" });
         requestComposerFocus();
       },
-      selectModel: (model) => dispatch({ type: "select-model", model }),
+      selectModel: (model) => {
+        invalidatePendingInteraction();
+        dispatch({ type: "select-model", model });
+      },
       startEditingMessage,
       cancelEditingMessage,
       saveUserPrompt: (prompt) =>
@@ -761,11 +805,7 @@ export function AIChatProvider({
     [
       activeConversation,
       ai,
-      chat.error,
-      chat.messages,
-      chat.regenerate,
-      chat.status,
-      chat.stop,
+      activeChat,
       composerFocusRequest,
       conversationsLoading,
       conversationSearch,
@@ -780,6 +820,7 @@ export function AIChatProvider({
       currentModel,
       getConfiguredTaskSet,
       invalidateConversationHistory,
+      invalidatePendingInteraction,
       draft,
       id,
       removeConversation,
@@ -809,7 +850,22 @@ export function AIChatProvider({
     ]
   );
 
+  const messagesValue = useMemo<AIChatMessagesContextValue>(
+    () => ({ messages: chat.messages }),
+    [chat.messages]
+  );
+  const statusValue = useMemo<AIChatStatusContextValue>(
+    () => ({ status: chat.status, error: chat.error }),
+    [chat.error, chat.status]
+  );
+
   return (
-    <AIChatContext.Provider value={value}>{children}</AIChatContext.Provider>
+    <AIChatContext.Provider value={value}>
+      <AIChatStatusContext.Provider value={statusValue}>
+        <AIChatMessagesContext.Provider value={messagesValue}>
+          {children}
+        </AIChatMessagesContext.Provider>
+      </AIChatStatusContext.Provider>
+    </AIChatContext.Provider>
   );
 }

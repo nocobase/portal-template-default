@@ -4,7 +4,7 @@ import {
   useMemo,
   type PropsWithChildren,
 } from "react";
-import type { AIToolInvokerMap } from "./types";
+import type { AIToolCallInvocationContext, AIToolInvokerMap } from "./types";
 
 export type AIFrontendToolPermission = "ASK" | "ALLOW";
 
@@ -179,30 +179,47 @@ const errorResult = (error: unknown) => ({
   content: error instanceof Error ? error.message : String(error),
 });
 
+const getToolId = (input: unknown) =>
+  input && typeof input === "object" && !Array.isArray(input)
+    ? (input as { toolId?: unknown }).toolId
+    : undefined;
+
+const isToolAllowed = (
+  toolId: string,
+  context: AIToolCallInvocationContext
+) => context.allowedFrontendToolIds?.includes(toolId) === true;
+
 export function createFrontendToolInvokers(
   registry: AIFrontendToolRegistry
 ): AIToolInvokerMap {
   return {
-    loadFrontendTool: async (input) => {
-      const toolId =
-        input && typeof input === "object" && !Array.isArray(input)
-          ? (input as { toolId?: unknown }).toolId
-          : undefined;
+    loadFrontendTool: async (input, context) => {
+      const toolId = getToolId(input);
       if (typeof toolId !== "string" || !toolId) {
         return errorResult("Frontend Tool id is required");
+      }
+      if (!isToolAllowed(toolId, context)) {
+        return errorResult(
+          `Frontend Tool "${toolId}" is not available in this conversation context`
+        );
       }
       return (
         registry.getManifest(toolId) ??
         errorResult(`Frontend Tool "${toolId}" is unavailable`)
       );
     },
-    executeFrontendTool: async (input) => {
+    executeFrontendTool: async (input, context) => {
       const params =
         input && typeof input === "object" && !Array.isArray(input)
           ? (input as { toolId?: unknown; args?: unknown })
           : {};
       if (typeof params.toolId !== "string" || !params.toolId) {
         return errorResult("Frontend Tool id is required");
+      }
+      if (!isToolAllowed(params.toolId, context)) {
+        return errorResult(
+          `Frontend Tool "${params.toolId}" is not available in this conversation context`
+        );
       }
       try {
         return await registry.execute(params.toolId, params.args ?? {});

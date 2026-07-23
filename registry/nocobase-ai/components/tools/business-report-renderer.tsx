@@ -9,8 +9,7 @@ import {
   type BusinessReportData,
 } from "./business-report-utils";
 import {
-  openBusinessReportDialog,
-  updateBusinessReportDialog,
+  useBusinessReportDialog,
 } from "./business-report-dialog";
 import { asRecord, asString } from "./tool-renderer-utils";
 
@@ -42,6 +41,7 @@ function ReportGeneratingProgress() {
 }
 
 export function BusinessReportRenderer({ part }: AIToolRendererProps) {
+  const reportDialog = useBusinessReportDialog();
   const input = asRecord(part.input);
   const title = asString(input.title) || "Business analysis report";
   const reportSummary = asString(input.summary);
@@ -70,8 +70,8 @@ export function BusinessReportRenderer({ part }: AIToolRendererProps) {
   const wasGenerating = useRef(false);
 
   useEffect(() => {
-    updateBusinessReportDialog(part.toolCallId, report, ready);
-  }, [part.toolCallId, ready, report]);
+    reportDialog.update(part.toolCallId, report, ready);
+  }, [part.toolCallId, ready, report, reportDialog]);
 
   useEffect(() => {
     if (generating) {
@@ -80,9 +80,9 @@ export function BusinessReportRenderer({ part }: AIToolRendererProps) {
     }
     if (wasGenerating.current && ready) {
       wasGenerating.current = false;
-      openBusinessReportDialog(part.toolCallId, report, ready);
+      reportDialog.open(part.toolCallId, report, ready);
     }
-  }, [generating, part.toolCallId, ready, report]);
+  }, [generating, part.toolCallId, ready, report, reportDialog]);
 
   return (
     <button
@@ -92,7 +92,7 @@ export function BusinessReportRenderer({ part }: AIToolRendererProps) {
         ready && "hover:bg-muted/40"
       )}
       disabled={!ready}
-      onClick={() => openBusinessReportDialog(part.toolCallId, report, ready)}
+      onClick={() => reportDialog.open(part.toolCallId, report, ready)}
     >
       <div className="flex items-start gap-3">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/30">

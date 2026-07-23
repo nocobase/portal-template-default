@@ -81,32 +81,64 @@ export const reconcileRefreshedMessages = (
   refreshed: AIChatMessage[]
 ) => {
   const usedCurrentIds = new Set<string>();
+  const byServerMessageId = new Map<string, AIChatMessage>();
+  const bySubAgentSessionId = new Map<string, AIChatMessage[]>();
+  const byToolCallId = new Map<string, AIChatMessage[]>();
+  const byRoleAndText = new Map<string, AIChatMessage[]>();
+  const addToIndex = (
+    index: Map<string, AIChatMessage[]>,
+    key: string,
+    message: AIChatMessage
+  ) => {
+    const messages = index.get(key);
+    if (messages) messages.push(message);
+    else index.set(key, [message]);
+  };
+  for (const message of current) {
+    const serverMessageId = message.metadata?.serverMessageId;
+    if (serverMessageId) byServerMessageId.set(serverMessageId, message);
+    for (const sessionId of getSubAgentSessionIds(message)) {
+      addToIndex(bySubAgentSessionId, sessionId, message);
+    }
+    for (const toolCallId of getMessageToolCallIds(message)) {
+      addToIndex(byToolCallId, toolCallId, message);
+    }
+    const text = getMessageText(message);
+    if (text) addToIndex(byRoleAndText, `${message.role}\0${text}`, message);
+  }
+  const firstUnused = (messages: AIChatMessage[] | undefined) =>
+    messages?.find((message) => !usedCurrentIds.has(message.id));
+
   return refreshed.map((serverMessage) => {
     const serverToolCallIds = getMessageToolCallIds(serverMessage);
-    const match = current.find((localMessage) => {
-      if (usedCurrentIds.has(localMessage.id)) return false;
-      if (
-        serverMessage.metadata?.serverMessageId &&
-        localMessage.metadata?.serverMessageId ===
-          serverMessage.metadata.serverMessageId
-      ) {
-        return true;
+    const serverMessageId = serverMessage.metadata?.serverMessageId;
+    let match = serverMessageId
+      ? byServerMessageId.get(serverMessageId)
+      : undefined;
+    if (match && usedCurrentIds.has(match.id)) match = undefined;
+    const serverSubAgentSessionIds = getSubAgentSessionIds(serverMessage);
+    if (!match && serverSubAgentSessionIds.size) {
+      for (const sessionId of serverSubAgentSessionIds) {
+        match = firstUnused(bySubAgentSessionId.get(sessionId));
+        if (match?.role === serverMessage.role) break;
+        match = undefined;
       }
-      if (localMessage.role !== serverMessage.role) return false;
-      const serverSubAgentSessionIds = getSubAgentSessionIds(serverMessage);
-      if (serverSubAgentSessionIds.size) {
-        return [...getSubAgentSessionIds(localMessage)].some((sessionId) =>
-          serverSubAgentSessionIds.has(sessionId)
-        );
+    }
+    if (!match && !serverSubAgentSessionIds.size && serverToolCallIds.size) {
+      for (const toolCallId of serverToolCallIds) {
+        match = firstUnused(byToolCallId.get(toolCallId));
+        if (match?.role === serverMessage.role) break;
+        match = undefined;
       }
-      if (serverToolCallIds.size) {
-        return [...getMessageToolCallIds(localMessage)].some((toolCallId) =>
-          serverToolCallIds.has(toolCallId)
-        );
-      }
+    }
+    if (!match && !serverSubAgentSessionIds.size && !serverToolCallIds.size) {
       const serverText = getMessageText(serverMessage);
-      return Boolean(serverText) && getMessageText(localMessage) === serverText;
-    });
+      if (serverText) {
+        match = firstUnused(
+          byRoleAndText.get(`${serverMessage.role}\0${serverText}`)
+        );
+      }
+    }
     if (!match) return serverMessage;
     usedCurrentIds.add(match.id);
     return {

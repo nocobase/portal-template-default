@@ -2,6 +2,12 @@
 
 The Registry is split by capability so applications only install the code and dependencies they use.
 
+These entries target the compatible NocoBase admin starter family. The host must
+provide the `@` source alias, `@/lib/nocobase/client`, the standard shadcn UI
+components, and (for `@nocobase/ai`) the `@/app/extension` discovery contract.
+Applications with a different host can still reuse the providers and components,
+but should supply their own `AIService` adapter and integration entry.
+
 - `@nocobase/ai-runtime`: NocoBase service adapter, chat state, streaming transport, conversation history, Tool execution, and page-context registries.
 - `@nocobase/ai-chat`: Chat windows, containers, triggers, page-element APIs, built-in Tool cards, and the high-level `NocoBaseAIRootProvider`.
 - `@nocobase/ai-react-hook-form`: Optional React Hook Form adapter for the built-in Form filler.

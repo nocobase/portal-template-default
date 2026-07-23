@@ -6,9 +6,9 @@ import {
   ParallelChart,
   ThemeRiverChart,
 } from "echarts/charts";
-import { use } from "echarts/core";
+import { use as registerEChartsModules } from "echarts/core";
 
-use([
+registerEChartsModules([
   CustomChart,
   HeatmapChart,
   LinesChart,

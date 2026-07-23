@@ -98,6 +98,32 @@ export function getAIWorkContextRequiredTools(items: AIWorkContextItem[]) {
   return items.some(isFormContext) ? ["formFiller"] : [];
 }
 
+export function getAIWorkContextToolScope(items: AIWorkContextItem[]) {
+  const frontendToolIds = new Set<string>();
+  const formIds = new Set<string>();
+  for (const item of items) {
+    if (Array.isArray(item.frontendTools)) {
+      for (const tool of item.frontendTools) {
+        if (
+          tool &&
+          typeof tool === "object" &&
+          typeof (tool as { id?: unknown }).id === "string"
+        ) {
+          frontendToolIds.add((tool as { id: string }).id);
+        }
+      }
+    }
+    if (isFormContext(item)) {
+      const form = (item.content as { form?: unknown } | undefined)?.form;
+      if (typeof form === "string" && form) formIds.add(form);
+    }
+  }
+  return {
+    allowedFrontendToolIds: [...frontendToolIds],
+    allowedFormIds: [...formIds],
+  };
+}
+
 export function mergeAIRequiredTools(
   skillSettings: AIEmployeeTask["skillSettings"],
   requiredTools: string[]

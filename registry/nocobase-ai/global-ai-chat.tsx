@@ -21,7 +21,7 @@ import {
   AIChatProvider,
   type AIToolInvokerMap,
   useAI,
-  useAIChat,
+  useAIChatBase,
   useAIChatControllerState,
   useGlobalAIChatController,
 } from "./providers";
@@ -107,7 +107,7 @@ function StarterGlobalAIChat({
     currentModel,
     addWorkContext,
     focusComposer,
-  } = useAIChat();
+  } = useAIChatBase();
   const { registeredCount, startPicking } = useAIPageElementPicker();
   const supportsWebSearch = currentModel.supportWebSearch === true;
   const unreadCount = conversations.filter(

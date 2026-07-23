@@ -16,7 +16,12 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { getAIModelKey, useAIChat, type AIEmployee } from "../../providers";
+import {
+  getAIModelKey,
+  useAIChatBase,
+  useAIChatStatus,
+  type AIEmployee,
+} from "../../providers";
 import { cn } from "@/lib/utils";
 import { ArrowUp, Paperclip, Pencil, Square, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -62,7 +67,6 @@ export function ChatComposer({
     setDraft,
     send,
     stop,
-    status,
     models,
     employees,
     currentEmployee,
@@ -78,7 +82,8 @@ export function ChatComposer({
     removeWorkContext,
     editingMessageId,
     cancelEditingMessage,
-  } = useAIChat();
+  } = useAIChatBase();
+  const { status } = useAIChatStatus();
   const busy = status === "submitted" || status === "streaming";
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);

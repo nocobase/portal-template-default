@@ -7,7 +7,7 @@ import {
 } from "react";
 import type { ToolCallPart } from "../chat/tool-call-card";
 import { builtInToolRenderers } from "./builtin-tool-renderers";
-import { BusinessReportDialogHost } from "./business-report-dialog";
+import { BusinessReportDialogProvider } from "./business-report-dialog";
 
 export type AIToolRendererProps = {
   part: ToolCallPart;
@@ -40,10 +40,11 @@ export function AIToolRendererProvider({
   );
 
   return (
-    <AIToolRendererContext.Provider value={value}>
-      {children}
-      <BusinessReportDialogHost />
-    </AIToolRendererContext.Provider>
+    <BusinessReportDialogProvider>
+      <AIToolRendererContext.Provider value={value}>
+        {children}
+      </AIToolRendererContext.Provider>
+    </BusinessReportDialogProvider>
   );
 }
 

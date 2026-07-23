@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { useAIChat, type AIToolCallDecision } from "../../providers";
+import { useAIChatBase, type AIToolCallDecision } from "../../providers";
 import { useRef, useState, type DragEvent, type ReactNode } from "react";
 import { ChatComposer, type AIChatComposerAction } from "./chat-composer";
 import { ChatHeader } from "./chat-header";
@@ -22,7 +22,7 @@ export function AIChatWindow({
   onToolCallDecision,
 }: AIChatWindowProps) {
   const { conversationListOpen, setConversationListOpen, uploadFiles } =
-    useAIChat();
+    useAIChatBase();
   const [draggingFiles, setDraggingFiles] = useState(false);
   const dragDepthRef = useRef(0);
 
@@ -74,14 +74,11 @@ export function AIChatWindow({
           onClick={() => setConversationListOpen(false)}
         />
       ) : null}
-      <aside
-        className={cn(
-          "ai-chat-conversation-panel z-30 h-full w-[300px] shrink-0 border-r bg-card",
-          conversationListOpen && showConversationToggle ? "flex" : "hidden"
-        )}
-      >
-        <ConversationList />
-      </aside>
+      {conversationListOpen && showConversationToggle ? (
+        <aside className="ai-chat-conversation-panel z-30 flex h-full w-[300px] shrink-0 border-r bg-card">
+          <ConversationList />
+        </aside>
+      ) : null}
       <div className="flex min-w-0 flex-1 flex-col">
         <ChatHeader
           actions={headerActions}

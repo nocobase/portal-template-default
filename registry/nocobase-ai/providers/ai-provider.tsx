@@ -64,6 +64,11 @@ type AIProviderValue = {
     input: unknown,
     context: AIToolCallInvocationContext
   ) => Promise<{ handled: boolean; result?: unknown }>;
+  canAutoApproveToolCall: (
+    toolName: string,
+    input: unknown,
+    context: AIToolCallInvocationContext
+  ) => boolean;
 };
 
 const AIContext = createContext<AIProviderValue | null>(null);
@@ -236,6 +241,36 @@ function AIProviderRuntime({
     [resolvedToolInvokers]
   );
 
+  const canAutoApproveToolCall = useCallback(
+    (
+      toolName: string,
+      input: unknown,
+      context: AIToolCallInvocationContext
+    ) => {
+      if (toolName === "formFiller") return false;
+      if (
+        toolName !== "loadFrontendTool" &&
+        toolName !== "executeFrontendTool"
+      ) {
+        return true;
+      }
+      const toolId =
+        input && typeof input === "object" && !Array.isArray(input)
+          ? (input as { toolId?: unknown }).toolId
+          : undefined;
+      if (
+        typeof toolId !== "string" ||
+        context.allowedFrontendToolIds?.includes(toolId) !== true
+      ) {
+        return false;
+      }
+      const manifest = frontendToolRegistry.getManifest(toolId);
+      if (!manifest) return false;
+      return toolName === "loadFrontendTool" || manifest.permission === "ALLOW";
+    },
+    [frontendToolRegistry]
+  );
+
   const value = useMemo<AIProviderValue>(
     () => ({
       configurationStatus,
@@ -255,11 +290,13 @@ function AIProviderRuntime({
       destroyConversation: service.destroyConversation.bind(service),
       updateToolCallDecision: service.updateToolCallDecision.bind(service),
       invokeToolCall,
+      canAutoApproveToolCall,
       createTransport: (options) =>
         new NocoBaseChatTransport({ service, ...options }),
     }),
     [
       configurationError,
+      canAutoApproveToolCall,
       configurationStatus,
       employees,
       globalController,

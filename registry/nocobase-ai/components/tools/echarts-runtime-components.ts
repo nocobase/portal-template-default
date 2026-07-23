@@ -14,9 +14,9 @@ import {
   TimelineComponent,
   VisualMapComponent,
 } from "echarts/components";
-import { use } from "echarts/core";
+import { use as registerEChartsModules } from "echarts/core";
 
-use([
+registerEChartsModules([
   BrushComponent,
   CalendarComponent,
   DataZoomComponent,

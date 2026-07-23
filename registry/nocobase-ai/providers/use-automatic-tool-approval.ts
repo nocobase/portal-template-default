@@ -14,7 +14,8 @@ export function useAutomaticToolApproval({
   decide: (
     conversationId: string,
     targetChat: Chat<AIChatMessage>,
-    decision: AIToolCallDecision
+    decision: AIToolCallDecision,
+    options?: { automatic?: boolean }
   ) => Promise<void>;
 }) {
   const approvedRef = useRef(new Set<string>());
@@ -47,15 +48,20 @@ export function useAutomaticToolApproval({
           for (const { key, message, part } of pending) {
             approvedRef.current.add(key);
             try {
-              await decide(conversationId, targetChat, {
-                messageId: message.id,
-                toolCallId: part.toolCallId,
-                toolName:
-                  part.type === "dynamic-tool"
-                    ? part.toolName
-                    : part.type.slice(5),
-                decision: "approve",
-              });
+              await decide(
+                conversationId,
+                targetChat,
+                {
+                  messageId: message.id,
+                  toolCallId: part.toolCallId,
+                  toolName:
+                    part.type === "dynamic-tool"
+                      ? part.toolName
+                      : part.type.slice(5),
+                  decision: "approve",
+                },
+                { automatic: true }
+              );
             } catch (error) {
               approvedRef.current.delete(key);
               throw error;

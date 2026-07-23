@@ -16,7 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAIChat } from "../../providers";
+import { useAIChatBase } from "../../providers";
 import {
   MoreHorizontal,
   PanelLeftClose,
@@ -48,7 +48,7 @@ export function ConversationList({
     conversationSearch,
     searchConversations,
     historyError,
-  } = useAIChat();
+  } = useAIChatBase();
   const [searchValue, setSearchValue] = useState(conversationSearch);
   const [renameTarget, setRenameTarget] = useState<{
     id: string;

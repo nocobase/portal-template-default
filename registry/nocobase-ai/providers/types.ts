@@ -140,6 +140,9 @@ export type AIToolCallInvocationContext = {
   messageId: string;
   toolCallId: string;
   toolName: string;
+  allowedFrontendToolIds?: string[];
+  allowedFormIds?: string[];
+  automatic?: boolean;
 };
 
 export type AIToolInvoker = (

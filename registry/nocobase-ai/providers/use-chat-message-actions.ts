@@ -1,13 +1,13 @@
-import type { Chat, UseChatHelpers } from "@ai-sdk/react";
+import type { Chat } from "@ai-sdk/react";
 import {
   useCallback,
-  useEffect,
   type Dispatch,
   type MutableRefObject,
   type SetStateAction,
 } from "react";
 import type { AIChatAction, AIChatState } from "./chat-reducer";
 import { findChatMessage, isAIToolPart } from "./chat-message-utils";
+import { getAIWorkContextToolScope } from "./page-context";
 import type { NocoBaseChatTransport } from "./chat-transport";
 import type { useAI } from "./ai-provider";
 import type { AIConversationRuntimeContext } from "./use-chat-runtime";
@@ -16,6 +16,7 @@ import type {
   AIChatAttachment,
   AIChatMessage,
   AIToolCallDecision,
+  AIToolCallInvocationContext,
   AIWorkContextItem,
 } from "./types";
 
@@ -37,9 +38,44 @@ type RefreshConversationMessages = (
 const isChatRunning = (chat: Chat<AIChatMessage>) =>
   chat.status === "streaming" || chat.status === "submitted";
 
+const getToolInvocationContext = ({
+  conversationId,
+  messages,
+  rootIndex,
+  runtimeContext,
+  messageId,
+  toolCallId,
+  toolName,
+  automatic,
+}: {
+  conversationId: string;
+  messages: AIChatMessage[];
+  rootIndex: number;
+  runtimeContext: AIConversationRuntimeContext;
+  messageId: string;
+  toolCallId: string;
+  toolName: string;
+  automatic?: boolean;
+}): AIToolCallInvocationContext => {
+  const userContext = messages
+    .slice(0, rootIndex + 1)
+    .reverse()
+    .find((message) => message.role === "user")?.metadata?.workContext;
+  return {
+    sessionId: conversationId,
+    messageId,
+    toolCallId,
+    toolName,
+    automatic,
+    ...getAIWorkContextToolScope([
+      ...(runtimeContext.task?.workContext ?? []),
+      ...(userContext ?? []),
+    ]),
+  };
+};
+
 export function useChatMessageActions({
   ai,
-  chat,
   activeChat,
   stateRef,
   chatSurfaceOpenRef,
@@ -57,7 +93,6 @@ export function useChatMessageActions({
   requestComposerFocus,
 }: {
   ai: AIContextValue;
-  chat: UseChatHelpers<AIChatMessage>;
   activeChat: Chat<AIChatMessage>;
   stateRef: MutableRefObject<AIChatState>;
   chatSurfaceOpenRef: MutableRefObject<boolean>;
@@ -137,8 +172,8 @@ export function useChatMessageActions({
     async (message: AIChatMessage) => {
       if (
         message.role !== "assistant" ||
-        chat.status === "streaming" ||
-        chat.status === "submitted"
+        activeChat.status === "streaming" ||
+        activeChat.status === "submitted"
       ) {
         return;
       }
@@ -159,7 +194,7 @@ export function useChatMessageActions({
         }
         transport.prepareResend(resolved.serverMessageId);
         try {
-          await chat.regenerate({ messageId: resolved.targetMessage.id });
+          await activeChat.regenerate({ messageId: resolved.targetMessage.id });
         } catch (error) {
           transport.cancelResend(resolved.serverMessageId);
           throw error;
@@ -172,7 +207,6 @@ export function useChatMessageActions({
     },
     [
       activeChat,
-      chat,
       resolveServerMessage,
       setHistoryError,
       stateRef,
@@ -184,7 +218,8 @@ export function useChatMessageActions({
     async (
       conversationId: string,
       targetChat: Chat<AIChatMessage>,
-      decision: AIToolCallDecision
+      decision: AIToolCallDecision,
+      options: { automatic?: boolean } = {}
     ) => {
       if (isChatRunning(targetChat)) return;
 
@@ -216,6 +251,44 @@ export function useChatMessageActions({
             : toolPart?.type.startsWith("tool-")
             ? toolPart.type.slice(5)
             : decision.toolName;
+        const runtimeContext = getRuntimeContext(resolved.conversationId);
+        const invocationContext = getToolInvocationContext({
+          conversationId: resolved.conversationId,
+          messages: resolved.messages,
+          rootIndex: resolved.rootIndex,
+          runtimeContext,
+          messageId: resolved.serverMessageId,
+          toolCallId: decision.toolCallId,
+          toolName,
+          automatic: options.automatic,
+        });
+        if (
+          options.automatic &&
+          !ai.canAutoApproveToolCall(
+            toolName,
+            toolPart?.input ?? decision.input,
+            invocationContext
+          )
+        ) {
+          if (toolPart && "callProviderMetadata" in toolPart) {
+            const providerMetadata = toolPart.callProviderMetadata ?? {};
+            const nocobase =
+              providerMetadata.nocobase &&
+              typeof providerMetadata.nocobase === "object"
+                ? providerMetadata.nocobase
+                : {};
+            toolPart.callProviderMetadata = {
+              ...providerMetadata,
+              nocobase: {
+                ...nocobase,
+                autoApprove: false,
+                requiresApproval: true,
+              },
+            };
+            targetChat.messages = [...targetChat.messages];
+          }
+          return;
+        }
         const userDecision =
           decision.decision === "approve"
             ? ({ type: "approve" } as const)
@@ -270,8 +343,7 @@ export function useChatMessageActions({
             toolCall.name,
             toolCall.args,
             {
-              sessionId: resolved.conversationId,
-              messageId: resolved.serverMessageId,
+              ...invocationContext,
               toolCallId: toolCall.id,
               toolName: toolCall.name,
             }
@@ -295,7 +367,6 @@ export function useChatMessageActions({
           );
         }
         const responseMessageId = `assistant-${crypto.randomUUID()}`;
-        const runtimeContext = getRuntimeContext(resolved.conversationId);
         targetChat.messages = [
           ...targetChat.messages,
           {
@@ -366,12 +437,12 @@ export function useChatMessageActions({
     async (message: AIChatMessage) => {
       if (
         message.role !== "user" ||
-        chat.status === "streaming" ||
-        chat.status === "submitted"
+        activeChat.status === "streaming" ||
+        activeChat.status === "submitted"
       ) {
         return;
       }
-      let messages = chat.messages;
+      let messages = activeChat.messages;
       let targetMessage = message;
       let index = messages.findIndex((item) => item.id === message.id);
       if (index < 0) return;
@@ -394,6 +465,7 @@ export function useChatMessageActions({
           );
           return;
         }
+        if (stateRef.current.activeConversationId !== conversationId) return;
         targetMessage = messages.filter((item) => item.role === "user")[
           userMessageIndex
         ];
@@ -409,7 +481,7 @@ export function useChatMessageActions({
         workContext: getConversationWorkContext(conversationId),
       };
       setEditingMessageId(serverMessageId ?? targetMessage.id);
-      chat.setMessages(messages.slice(0, index));
+      activeChat.messages = messages.slice(0, index);
       setConversationAttachments(
         conversationId,
         targetMessage.metadata?.attachments ?? []
@@ -430,7 +502,6 @@ export function useChatMessageActions({
     },
     [
       activeChat,
-      chat,
       dispatch,
       editingSnapshotRef,
       getConversationAttachments,
@@ -451,7 +522,7 @@ export function useChatMessageActions({
       snapshot &&
       snapshot.conversationId === stateRef.current.activeConversationId
     ) {
-      chat.setMessages(snapshot.messages);
+      activeChat.messages = snapshot.messages;
       setConversationAttachments(snapshot.conversationId, snapshot.attachments);
       setConversationWorkContext(snapshot.conversationId, snapshot.workContext);
       dispatch({
@@ -463,7 +534,7 @@ export function useChatMessageActions({
     setEditingMessageId(undefined);
     editingSnapshotRef.current = undefined;
   }, [
-    chat,
+    activeChat,
     dispatch,
     editingSnapshotRef,
     setConversationAttachments,
