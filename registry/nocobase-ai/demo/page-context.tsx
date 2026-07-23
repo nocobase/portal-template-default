@@ -1,11 +1,12 @@
 import {
   AIChatWindow,
   AIEmployeeShortcut,
-  applyReactHookFormValues,
   ChatInline,
   useAIForm,
   useAIPageElement,
+  useAIPageElementHandle,
 } from "../components";
+import { applyReactHookFormValues } from "../adapters/react-hook-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +31,7 @@ import {
 } from "../providers";
 import { useMemo, useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
-import { AIConfigurationGate, AIConversationModeToggle } from "./mode-toggle";
+import { AIConfigurationGate } from "./configuration-gate";
 import { PageContextPromptGenerator } from "./page-context-prompt-generator";
 import { PageElementShowcase } from "./page-element-showcase";
 
@@ -63,7 +64,6 @@ function PageContextPageContent() {
             custom frontend capabilities that can safely update the page.
           </p>
         </div>
-        <AIConversationModeToggle />
       </section>
 
       <ContextSection
@@ -192,7 +192,6 @@ function FormFillerShowcase() {
         user: `Extract the lead details from the following text and fill the current form. Do not submit it.\n\n${sourceText}`,
       },
       autoSend: true,
-      skillSettings: { tools: ["formFiller"] },
     }),
     [sourceText]
   );
@@ -391,7 +390,7 @@ function CustomFrontendToolShowcase() {
     ],
     []
   );
-  const contextRef = useAIPageElement({
+  const quoteContext = useAIPageElementHandle({
     id: "quote-review-card",
     title: "Quote review",
     kind: "record-detail",
@@ -408,14 +407,6 @@ function CustomFrontendToolShowcase() {
       },
     }),
   });
-  const contextReference = useMemo<AIWorkContextItem>(
-    () => ({
-      type: "page-element",
-      id: "quote-review-card",
-      title: "Quote review",
-    }),
-    []
-  );
   const task = useMemo<AIEmployeeTask>(
     () => ({
       title: "Apply review discount",
@@ -428,7 +419,7 @@ function CustomFrontendToolShowcase() {
   );
 
   return (
-    <AIPageContextScope context={contextReference}>
+    <AIPageContextScope context={quoteContext.context}>
       <AIChatProvider
         id="custom-frontend-tool-demo"
         controller={controller}
@@ -437,7 +428,7 @@ function CustomFrontendToolShowcase() {
         <Card className="gap-0 overflow-hidden py-0">
           <div className="grid min-h-[560px] xl:grid-cols-[minmax(0,1fr)_410px]">
             <div className="bg-muted/15 p-4 sm:p-5">
-              <Card ref={contextRef}>
+              <Card ref={quoteContext.ref}>
                 <CardHeader>
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
@@ -528,7 +519,7 @@ function ShortcutTaskContextShowcase() {
   const contextRef = useAIPageElement({
     id: "selected-support-case",
     title: "Selected support case",
-    kind: "form",
+    kind: "editable-record",
     getContext: () => ({
       resource: "supportTickets",
       values: { summary, severity },

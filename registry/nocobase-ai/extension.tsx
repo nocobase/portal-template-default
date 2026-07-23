@@ -1,8 +1,3 @@
-import { AIChatPage } from "./demo";
-import { FloatingChatPage } from "./demo/floating";
-import { PageContextPage } from "./demo/page-context";
-import { ShortcutPage } from "./demo/shortcut";
-import { ToolCardsPage } from "./demo/tool-cards";
 import { NocoBaseAIExtensionProvider } from "./global-ai-chat";
 import type { AppExtension } from "@/app/extension";
 import {
@@ -13,7 +8,46 @@ import {
   Sparkles,
   Wrench,
 } from "lucide-react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { Outlet, Route } from "react-router";
+
+const AIChatPage = lazy(() =>
+  import("./demo").then((module) => ({ default: module.AIChatPage }))
+);
+const FloatingChatPage = lazy(() =>
+  import("./demo/floating").then((module) => ({
+    default: module.FloatingChatPage,
+  }))
+);
+const ShortcutPage = lazy(() =>
+  import("./demo/shortcut").then((module) => ({
+    default: module.ShortcutPage,
+  }))
+);
+const PageContextPage = lazy(() =>
+  import("./demo/page-context").then((module) => ({
+    default: module.PageContextPage,
+  }))
+);
+const ToolCardsPage = lazy(() =>
+  import("./demo/tool-cards").then((module) => ({
+    default: module.ToolCardsPage,
+  }))
+);
+
+function LazyDemoRoute({ children }: { children: ReactNode }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[320px] items-center justify-center text-sm text-muted-foreground">
+          Loading AI components…
+        </div>
+      }
+    >
+      {children}
+    </Suspense>
+  );
+}
 
 const nocobaseAIExtension: AppExtension = {
   id: "nocobase-ai",
@@ -76,11 +110,46 @@ const nocobaseAIExtension: AppExtension = {
   ],
   routes: (
     <Route key="nocobase-ai" path="/ai-chat" element={<Outlet />}>
-      <Route index element={<AIChatPage />} />
-      <Route path="floating" element={<FloatingChatPage />} />
-      <Route path="shortcut" element={<ShortcutPage />} />
-      <Route path="context" element={<PageContextPage />} />
-      <Route path="tools" element={<ToolCardsPage />} />
+      <Route
+        index
+        element={
+          <LazyDemoRoute>
+            <AIChatPage />
+          </LazyDemoRoute>
+        }
+      />
+      <Route
+        path="floating"
+        element={
+          <LazyDemoRoute>
+            <FloatingChatPage />
+          </LazyDemoRoute>
+        }
+      />
+      <Route
+        path="shortcut"
+        element={
+          <LazyDemoRoute>
+            <ShortcutPage />
+          </LazyDemoRoute>
+        }
+      />
+      <Route
+        path="context"
+        element={
+          <LazyDemoRoute>
+            <PageContextPage />
+          </LazyDemoRoute>
+        }
+      />
+      <Route
+        path="tools"
+        element={
+          <LazyDemoRoute>
+            <ToolCardsPage />
+          </LazyDemoRoute>
+        }
+      />
     </Route>
   ),
 };

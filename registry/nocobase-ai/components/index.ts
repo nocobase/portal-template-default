@@ -1,8 +1,16 @@
+export {
+  NocoBaseAIRootProvider,
+  type NocoBaseAIRootProviderProps,
+} from "./ai-root-provider";
 export { AIChatWindow, type AIChatWindowProps } from "./chat/chat-window";
 export { ChatComposer, type AIChatComposerAction } from "./chat/chat-composer";
-export { AIChatCompact } from "./chat/chat-compact";
+export { AIChatCompact, type AIChatCompactProps } from "./chat/chat-compact";
 export { AIChatHistoryDialog } from "./chat/chat-history-dialog";
-export { AIChatMessageList, ChatMessages } from "./chat/chat-messages";
+export {
+  AIChatMessageList,
+  ChatMessages,
+  type AIChatMessageListProps,
+} from "./chat/chat-messages";
 export { AIModelSelectOptions } from "./chat/model-select-options";
 export { ChatDialog } from "./surfaces/chat-dialog";
 export { ChatSurfaceActions } from "./surfaces/chat-surface-actions";
@@ -16,17 +24,27 @@ export {
   ChatSidePanelLayout,
   type ChatSidePanelLayoutProps,
 } from "./surfaces/chat-side-panel-layout";
-export { AIChatFloatingTrigger } from "./triggers/ai-chat-floating-trigger";
-export { AIEmployeeShortcut } from "./triggers/ai-employee-shortcut";
+export {
+  AIChatFloatingTrigger,
+  type AIChatFloatingTriggerProps,
+} from "./triggers/ai-chat-floating-trigger";
+export {
+  AIEmployeeShortcut,
+  type AIEmployeeShortcutProps,
+} from "./triggers/ai-employee-shortcut";
 export {
   AIPageElementProvider,
   useAIPageElement,
+  useAIPageElementHandle,
   useAIPageElementPicker,
+  AIPageContextResolutionError,
+  type AIPageContextFailurePolicy,
   type AIPageElementDescriptor,
+  type AIPageElementHandle,
   type AIPageElementPickerOptions,
+  type AIPageElementProviderProps,
 } from "./page-elements/page-element-provider";
 export {
-  applyReactHookFormValues,
   useAIForm,
   type AIFormDescriptor,
 } from "./page-elements/ai-form";

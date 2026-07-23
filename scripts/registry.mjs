@@ -52,8 +52,13 @@ function assertSafePath(value, prefix, label) {
 const sourceConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
 const sourceFiles = new Map();
 const sourceMappings = new Map();
+const itemNames = new Set();
 
 const items = sourceConfig.items.map((item) => {
+  if (!item.name || itemNames.has(item.name)) {
+    throw new Error(`Registry item name must be unique: ${item.name}`);
+  }
+  itemNames.add(item.name);
   const source = item.source;
   if (!source) {
     throw new Error(`Registry item ${item.name} is missing its source mapping`);
@@ -67,23 +72,40 @@ const items = sourceConfig.items.map((item) => {
     throw new Error(`Registry source does not exist: ${source.root}`);
   }
 
-  sourceMappings.set(`${source.root}\0${source.target}`, source);
+  if (!Array.isArray(source.include) || !source.include.length) {
+    throw new Error(`Registry item ${item.name} must include at least one path`);
+  }
 
-  if (action !== "build") return item;
+  const mappingKey = `${source.root}\0${source.target}`;
+  const mapping = sourceMappings.get(mappingKey) ?? {
+    root: source.root,
+    target: source.target,
+    include: new Set(),
+  };
+  source.include.forEach((entry) => mapping.include.add(entry));
+  sourceMappings.set(mappingKey, mapping);
 
   const allFiles = sourceFiles.get(source.root) ?? walkFiles(sourceRoot);
   sourceFiles.set(source.root, allFiles);
+  const includedFiles = allFiles.filter((file) =>
+    isIncluded(file, source.include)
+  );
+  if (!includedFiles.length) {
+    throw new Error(
+      `Registry item ${item.name} include paths did not match any files`
+    );
+  }
+
+  if (action !== "build") return item;
   const { source: _source, ...registryItem } = item;
 
   return {
     ...registryItem,
-    files: allFiles
-      .filter((file) => isIncluded(file, source.include))
-      .map((file) => ({
-        path: path.posix.join(source.root, file),
-        type: "registry:file",
-        target: path.posix.join(source.target, file),
-      })),
+    files: includedFiles.map((file) => ({
+      path: path.posix.join(source.root, file),
+      type: "registry:file",
+      target: path.posix.join(source.target, file),
+    })),
   };
 });
 
@@ -96,14 +118,6 @@ function copySource(source, overwrite) {
     return;
   }
 
-  if (overwrite) {
-    fs.rmSync(targetPath, { recursive: true, force: true });
-    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-    fs.cpSync(sourcePath, targetPath, { recursive: true });
-    console.log(`${source.target}: preview refreshed`);
-    return;
-  }
-
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   const temporaryRoot = fs.mkdtempSync(
     path.join(path.dirname(targetPath), `.${path.basename(targetPath)}-install-`)
@@ -111,9 +125,20 @@ function copySource(source, overwrite) {
   const temporaryTarget = path.join(temporaryRoot, path.basename(targetPath));
 
   try {
-    fs.cpSync(sourcePath, temporaryTarget, { recursive: true });
+    const includedFiles = walkFiles(sourcePath).filter((file) =>
+      isIncluded(file, [...source.include])
+    );
+    for (const file of includedFiles) {
+      const sourceFile = path.join(sourcePath, file);
+      const targetFile = path.join(temporaryTarget, file);
+      fs.mkdirSync(path.dirname(targetFile), { recursive: true });
+      fs.copyFileSync(sourceFile, targetFile);
+    }
+    if (overwrite) fs.rmSync(targetPath, { recursive: true, force: true });
     fs.renameSync(temporaryTarget, targetPath);
-    console.log(`${source.target}: installed`);
+    console.log(
+      `${source.target}: ${overwrite ? "preview refreshed" : "installed"}`
+    );
   } finally {
     fs.rmSync(temporaryRoot, { recursive: true, force: true });
   }

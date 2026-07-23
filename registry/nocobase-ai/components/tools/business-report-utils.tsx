@@ -1,5 +1,4 @@
 import ReactMarkdown from "react-markdown";
-import { renderToStaticMarkup } from "react-dom/server";
 import remarkGfm from "remark-gfm";
 
 export type BusinessReportChart = {
@@ -125,16 +124,23 @@ export function downloadBusinessReportFile(
   URL.revokeObjectURL(url);
 }
 
-const renderMarkdownToHtml = (markdown: string) =>
-  renderToStaticMarkup(
+export async function renderBusinessReportMarkdownToHtml(markdown: string) {
+  // Static rendering is intentionally loaded only for HTML export/preview.
+  // Rendering through a temporary client root can lose a section when the
+  // root is unmounted immediately after a synchronous render.
+  const { prerender } = await import("react-dom/static.browser");
+  const { prelude } = await prerender(
     <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
   );
+  return new Response(prelude as unknown as BodyInit).text();
+}
 
 const nextFrame = () =>
   new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
 async function renderChartImage(options: Record<string, unknown>) {
-  const echarts = await import("echarts");
+  const { prepareEChartsRuntime } = await import("./echarts-runtime");
+  const echarts = await prepareEChartsRuntime(options);
   const host = document.createElement("div");
   host.style.position = "fixed";
   host.style.left = "-100000px";
@@ -186,7 +192,7 @@ export async function buildBusinessReportHtml(
   const body: string[] = [];
   for (const part of parts) {
     if (part.type === "markdown") {
-      body.push(renderMarkdownToHtml(part.content));
+      body.push(await renderBusinessReportMarkdownToHtml(part.content));
       continue;
     }
     try {

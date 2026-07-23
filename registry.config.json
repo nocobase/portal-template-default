@@ -30,7 +30,6 @@
         "echarts-for-react@3.0.2",
         "lucide-react@^0.487.0",
         "next-themes@^0.4.6",
-        "react-hook-form@^7.57.0",
         "react-markdown@^10.1.0",
         "remark-gfm@^4.0.1"
       ],
@@ -55,7 +54,20 @@
       "source": {
         "root": "registry/nocobase-ai",
         "target": "src/extensions/nocobase-ai",
-        "include": ["components", "assets", "index.ts"]
+        "include": ["components", "assets", "index.ts", "README.md"]
+      }
+    },
+    {
+      "name": "ai-react-hook-form",
+      "type": "registry:lib",
+      "title": "NocoBase AI React Hook Form Adapter",
+      "description": "Optional React Hook Form adapter for the built-in AI Form filler.",
+      "dependencies": ["react-hook-form@^7.57.0"],
+      "registryDependencies": ["@nocobase/ai-chat"],
+      "source": {
+        "root": "registry/nocobase-ai",
+        "target": "src/extensions/nocobase-ai",
+        "include": ["adapters/react-hook-form.ts"]
       }
     },
     {
@@ -66,6 +78,7 @@
       "dependencies": ["@refinedev/core@^5.0.8", "react-router@^7.0.2"],
       "registryDependencies": [
         "@nocobase/ai-chat",
+        "@nocobase/ai-react-hook-form",
         "accordion",
         "alert",
         "badge",

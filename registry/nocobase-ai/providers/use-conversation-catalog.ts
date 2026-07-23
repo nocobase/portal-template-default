@@ -1,17 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AIConfigurationStatus, AIConversation, AIProviderMode } from "./types";
+import type { AIConfigurationStatus, AIConversation } from "./types";
 
 export function useConversationCatalog({
-  mode,
   configurationStatus,
-  initialConversations,
   listConversations,
   onChange,
   onError,
 }: {
-  mode: AIProviderMode;
   configurationStatus: AIConfigurationStatus;
-  initialConversations: AIConversation[];
   listConversations: (keyword?: string) => Promise<AIConversation[]>;
   onChange: (conversations: AIConversation[]) => void;
   onError: (error?: Error) => void;
@@ -20,7 +16,7 @@ export function useConversationCatalog({
   const [search, setSearch] = useState("");
   const searchRef = useRef("");
   const requestRef = useRef(0);
-  const catalogRef = useRef(initialConversations);
+  const catalogRef = useRef<AIConversation[]>([]);
 
   const apply = useCallback(
     (conversations: AIConversation[], keyword = searchRef.current) => {
@@ -40,7 +36,7 @@ export function useConversationCatalog({
   }, [apply, listConversations]);
 
   useEffect(() => {
-    if (mode !== "nocobase" || configurationStatus !== "ready") return;
+    if (configurationStatus !== "ready") return;
     let active = true;
     setLoading(true);
     onError(undefined);
@@ -63,27 +59,13 @@ export function useConversationCatalog({
     return () => {
       active = false;
     };
-  }, [apply, configurationStatus, listConversations, mode, onError]);
+  }, [apply, configurationStatus, listConversations, onError]);
 
   const searchConversations = useCallback(
     async (keyword: string) => {
       const normalizedKeyword = keyword.trim();
       setSearch(keyword);
       searchRef.current = normalizedKeyword;
-
-      if (mode === "mock") {
-        const normalizedSearch = normalizedKeyword.toLocaleLowerCase();
-        onChange(
-          normalizedSearch
-            ? catalogRef.current.filter((conversation) =>
-                conversation.title
-                  .toLocaleLowerCase()
-                  .includes(normalizedSearch)
-              )
-            : catalogRef.current
-        );
-        return;
-      }
 
       const requestId = requestRef.current + 1;
       requestRef.current = requestId;
@@ -105,18 +87,7 @@ export function useConversationCatalog({
         if (requestRef.current === requestId) setLoading(false);
       }
     },
-    [apply, listConversations, mode, onChange, onError]
-  );
-
-  const reset = useCallback(
-    (conversations: AIConversation[]) => {
-      requestRef.current += 1;
-      searchRef.current = "";
-      catalogRef.current = conversations;
-      setSearch("");
-      setLoading(false);
-    },
-    []
+    [apply, listConversations, onError]
   );
 
   const updateCatalog = useCallback(
@@ -131,7 +102,6 @@ export function useConversationCatalog({
     search,
     searchRef,
     refresh,
-    reset,
     searchConversations,
     updateCatalog,
   };

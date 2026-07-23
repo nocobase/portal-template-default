@@ -11,7 +11,7 @@ import {
   useAIChatControllerState,
 } from "../providers";
 import { PromptCard } from "./prompt-card";
-import { AIConfigurationGate, AIConversationModeToggle } from "./mode-toggle";
+import { AIConfigurationGate } from "./configuration-gate";
 
 const floatingPrompt = `Add the standard NocoBase AI floating chat entry to the application layout.
 
@@ -63,7 +63,6 @@ function FloatingChatPageContent() {
                 treated as a generic chat container.
               </p>
             </div>
-            <AIConversationModeToggle />
           </section>
 
           <section className="space-y-5">

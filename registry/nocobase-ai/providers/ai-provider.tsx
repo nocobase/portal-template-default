@@ -20,13 +20,11 @@ import {
   createFrontendToolInvokers,
   useAIFrontendToolRegistry,
 } from "./frontend-tool-registry";
-import { MockChatTransport } from "./testing/mock-chat";
 import type {
   AIConfigurationStatus,
   AIConversation,
   AIEmployee,
   AIModel,
-  AIProviderMode,
   AIToolCallInvocationContext,
   AIToolInvokerMap,
   AITransportFactory,
@@ -38,9 +36,13 @@ const UNCONFIGURED_MODEL: AIModel = {
   configured: false,
 };
 
+const RESERVED_TOOL_INVOKER_NAMES = [
+  "formFiller",
+  "loadFrontendTool",
+  "executeFrontendTool",
+] as const;
+
 type AIProviderValue = {
-  mode: AIProviderMode;
-  setMode: (mode: AIProviderMode) => void;
   configurationStatus: AIConfigurationStatus;
   configurationError?: Error;
   modelConfigurationError?: Error;
@@ -66,10 +68,7 @@ type AIProviderValue = {
 
 const AIContext = createContext<AIProviderValue | null>(null);
 
-type AIProviderProps = PropsWithChildren<{
-  mode?: AIProviderMode;
-  defaultMode?: AIProviderMode;
-  onModeChange?: (mode: AIProviderMode) => void;
+export type AIProviderProps = PropsWithChildren<{
   employees?: AIEmployee[];
   models?: AIModel[];
   service?: AIService;
@@ -89,11 +88,6 @@ export function AIProvider(props: AIProviderProps) {
 
 function AIProviderRuntime({
   children,
-  mode: controlledMode,
-  defaultMode = import.meta.env.NOCOBASE_AI_MODE === "mock"
-    ? "mock"
-    : "nocobase",
-  onModeChange,
   employees: providedEmployees,
   models: providedModels,
   service = nocobaseAIService,
@@ -103,15 +97,23 @@ function AIProviderRuntime({
   const formRegistry = useAIFormRegistry();
   const frontendToolRegistry = useAIFrontendToolRegistry();
   const resolvedToolInvokers = useMemo<AIToolInvokerMap>(
-    () => ({
-      ...toolInvokers,
-      ...createFrontendToolInvokers(frontendToolRegistry),
-      formFiller: createFormFillerInvoker(formRegistry),
-    }),
+    () => {
+      const reservedToolCollision = RESERVED_TOOL_INVOKER_NAMES.find(
+        (name) => toolInvokers?.[name]
+      );
+      if (reservedToolCollision) {
+        throw new Error(
+          `Tool invoker "${reservedToolCollision}" is built into AIProvider and cannot be overridden`
+        );
+      }
+      return {
+        ...toolInvokers,
+        ...createFrontendToolInvokers(frontendToolRegistry),
+        formFiller: createFormFillerInvoker(formRegistry),
+      };
+    },
     [formRegistry, frontendToolRegistry, toolInvokers]
   );
-  const [internalMode, setInternalMode] = useState(defaultMode);
-  const mode = controlledMode ?? internalMode;
   const [liveConfiguration, setLiveConfiguration] = useState<{
     employees: AIEmployee[];
     models: AIModel[];
@@ -121,14 +123,6 @@ function AIProviderRuntime({
   }>({ employees: [], models: [], status: "loading" });
   const internalGlobalController = useAIChatController();
   const globalController = providedGlobalController ?? internalGlobalController;
-
-  const setMode = useCallback(
-    (nextMode: AIProviderMode) => {
-      if (controlledMode === undefined) setInternalMode(nextMode);
-      onModeChange?.(nextMode);
-    },
-    [controlledMode, onModeChange]
-  );
 
   useEffect(() => {
     if (providedEmployees && providedModels) {
@@ -244,8 +238,6 @@ function AIProviderRuntime({
 
   const value = useMemo<AIProviderValue>(
     () => ({
-      mode,
-      setMode,
       configurationStatus,
       configurationError,
       modelConfigurationError,
@@ -264,9 +256,7 @@ function AIProviderRuntime({
       updateToolCallDecision: service.updateToolCallDecision.bind(service),
       invokeToolCall,
       createTransport: (options) =>
-        mode === "nocobase"
-          ? new NocoBaseChatTransport({ service, ...options })
-          : new MockChatTransport(),
+        new NocoBaseChatTransport({ service, ...options }),
     }),
     [
       configurationError,
@@ -275,11 +265,9 @@ function AIProviderRuntime({
       globalController,
       hasEnabledModels,
       invokeToolCall,
-      mode,
       modelConfigurationError,
       models,
       service,
-      setMode,
       updateEmployeeUserPrompt,
     ]
   );

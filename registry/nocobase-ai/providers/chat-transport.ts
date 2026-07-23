@@ -72,7 +72,7 @@ export class NocoBaseChatTransport implements ChatTransport<AIChatMessage> {
     const context = this.options.getContext();
     if (context.model.configured === false) {
       throw new Error(
-        "No enabled LLM model is configured in NocoBase. Enable Mock conversation to preview responses, or configure an LLM service before using the live API."
+        "No enabled LLM model is configured in NocoBase. Configure and enable an LLM service before starting a conversation."
       );
     }
     let sessionId = context.sessionId;

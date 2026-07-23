@@ -1,10 +1,4 @@
 import { useEffect, useRef, type RefCallback } from "react";
-import type {
-  FieldValues,
-  Path,
-  PathValue,
-  UseFormReturn,
-} from "react-hook-form";
 import { useAIFormRegistry, type AIFormField } from "../../providers";
 import { useAIPageElement } from "./page-element-provider";
 
@@ -47,18 +41,4 @@ export function useAIForm(
       instructions: `Use the formFiller tool with form "${descriptor.id}" to fill this form. The tool only changes visible field values and does not submit the form.`,
     }),
   });
-}
-
-export function applyReactHookFormValues<TValues extends FieldValues>(
-  form: Pick<UseFormReturn<TValues>, "setValue">,
-  values: Record<string, unknown>
-) {
-  for (const [name, value] of Object.entries(values)) {
-    const path = name as Path<TValues>;
-    form.setValue(path, value as PathValue<TValues, typeof path>, {
-      shouldDirty: true,
-      shouldTouch: true,
-      shouldValidate: true,
-    });
-  }
 }

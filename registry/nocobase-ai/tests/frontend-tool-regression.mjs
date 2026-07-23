@@ -56,6 +56,44 @@ try {
   );
   assert.deepEqual(calls, [{ discountPercent: 12 }]);
 
+  assert.throws(
+    () =>
+      registry.register("quote-card", {
+        name: "update_quote_discount",
+        description: "Duplicate Tool",
+        execute: () => undefined,
+      }),
+    /already registered/
+  );
+  assert.throws(
+    () =>
+      registry.register("quote-card", {
+        name: "invalid_schema",
+        description: "Invalid schema",
+        inputSchema: [],
+        execute: () => undefined,
+      }),
+    /inputSchema must be an object/
+  );
+
+  const unregisterInvalidResult = registry.register("quote-card", {
+    name: "invalid_result",
+    description: "Return an invalid result.",
+    execute: () => ({ value: 1n }),
+  });
+  assert.deepEqual(
+    await invokers.executeFrontendTool(
+      { toolId: "quote-card:invalid_result", args: {} },
+      {}
+    ),
+    {
+      status: "error",
+      content:
+        'Frontend Tool "quote-card:invalid_result" returned a non-serializable result',
+    }
+  );
+  unregisterInvalidResult();
+
   unregister();
   assert.deepEqual(
     await invokers.executeFrontendTool({ toolId: manifest.id, args: {} }, {}),

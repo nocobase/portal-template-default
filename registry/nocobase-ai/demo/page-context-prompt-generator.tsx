@@ -81,10 +81,10 @@ Show "${taskMessage}" as a suggested prompt near the chat, but keep it in the co
     }[pattern];
 
     const capabilityInstructions = {
-      context: `Build the primary work area as a polished, read-only business detail view based on the scene brief. Include at least five realistic fields, a status indicator, and a short recent-activity section. Register the complete detail region with useAIPageElement and return its current serializable values from getContext.`,
+      context: `Build the primary work area as a polished, read-only business detail view based on the scene brief. Include at least five realistic fields, a status indicator, and a short recent-activity section. Register the complete detail region with useAIPageElementHandle and return its current serializable values from getContext. Reuse handle.ref on the visible element and handle.context wherever the scene needs a context reference.`,
       "form-filler": `Build the primary work area with two connected parts: realistic source material and an editable business form derived from the scene brief. Use React Hook Form and register the form with useAIForm using id "${contextId}", meaningful field definitions, getValues, and setValues.
 
-Use the fixed built-in formFiller Tool. Do not register Form filler as a custom frontend Tool. The Tool may fill visible values only and must never submit or save the form. Include a visible reset action and use applyReactHookFormValues in setValues.`,
+Use the fixed built-in formFiller Tool. Do not register Form filler as a custom frontend Tool and do not add formFiller manually to task.skillSettings: the Registry activates it automatically when a registered form context is sent. The Tool may fill declared editable values only and must never submit or save the form. Include a visible reset action and import applyReactHookFormValues from the optional adapters/react-hook-form Registry item for setValues.`,
       "custom-tool": `Register a custom frontend Tool on the useAIPageElement descriptor:
 - Name: ${toolName}
 - Business action: ${toolAction}
@@ -116,6 +116,7 @@ Business context
 - Context title: ${contextTitle}
 - Register a visible, meaningful business element with this stable id.
 - Resolve its content at task or message send time so the AI always receives the latest displayed values.
+- Prefer useAIPageElementHandle so the registered ref and context reference cannot drift apart.
 
 AI interaction pattern
 ${patternInstructions}
@@ -129,6 +130,7 @@ Implementation requirements
 - The finished result must demonstrate the entire user journey: inspect or edit the business surface, trigger or compose the AI request, see the selected context, and observe the response or page update.
 - Keep page context serializable. Never pass React instances, DOM nodes, form instances, or callback functions to the backend.
 - Public React APIs use context id, not Flow Model uid.
+- Page-context resolution errors must block sending and remain visible to the user; do not silently send an unresolved reference.
 - Explicit task message.workContext takes precedence over trigger context and AIPageContextScope.
 - A task without explicit context inherits the surrounding scope.
 - Manual Pick affects only the current composed message.

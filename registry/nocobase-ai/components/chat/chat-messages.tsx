@@ -21,6 +21,7 @@ export function ChatMessages({
     error,
     messagesLoading,
     historyError,
+    interactionError,
     retryMessage,
     decideToolCall,
     startEditingMessage,
@@ -34,6 +35,7 @@ export function ChatMessages({
       loading={messagesLoading}
       error={error}
       historyError={historyError}
+      interactionError={interactionError}
       onToolCallDecision={onToolCallDecision}
       retryMessage={retryMessage}
       decideToolCall={decideToolCall}
@@ -43,26 +45,13 @@ export function ChatMessages({
   );
 }
 
-export function AIChatMessageList({
-  messages,
-  status = "ready",
-  loading = false,
-  error,
-  historyError,
-  emptyState,
-  className,
-  onToolCallDecision,
-  showMessageActions = true,
-  retryMessage,
-  decideToolCall,
-  startEditingMessage,
-  focusComposer,
-}: {
+export type AIChatMessageListProps = {
   messages: AIChatMessage[];
   status?: "submitted" | "streaming" | "ready" | "error";
   loading?: boolean;
   error?: Error | null;
   historyError?: Error | null;
+  interactionError?: Error | null;
   emptyState?: ReactNode;
   className?: string;
   onToolCallDecision?: (decision: AIToolCallDecision) => void | Promise<void>;
@@ -71,7 +60,24 @@ export function AIChatMessageList({
   decideToolCall?: (decision: AIToolCallDecision) => Promise<void>;
   startEditingMessage?: (message: AIChatMessage) => Promise<void>;
   focusComposer?: () => void;
-}) {
+};
+
+export function AIChatMessageList({
+  messages,
+  status = "ready",
+  loading = false,
+  error,
+  historyError,
+  interactionError,
+  emptyState,
+  className,
+  onToolCallDecision,
+  showMessageActions = true,
+  retryMessage,
+  decideToolCall,
+  startEditingMessage,
+  focusComposer,
+}: AIChatMessageListProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [atBottom, setAtBottom] = useState(true);
 
@@ -103,34 +109,52 @@ export function AIChatMessageList({
           <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
             <LoaderCircle className="size-4 animate-spin" /> Loading messages…
           </div>
-        ) : messages.length ? (
-          <div className="mx-auto w-full max-w-3xl py-2">
-            {messages.map((message) => (
-              <ChatMessage
-                key={message.id}
-                message={message}
-                onToolCallDecision={onToolCallDecision}
-                showActions={showMessageActions}
-                status={status}
-                retryMessage={retryMessage}
-                decideToolCall={decideToolCall}
-                startEditingMessage={startEditingMessage}
-                focusComposer={focusComposer}
-              />
-            ))}
+        ) : (
+          <>
+            {messages.length ? (
+              <div className="mx-auto w-full max-w-3xl py-2">
+                {messages.map((message) => (
+                  <ChatMessage
+                    key={message.id}
+                    message={message}
+                    onToolCallDecision={onToolCallDecision}
+                    showActions={showMessageActions}
+                    status={status}
+                    retryMessage={retryMessage}
+                    decideToolCall={decideToolCall}
+                    startEditingMessage={startEditingMessage}
+                    focusComposer={focusComposer}
+                  />
+                ))}
+              </div>
+            ) : (
+              emptyState ?? <ChatEmptyState />
+            )}
             {error ? (
-              <div className="mx-5 my-3 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              <div
+                role="alert"
+                className="mx-5 my-3 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+              >
                 {error.message}
               </div>
             ) : null}
             {historyError ? (
-              <div className="mx-5 my-3 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              <div
+                role="alert"
+                className="mx-5 my-3 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+              >
                 {historyError.message}
               </div>
             ) : null}
-          </div>
-        ) : (
-          emptyState ?? <ChatEmptyState />
+            {interactionError ? (
+              <div
+                role="alert"
+                className="mx-5 my-3 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+              >
+                {interactionError.message}
+              </div>
+            ) : null}
+          </>
         )}
       </div>
       {!atBottom ? (

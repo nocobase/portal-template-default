@@ -2,8 +2,6 @@ import type { ChatTransport, UIMessage } from "ai";
 
 export const AI_DRAFT_CONVERSATION_ID = "__draft__";
 
-export type AIProviderMode = "mock" | "nocobase";
-
 export type AIConfigurationStatus = "loading" | "ready" | "error";
 
 export type AIEmployee = {

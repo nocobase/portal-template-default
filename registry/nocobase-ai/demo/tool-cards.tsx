@@ -2,7 +2,6 @@ import {
   ToolCallCard,
   type ToolCallPart,
 } from "../components/chat/tool-call-card";
-import { AIConversationModeToggle } from "./mode-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -223,7 +222,6 @@ export function ToolCardsPage() {
             approval, error, and input disclosure card.
           </p>
         </div>
-        <AIConversationModeToggle />
       </section>
 
       <section className="space-y-5">

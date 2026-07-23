@@ -9,8 +9,7 @@ import {
 } from "react";
 import {
   AIChatFloatingTrigger,
-  AIPageElementProvider,
-  AIToolRendererProvider,
+  NocoBaseAIRootProvider,
   useAIPageElementPicker,
   type AIChatComposerAction,
 } from "./components";
@@ -20,7 +19,6 @@ import { ChatSidePanel } from "./components/surfaces/chat-side-panel";
 import { ChatSurfaceActions } from "./components/surfaces/chat-surface-actions";
 import {
   AIChatProvider,
-  AIProvider,
   type AIToolInvokerMap,
   useAI,
   useAIChat,
@@ -36,13 +34,12 @@ export function NocoBaseAIExtensionProvider({
   toolInvokers,
 }: PropsWithChildren<{ toolInvokers?: AIToolInvokerMap }>) {
   return (
-    <AIProvider service={nocobaseAIService} toolInvokers={toolInvokers}>
-      <AIToolRendererProvider>
-        <AIPageElementProvider>
-          <NocoBaseAIGlobalEntry>{children}</NocoBaseAIGlobalEntry>
-        </AIPageElementProvider>
-      </AIToolRendererProvider>
-    </AIProvider>
+    <NocoBaseAIRootProvider
+      service={nocobaseAIService}
+      toolInvokers={toolInvokers}
+    >
+      <NocoBaseAIGlobalEntry>{children}</NocoBaseAIGlobalEntry>
+    </NocoBaseAIRootProvider>
   );
 }
 
@@ -55,7 +52,7 @@ function NocoBaseAIGlobalEntry({ children }: PropsWithChildren) {
   const ready =
     ai.configurationStatus === "ready" &&
     ai.employees.length > 0 &&
-    ai.models.length > 0;
+    ai.hasEnabledModels;
 
   return (
     <div

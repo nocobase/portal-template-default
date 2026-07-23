@@ -7,6 +7,15 @@ import {
 } from "../../providers";
 import type { AIChatController } from "../../providers";
 
+export type AIChatFloatingTriggerProps = {
+  aiEmployee?: string;
+  controller?: AIChatController;
+  unreadCount?: number;
+  position?: "fixed" | "absolute";
+  hideWhenOpen?: boolean;
+  className?: string;
+};
+
 export function AIChatFloatingTrigger({
   aiEmployee,
   controller: providedController,
@@ -14,14 +23,7 @@ export function AIChatFloatingTrigger({
   position = "fixed",
   hideWhenOpen = true,
   className,
-}: {
-  aiEmployee?: string;
-  controller?: AIChatController;
-  unreadCount?: number;
-  position?: "fixed" | "absolute";
-  hideWhenOpen?: boolean;
-  className?: string;
-}) {
+}: AIChatFloatingTriggerProps) {
   const ai = useAI();
   const globalController = useGlobalAIChatController();
   const controller = providedController ?? globalController;

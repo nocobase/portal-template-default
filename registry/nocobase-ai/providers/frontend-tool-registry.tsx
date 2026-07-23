@@ -8,13 +8,16 @@ import type { AIToolInvokerMap } from "./types";
 
 export type AIFrontendToolPermission = "ASK" | "ALLOW";
 
-export type AIFrontendToolRegistration = {
+export type AIFrontendToolRegistration<
+  TArgs = unknown,
+  TResult = unknown,
+> = {
   name: string;
   title?: string;
   description: string;
   permission?: AIFrontendToolPermission;
   inputSchema?: Record<string, unknown>;
-  execute: (args: unknown) => unknown | Promise<unknown>;
+  execute: (args: TArgs) => TResult | Promise<TResult>;
 };
 
 export type AIFrontendToolManifest = {
@@ -30,7 +33,7 @@ export type AIFrontendToolManifest = {
 type AIFrontendToolEntry = {
   token: symbol;
   manifest: AIFrontendToolManifest;
-  execute: AIFrontendToolRegistration["execute"];
+  execute: (args: unknown) => unknown | Promise<unknown>;
 };
 
 const TOOL_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
@@ -39,18 +42,38 @@ const cloneManifest = (
   manifest: AIFrontendToolManifest
 ): AIFrontendToolManifest => structuredClone(manifest);
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === "object" && !Array.isArray(value);
+
+export function defineAIFrontendTool<TArgs, TResult>(
+  registration: AIFrontendToolRegistration<TArgs, TResult>
+) {
+  return registration;
+}
+
 export class AIFrontendToolRegistry {
   private readonly tools = new Map<string, AIFrontendToolEntry>();
 
   register(contextId: string, registration: AIFrontendToolRegistration) {
-    if (!contextId) throw new Error("Frontend Tool context id is required");
+    if (!contextId.trim()) {
+      throw new Error("Frontend Tool context id is required");
+    }
     if (!TOOL_NAME_PATTERN.test(registration.name)) {
       throw new Error(
         "Frontend Tool name must start with a letter and contain only letters, numbers, underscores, or hyphens"
       );
     }
-    if (!registration.description) {
+    if (!registration.description.trim()) {
       throw new Error("Frontend Tool description is required");
+    }
+    if (typeof registration.execute !== "function") {
+      throw new Error("Frontend Tool execute must be a function");
+    }
+    if (
+      registration.inputSchema !== undefined &&
+      !isRecord(registration.inputSchema)
+    ) {
+      throw new Error("Frontend Tool inputSchema must be an object");
     }
     if (
       registration.permission !== undefined &&
@@ -61,7 +84,20 @@ export class AIFrontendToolRegistry {
     }
 
     const id = `${contextId}:${registration.name}`;
+    if (this.tools.has(id)) {
+      throw new Error(
+        `Frontend Tool "${registration.name}" is already registered for context "${contextId}"`
+      );
+    }
     const token = Symbol(id);
+    let inputSchema: Record<string, unknown>;
+    try {
+      inputSchema = structuredClone(
+        registration.inputSchema ?? { type: "object", properties: {} }
+      );
+    } catch {
+      throw new Error("Frontend Tool inputSchema must be serializable");
+    }
     const manifest: AIFrontendToolManifest = {
       id,
       blockUid: contextId,
@@ -69,14 +105,14 @@ export class AIFrontendToolRegistry {
       title: registration.title,
       description: registration.description,
       permission: registration.permission ?? "ASK",
-      inputSchema: structuredClone(
-        registration.inputSchema ?? { type: "object", properties: {} }
-      ),
+      inputSchema,
     };
     this.tools.set(id, {
       token,
       manifest,
-      execute: registration.execute,
+      execute: registration.execute as (
+        args: unknown
+      ) => unknown | Promise<unknown>,
     });
     return () => {
       if (this.tools.get(id)?.token === token) this.tools.delete(id);
@@ -97,7 +133,16 @@ export class AIFrontendToolRegistry {
   async execute(toolId: string, args: unknown) {
     const entry = this.tools.get(toolId);
     if (!entry) throw new Error(`Frontend Tool "${toolId}" is unavailable`);
-    return entry.execute(args);
+    const result = await entry.execute(args);
+    try {
+      structuredClone(result);
+      JSON.stringify(result);
+    } catch {
+      throw new Error(
+        `Frontend Tool "${toolId}" returned a non-serializable result`
+      );
+    }
+    return result;
   }
 }
 
@@ -123,6 +168,10 @@ export function useAIFrontendToolRegistry() {
     );
   }
   return registry;
+}
+
+export function useOptionalAIFrontendToolRegistry() {
+  return useContext(AIFrontendToolRegistryContext);
 }
 
 const errorResult = (error: unknown) => ({

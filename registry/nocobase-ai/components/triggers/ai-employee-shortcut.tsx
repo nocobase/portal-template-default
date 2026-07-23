@@ -18,6 +18,19 @@ import { AIEmployeeAvatar } from "../chat/ai-employee-avatar";
 import { Send, TextCursorInput } from "lucide-react";
 import { useState } from "react";
 
+export type AIEmployeeShortcutProps = {
+  aiEmployee: string | AIEmployee;
+  tasks?: AIEmployeeTask[];
+  context?: AIWorkContextItem[];
+  target?: AIChatController;
+  auto?: boolean;
+  size?: number;
+  label?: string;
+  showNotice?: boolean;
+  className?: string;
+  onTrigger?: (task?: AIEmployeeTask) => void;
+};
+
 export function AIEmployeeShortcut({
   aiEmployee,
   tasks = [],
@@ -29,18 +42,7 @@ export function AIEmployeeShortcut({
   showNotice = false,
   className,
   onTrigger,
-}: {
-  aiEmployee: string | AIEmployee;
-  tasks?: AIEmployeeTask[];
-  context?: AIWorkContextItem[];
-  target?: AIChatController;
-  auto?: boolean;
-  size?: number;
-  label?: string;
-  showNotice?: boolean;
-  className?: string;
-  onTrigger?: (task?: AIEmployeeTask) => void;
-}) {
+}: AIEmployeeShortcutProps) {
   const ai = useAI();
   const [focused, setFocused] = useState(false);
   const globalController = useGlobalAIChatController();

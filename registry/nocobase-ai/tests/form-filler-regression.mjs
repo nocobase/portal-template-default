@@ -18,7 +18,15 @@ try {
   const unregister = registry.register({
     id: "lead-form",
     title: "Lead form",
-    fields: [],
+    fields: [
+      { name: "company", type: "string" },
+      {
+        name: "priority",
+        type: "string",
+        enum: ["normal", "high"],
+      },
+      { name: "owner", type: "string", readonly: true },
+    ],
     getValues: () => ({}),
     setValues: (values) => applied.push(values),
   });
@@ -33,9 +41,52 @@ try {
       status: "success",
       content:
         'Filled "Lead form". Please review the values and submit the form manually.',
+      appliedFields: ["company", "priority"],
+      skippedFields: [],
     }
   );
   assert.deepEqual(applied, [{ company: "Acme", priority: "high" }]);
+
+  assert.deepEqual(
+    await invoke({
+      form: "lead-form",
+      data: { company: 42, owner: "Ada", unknown: true },
+    }),
+    {
+      status: "error",
+      content: 'No valid editable fields were provided for "Lead form".',
+      appliedFields: [],
+      skippedFields: [
+        {
+          name: "company",
+          reason: "invalid",
+          message: "Expected a string.",
+        },
+        {
+          name: "owner",
+          reason: "readonly",
+          message: "This field is read-only.",
+        },
+        {
+          name: "unknown",
+          reason: "undeclared",
+          message: "This field is not declared by the target form.",
+        },
+      ],
+    }
+  );
+
+  assert.throws(
+    () =>
+      registry.register({
+        id: "lead-form",
+        title: "Duplicate lead form",
+        fields: [],
+        getValues: () => ({}),
+        setValues: () => undefined,
+      }),
+    /already registered/
+  );
 
   unregister();
   assert.deepEqual(
@@ -43,6 +94,8 @@ try {
     {
       status: "error",
       content: 'The target form "lead-form" is not available on this page.',
+      appliedFields: [],
+      skippedFields: [],
     }
   );
 

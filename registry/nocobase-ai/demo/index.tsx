@@ -22,7 +22,7 @@ import { Globe2, MousePointer2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ContainerShowcase, type ChatContainer } from "./container-showcase";
 import { InteractionShowcase } from "./interaction-showcase";
-import { AIConfigurationGate, AIConversationModeToggle } from "./mode-toggle";
+import { AIConfigurationGate } from "./configuration-gate";
 import { PromptGenerator } from "./prompt-generator";
 
 const propRows = [
@@ -244,7 +244,6 @@ function AIChatPageContent() {
               prompt for a target page.
             </p>
           </div>
-          <AIConversationModeToggle />
         </section>
 
         <section className="space-y-5">

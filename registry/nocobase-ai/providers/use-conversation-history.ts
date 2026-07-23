@@ -8,7 +8,6 @@ const isChatRunning = (chat: Chat<AIChatMessage>) =>
   chat.status === "streaming" || chat.status === "submitted";
 
 export function useConversationHistory({
-  mode,
   chatSurfaceOpen,
   activeConversationId,
   getActiveConversationId,
@@ -19,7 +18,6 @@ export function useConversationHistory({
   onMarkRead,
   onError,
 }: {
-  mode: "mock" | "nocobase";
   chatSurfaceOpen: boolean;
   activeConversationId: string;
   getActiveConversationId: () => string;
@@ -72,7 +70,6 @@ export function useConversationHistory({
 
   const load = useCallback(
     async (conversationId: string) => {
-      if (mode !== "nocobase") return;
       const targetChat = getChat(conversationId);
       if (isChatRunning(targetChat)) return;
 
@@ -131,7 +128,6 @@ export function useConversationHistory({
       getChat,
       getConversationActiveState,
       getTransport,
-      mode,
       onError,
       onMarkRead,
       refresh,
@@ -141,7 +137,6 @@ export function useConversationHistory({
   useEffect(() => {
     if (
       !chatSurfaceOpen ||
-      mode !== "nocobase" ||
       activeConversationId === AI_DRAFT_CONVERSATION_ID
     ) {
       return;
@@ -170,21 +165,14 @@ export function useConversationHistory({
     chatSurfaceOpen,
     getActiveConversationId,
     getChat,
-    mode,
     onError,
     onMarkRead,
     refresh,
   ]);
 
-  const reset = useCallback(() => {
-    openVersionRef.current += 1;
-    pendingRequestsRef.current.clear();
-    setLoadingId(undefined);
-  }, []);
-
   const invalidate = useCallback(() => {
     openVersionRef.current += 1;
   }, []);
 
-  return { invalidate, load, loadingId, refresh, reset };
+  return { invalidate, load, loadingId, refresh };
 }

@@ -41,7 +41,7 @@ import {
 import { MousePointer2, Plus, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PromptCard } from "./prompt-card";
-import { AIConfigurationGate, AIConversationModeToggle } from "./mode-toggle";
+import { AIConfigurationGate } from "./configuration-gate";
 
 const analyzeTicketTask: AIEmployeeTask = {
   title: "Analyze this ticket",
@@ -170,7 +170,6 @@ function ShortcutPageContent() {
             contextual buttons elsewhere in the application.
           </p>
         </div>
-        <AIConversationModeToggle />
       </section>
 
       <section className="space-y-5">

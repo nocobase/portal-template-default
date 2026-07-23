@@ -16,7 +16,8 @@ import {
 import { createPortal } from "react-dom";
 import {
   AIPageContextResolverProvider,
-  useAIFrontendToolRegistry,
+  createAIPageContextReference,
+  useOptionalAIFrontendToolRegistry,
   type AIFrontendToolManifest,
   type AIFrontendToolRegistration,
   type AIWorkContextItem,
@@ -41,6 +42,22 @@ export type AIPageElementPickerOptions = {
   onSelect: (item: AIWorkContextItem) => void;
   onCancel?: () => void;
 };
+
+export type AIPageContextFailurePolicy = "throw" | "omit";
+
+export type AIPageElementProviderProps = PropsWithChildren<{
+  contextFailurePolicy?: AIPageContextFailurePolicy;
+}>;
+
+export class AIPageContextResolutionError extends Error {
+  constructor(
+    message: string,
+    readonly failures: Array<{ item: AIWorkContextItem; reason: unknown }>
+  ) {
+    super(message);
+    this.name = "AIPageContextResolutionError";
+  }
+}
 
 type RegisteredPageElement = {
   element: HTMLElement;
@@ -82,7 +99,10 @@ const findRegisteredElement = (
   return registered ? { runtimeId, registered } : undefined;
 };
 
-export function AIPageElementProvider({ children }: PropsWithChildren) {
+export function AIPageElementProvider({
+  children,
+  contextFailurePolicy = "throw",
+}: AIPageElementProviderProps) {
   const registryRef = useRef(new Map<string, RegisteredPageElement>());
   const [registeredCount, setRegisteredCount] = useState(0);
   const [request, setRequest] = useState<PickerRequest>();
@@ -96,6 +116,17 @@ export function AIPageElementProvider({ children }: PropsWithChildren) {
 
   const register = useCallback<AIPageElementContextValue["register"]>(
     (runtimeId, element, getDescriptor) => {
+      const contextId = getDescriptor().id ?? runtimeId;
+      const duplicate = [...registryRef.current.entries()].find(
+        ([registeredRuntimeId, entry]) =>
+          registeredRuntimeId !== runtimeId &&
+          (entry.getDescriptor().id ?? registeredRuntimeId) === contextId
+      );
+      if (duplicate) {
+        throw new Error(
+          `AI page context id "${contextId}" is already registered`
+        );
+      }
       element.setAttribute(PAGE_ELEMENT_ATTRIBUTE, runtimeId);
       registryRef.current.set(runtimeId, { element, getDescriptor });
       setRegisteredCount(registryRef.current.size);
@@ -140,35 +171,58 @@ export function AIPageElementProvider({ children }: PropsWithChildren) {
     current?.onCancel?.();
   }, []);
 
-  const resolvePageContext = useCallback(async (items: AIWorkContextItem[]) => {
-    const resolved = await Promise.allSettled(
-      items.map(async (item) => {
-        if (item.type !== "page-element" || item.content !== undefined) {
-          return item;
-        }
-        const registeredEntry = [...registryRef.current.entries()].find(
-          ([runtimeId, entry]) =>
-            (entry.getDescriptor().id ?? runtimeId) === item.id
+  const resolvePageContext = useCallback(
+    async (items: AIWorkContextItem[]) => {
+      const resolved = await Promise.allSettled(
+        items.map(async (item) => {
+          if (item.type !== "page-element") return item;
+          const registeredEntry = [...registryRef.current.entries()].find(
+            ([runtimeId, entry]) =>
+              (entry.getDescriptor().id ?? runtimeId) === item.id
+          );
+          if (!registeredEntry) {
+            if (item.content !== undefined) return item;
+            throw new Error(
+              `Page context "${item.title ?? item.id ?? "unknown"}" is not mounted`
+            );
+          }
+          const [runtimeId, entry] = registeredEntry;
+          const descriptor = entry.getDescriptor();
+          const contextId = item.id ?? descriptor.id ?? runtimeId;
+          const frontendTools = descriptor.frontendTools ?? [];
+          return {
+            ...item,
+            id: contextId,
+            title: item.title ?? descriptor.title,
+            kind: item.kind ?? descriptor.kind,
+            content: await descriptor.getContext(),
+            ...(frontendTools.length ? { uid: contextId, frontendTools } : {}),
+          } satisfies AIWorkContextItem;
+        })
+      );
+      const failures = resolved.flatMap((result, index) =>
+        result.status === "rejected"
+          ? [{ item: items[index], reason: result.reason }]
+          : []
+      );
+      if (failures.length && contextFailurePolicy === "throw") {
+        const labels = failures.map(({ item, reason }) => {
+          const label = item.title ?? item.id ?? "unknown page context";
+          return reason instanceof Error
+            ? `${label} (${reason.message})`
+            : label;
+        });
+        throw new AIPageContextResolutionError(
+          `Unable to read page context: ${labels.join(", ")}`,
+          failures
         );
-        if (!registeredEntry) return item;
-        const [runtimeId, entry] = registeredEntry;
-        const descriptor = entry.getDescriptor();
-        const contextId = item.id ?? descriptor.id ?? runtimeId;
-        const frontendTools = descriptor.frontendTools ?? [];
-        return {
-          ...item,
-          id: contextId,
-          title: item.title ?? descriptor.title,
-          kind: item.kind ?? descriptor.kind,
-          content: await descriptor.getContext(),
-          ...(frontendTools.length ? { uid: contextId, frontendTools } : {}),
-        } satisfies AIWorkContextItem;
-      })
-    );
-    return resolved.map((result, index) =>
-      result.status === "fulfilled" ? result.value : items[index]
-    );
-  }, []);
+      }
+      return resolved.flatMap((result) =>
+        result.status === "fulfilled" ? [result.value] : []
+      );
+    },
+    [contextFailurePolicy]
+  );
 
   useEffect(() => {
     if (!picking) return;
@@ -344,7 +398,7 @@ export function useAIPageElement(
   descriptor: AIPageElementDescriptor
 ): RefCallback<HTMLElement> {
   const { register } = useAIPageElementPicker();
-  const frontendTools = useAIFrontendToolRegistry();
+  const frontendTools = useOptionalAIFrontendToolRegistry();
   const reactId = useId();
   const descriptorRef = useRef(descriptor);
   descriptorRef.current = descriptor;
@@ -353,10 +407,25 @@ export function useAIPageElement(
   const unregisterRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
+    if (!frontendTools) {
+      if (descriptor.tools?.length) {
+        throw new Error(
+          "Page element frontend Tools require AIProvider above AIPageElementProvider"
+        );
+      }
+      toolManifestsRef.current = [];
+      return;
+    }
     const contextId = descriptor.id ?? runtimeIdRef.current;
-    const unregisterTools = (descriptor.tools ?? []).map((tool) =>
-      frontendTools.register(contextId, tool)
-    );
+    const unregisterTools: Array<() => void> = [];
+    try {
+      for (const tool of descriptor.tools ?? []) {
+        unregisterTools.push(frontendTools.register(contextId, tool));
+      }
+    } catch (error) {
+      unregisterTools.forEach((unregister) => unregister());
+      throw error;
+    }
     toolManifestsRef.current = frontendTools.list(contextId);
     return () => {
       unregisterTools.forEach((unregister) => unregister());
@@ -376,4 +445,25 @@ export function useAIPageElement(
     },
     [register]
   );
+}
+
+export type AIPageElementHandle = {
+  ref: RefCallback<HTMLElement>;
+  context: AIWorkContextItem;
+};
+
+export function useAIPageElementHandle(
+  descriptor: AIPageElementDescriptor & { id: string }
+): AIPageElementHandle {
+  const ref = useAIPageElement(descriptor);
+  const context = useMemo(
+    () =>
+      createAIPageContextReference({
+        id: descriptor.id,
+        title: descriptor.title,
+        kind: descriptor.kind,
+      }),
+    [descriptor.id, descriptor.kind, descriptor.title]
+  );
+  return useMemo(() => ({ ref, context }), [context, ref]);
 }

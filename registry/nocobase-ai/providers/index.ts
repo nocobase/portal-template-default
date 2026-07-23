@@ -1,5 +1,14 @@
-export { AIProvider, useAI, useGlobalAIChatController } from "./ai-provider";
-export { AIChatProvider, useAIChat } from "./chat-provider";
+export {
+  AIProvider,
+  useAI,
+  useGlobalAIChatController,
+  type AIProviderProps,
+} from "./ai-provider";
+export { AIChatProvider, type AIChatProviderProps } from "./chat-provider";
+export {
+  useAIChat,
+  type AIChatContextValue,
+} from "./chat-context";
 export {
   createAIChatController,
   useAIChatController,
@@ -17,13 +26,17 @@ export {
   createFormFillerInvoker,
   useAIFormRegistry,
   type AIFormField,
+  type AIFormFillResult,
+  type AIFormFillSkippedField,
   type AIFormTarget,
 } from "./form-registry";
 export {
   AIFrontendToolRegistry,
   AIFrontendToolRegistryProvider,
   createFrontendToolInvokers,
+  defineAIFrontendTool,
   useAIFrontendToolRegistry,
+  useOptionalAIFrontendToolRegistry,
   type AIFrontendToolManifest,
   type AIFrontendToolPermission,
   type AIFrontendToolRegistration,
@@ -31,6 +44,9 @@ export {
 export {
   AIPageContextResolverProvider,
   AIPageContextScope,
+  createAIPageContextReference,
+  getAIWorkContextRequiredTools,
+  mergeAIRequiredTools,
   useAIPageContextScope,
   useAIPageContextResolver,
   type AIPageContextResolver,

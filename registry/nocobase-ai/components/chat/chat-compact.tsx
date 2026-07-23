@@ -7,6 +7,19 @@ import { ChatComposer, type AIChatComposerAction } from "./chat-composer";
 import { AIChatHistoryDialog } from "./chat-history-dialog";
 import { ChatHeader } from "./chat-header";
 
+export type AIChatCompactProps = {
+  className?: string;
+  headerActions?: ReactNode;
+  composerActions?: AIChatComposerAction[];
+  showEmployeeSelector?: boolean;
+  showModelSelector?: boolean;
+  showUserPrompt?: boolean;
+  enableAttachments?: boolean;
+  placeholder?: string;
+  disclaimer?: ReactNode | false;
+  onToolCallDecision?: (decision: AIToolCallDecision) => void | Promise<void>;
+};
+
 export function AIChatCompact({
   className,
   headerActions,
@@ -18,18 +31,7 @@ export function AIChatCompact({
   placeholder,
   disclaimer,
   onToolCallDecision,
-}: {
-  className?: string;
-  headerActions?: ReactNode;
-  composerActions?: AIChatComposerAction[];
-  showEmployeeSelector?: boolean;
-  showModelSelector?: boolean;
-  showUserPrompt?: boolean;
-  enableAttachments?: boolean;
-  placeholder?: string;
-  disclaimer?: ReactNode | false;
-  onToolCallDecision?: (decision: AIToolCallDecision) => void | Promise<void>;
-}) {
+}: AIChatCompactProps) {
   const { status, currentEmployee } = useAIChat();
   const [historyOpen, setHistoryOpen] = useState(false);
   const busy = status === "submitted" || status === "streaming";
