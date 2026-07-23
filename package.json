@@ -67,12 +67,12 @@
     "vite": "^6.3.5"
   },
   "scripts": {
-    "postinstall": "node ./scripts/install-missing-extensions.mjs",
-    "extensions:install": "node ./scripts/install-missing-extensions.mjs",
+    "postinstall": "node ./scripts/registry.mjs install-missing",
     "dev": "vite",
     "build": "tsc && refine build",
-    "registry:preview": "node ./scripts/build-registry.mjs --preview",
-    "registry:build": "node ./scripts/build-registry.mjs && shadcn build ./registry.json -o ./public/r",
+    "registry:install": "node ./scripts/registry.mjs install-missing",
+    "registry:preview": "node ./scripts/registry.mjs preview",
+    "registry:build": "node ./scripts/registry.mjs build && shadcn build ./registry.json -o ./public/r",
     "start": "refine start",
     "refine": "refine"
   },

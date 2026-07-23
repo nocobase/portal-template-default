@@ -4,7 +4,7 @@ import {
   ChatInline,
   type AIChatComposerAction,
 } from "../components";
-import type { AIChatMessage } from "../providers";
+import { AIChatProvider, type AIChatMessage } from "../providers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,6 +95,7 @@ export function InteractionShowcase() {
               <AIChatMessageList
                 className="h-full"
                 messages={showcaseMessages}
+                showMessageActions={false}
               />
               <div className="shrink-0 bg-card px-4 pt-2 pb-3">
                 <div className="rounded-xl border bg-background px-3 py-2.5 shadow-sm">
@@ -135,12 +136,14 @@ export function InteractionShowcase() {
           </p>
         </CardHeader>
         <CardContent className="bg-muted/15 p-4">
-          <AIChatCompact
-            className="bg-background"
-            composerActions={compactActions}
-            showModelSelector={false}
-            disclaimer={false}
-          />
+          <AIChatProvider id="message-presentation-compact-demo">
+            <AIChatCompact
+              className="bg-background"
+              composerActions={compactActions}
+              showModelSelector={false}
+              disclaimer={false}
+            />
+          </AIChatProvider>
         </CardContent>
       </Card>
     </div>

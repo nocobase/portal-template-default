@@ -38,20 +38,19 @@ source:
   its providers, Refine resources, and routes to the app.
 - `registry/<name>` contains the canonical authoring source for a Registry
   package while it is developed in this repository.
-- `src/extensions/<name>` contains installed source. The directory is ignored by
-  Git so Registry source is not committed twice.
+- `src/extensions/<name>` contains installed, application-owned source.
+  Downstream applications can commit this directory like any other source code.
 
-`extensions.json` declares which extensions the starter expects, and
-`extensions.lock.json` records where their Registry items can be resolved. The
-`postinstall` hook runs the generic missing-extension installer. If a target
-directory already exists, the installer skips it completely and preserves all
-local changes. It only installs an extension when its target directory is
-missing.
+`registry.config.json` is the only authoring manifest. In addition to standard
+Shadcn Registry item fields, each item has a local `source` mapping used to
+generate its standard `files` array. The same mapping lets the starter's
+`postinstall` hook copy a locally authored extension only when its target is
+missing. Existing installed source is never compared, updated, or overwritten.
 
 You can run the same missing-only installation explicitly with:
 
 ```bash
-pnpm extensions:install
+pnpm registry:install
 ```
 
 This repository currently authors three incremental NocoBase AI entries:
@@ -64,7 +63,7 @@ This repository currently authors three incremental NocoBase AI entries:
 - `ai` adds the Refine extension integration and Demo pages and depends on the
   chat entry.
 
-To refresh the ignored local preview from the canonical Registry source, run:
+To refresh the local preview from the canonical Registry source, run:
 
 ```bash
 pnpm registry:preview
@@ -72,7 +71,7 @@ pnpm registry:preview
 
 This is the only command that intentionally replaces the local preview at
 `src/extensions/nocobase-ai`. Normal `pnpm dev`, `pnpm install`, and
-`pnpm extensions:install` do not overwrite an installed extension.
+`pnpm registry:install` do not overwrite an installed extension.
 
 Build the standard Shadcn Registry JSON files into `public/r` with:
 
@@ -87,9 +86,14 @@ complete item through Shadcn:
 pnpm dlx shadcn@latest add @nocobase/ai
 ```
 
+Shadcn does not keep a Registry item lock or merge local changes. Re-running
+`add` downloads the current item, skips identical files, and asks before
+replacing different files. Use `--diff` to inspect an update and `--overwrite`
+to accept the Registry version explicitly.
+
 The Registry alias is configured in `components.json` and resolves to
 `http://localhost:5173/r/{name}.json` during local development. The same generic
-extension host and installation manifest can be reused for future Registry
+extension host and Registry source mapping can be reused for future Registry
 packages without adding package-specific logic to `App.tsx` or the installer.
 
 ### Running the production server.

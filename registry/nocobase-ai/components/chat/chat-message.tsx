@@ -20,9 +20,11 @@ import { SubAgentConversation } from "./sub-agent-conversation";
 export function ChatMessage({
   message,
   onToolCallDecision,
+  showActions = true,
 }: {
   message: AIChatMessageType;
   onToolCallDecision?: (decision: AIToolCallDecision) => void | Promise<void>;
+  showActions?: boolean;
 }) {
   const {
     retryMessage,
@@ -71,31 +73,33 @@ export function ChatMessage({
             </div>
           ) : null}
         </div>
-        <div className="pointer-events-none mt-1 flex h-6 items-center gap-1 opacity-0 transition-opacity group-hover/message:pointer-events-auto group-hover/message:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            aria-label="Edit message"
-            disabled={interactionPending}
-            onClick={() => void startEditingMessage(message)}
-          >
-            <Pencil />
-          </Button>
-          {text ? (
+        {showActions ? (
+          <div className="pointer-events-none mt-1 flex h-6 items-center gap-1 opacity-0 transition-opacity group-hover/message:pointer-events-auto group-hover/message:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
             <Button
               variant="ghost"
               size="icon-xs"
-              aria-label="Copy message"
-              onClick={async () => {
-                await navigator.clipboard.writeText(text);
-                setCopied(true);
-                window.setTimeout(() => setCopied(false), 1200);
-              }}
+              aria-label="Edit message"
+              disabled={interactionPending}
+              onClick={() => void startEditingMessage(message)}
             >
-              {copied ? <Check /> : <Copy />}
+              <Pencil />
             </Button>
-          ) : null}
-        </div>
+            {text ? (
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                aria-label="Copy message"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(text);
+                  setCopied(true);
+                  window.setTimeout(() => setCopied(false), 1200);
+                }}
+              >
+                {copied ? <Check /> : <Copy />}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </article>
     );
   }
@@ -170,7 +174,7 @@ export function ChatMessage({
               disabled={interactionPending}
               onRevise={focusComposer}
               inlineActions={
-                useInlineToolActions && part === singleToolCall
+                showActions && useInlineToolActions && part === singleToolCall
                   ? messageActions
                   : undefined
               }
@@ -205,7 +209,8 @@ export function ChatMessage({
           </div>
         ) : null}
       </div>
-      {text || (toolCalls.length && !useInlineToolActions) ? (
+      {showActions &&
+      (text || (toolCalls.length && !useInlineToolActions)) ? (
         <div className="pointer-events-none mt-1 flex h-6 items-center gap-1 opacity-0 transition-opacity group-hover/message:pointer-events-auto group-hover/message:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
           {messageActions}
         </div>

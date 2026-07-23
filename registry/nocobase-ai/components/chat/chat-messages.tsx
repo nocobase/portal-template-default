@@ -39,6 +39,7 @@ export function AIChatMessageList({
   emptyState,
   className,
   onToolCallDecision,
+  showMessageActions = true,
 }: {
   messages: AIChatMessage[];
   status?: "submitted" | "streaming" | "ready" | "error";
@@ -48,6 +49,7 @@ export function AIChatMessageList({
   emptyState?: ReactNode;
   className?: string;
   onToolCallDecision?: (decision: AIToolCallDecision) => void | Promise<void>;
+  showMessageActions?: boolean;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [atBottom, setAtBottom] = useState(true);
@@ -87,6 +89,7 @@ export function AIChatMessageList({
                 key={message.id}
                 message={message}
                 onToolCallDecision={onToolCallDecision}
+                showActions={showMessageActions}
               />
             ))}
             {error ? (

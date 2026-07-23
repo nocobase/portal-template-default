@@ -1,8 +1,0 @@
-{
-  "extensions": [
-    {
-      "name": "nocobase-ai",
-      "target": "src/extensions/nocobase-ai"
-    }
-  ]
-}
