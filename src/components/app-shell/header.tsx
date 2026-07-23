@@ -84,7 +84,10 @@ function MobileHeader() {
         )}
       />
       <Brand logoClassName="h-6" />
-      <ThemeToggle className={cn("size-9")} />
+      <div className="flex shrink-0 items-center gap-1">
+        <ThemeToggle className="size-9" />
+        <UserDropdown />
+      </div>
     </header>
   );
 }
