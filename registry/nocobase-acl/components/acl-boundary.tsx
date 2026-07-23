@@ -15,6 +15,26 @@ export type AclPermission = {
   dataSourceKey?: string;
 };
 
+export type AclPageProps = PropsWithChildren<{
+  anyOf?: AclPermission[];
+  allOf?: AclPermission[];
+  fallback?: ReactNode;
+}>;
+
+export type AclRegionProps = PropsWithChildren<
+  Omit<AclPermission, "field"> & {
+    fallback?: "hidden" | "forbidden" | ReactNode;
+  }
+>;
+
+export type AclFieldProps = PropsWithChildren<{
+  resource: string;
+  action: string;
+  field: string;
+  dataSourceKey?: string;
+  fallback?: ReactNode;
+}>;
+
 const canAccess = (
   snapshot: ReturnType<typeof useAclSnapshot>,
   permission: AclPermission
@@ -34,11 +54,7 @@ export function AclPage({
   anyOf,
   allOf,
   fallback = <AccessDenied />,
-}: PropsWithChildren<{
-  anyOf?: AclPermission[];
-  allOf?: AclPermission[];
-  fallback?: ReactNode;
-}>) {
+}: AclPageProps) {
   const snapshot = useAclSnapshot();
   const anyAllowed = !anyOf?.length || anyOf.some((item) => canAccess(snapshot, item));
   const allAllowed = !allOf?.length || allOf.every((item) => canAccess(snapshot, item));
@@ -53,9 +69,7 @@ export function AclRegion({
   id,
   dataSourceKey,
   fallback = "hidden",
-}: PropsWithChildren<AclPermission & {
-  fallback?: "hidden" | "forbidden" | ReactNode;
-}>) {
+}: AclRegionProps) {
   const snapshot = useAclSnapshot();
   const allowed = canAccess(snapshot, {
     resource,
@@ -79,13 +93,7 @@ export function AclField({
   field,
   dataSourceKey,
   fallback = null,
-}: PropsWithChildren<{
-  resource: string;
-  action: string;
-  field: string;
-  dataSourceKey?: string;
-  fallback?: ReactNode;
-}>) {
+}: AclFieldProps) {
   const snapshot = useAclSnapshot();
   return canAccess(snapshot, {
     resource,

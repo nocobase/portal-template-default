@@ -69,7 +69,7 @@ Component presentation
 - Use className and triggerClassName only to fit the existing surface; do not fork or restyle the internal Select implementation.
 
 Integration requirements
-- Import and reuse RoleSwitcher from the installed @nocobase/acl-ui Registry item.
+- Import and reuse RoleSwitcher from the installed local entry point at @/extensions/nocobase-acl.
 - Update the existing application surface instead of creating an isolated example page.
 - Do not fetch, hard-code, or pass a duplicate role list. The component reads roles from the current Refine identity.
 - Do not reimplement Full permissions, Anonymous, or role-mode logic. The component derives these options from the Starter ACL store.

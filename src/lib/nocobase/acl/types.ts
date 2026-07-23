@@ -79,6 +79,7 @@ export type AclCanParams = {
     id?: BaseKey;
     field?: string;
     dataSourceKey?: string;
+    meta?: Record<string, unknown>;
     resource?: IResourceItem;
     [key: string]: unknown;
   };

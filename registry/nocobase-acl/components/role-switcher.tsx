@@ -20,17 +20,19 @@ import {
 import { cn } from "@/lib/utils";
 import { getRoleOptions, UNION_ROLE } from "./role-options";
 
+export type RoleSwitcherProps = {
+  className?: string;
+  triggerClassName?: string;
+  label?: ReactNode | false;
+  showWhenUnavailable?: boolean;
+};
+
 export function RoleSwitcher({
   className,
   triggerClassName,
   label = "Switch role",
   showWhenUnavailable = false,
-}: {
-  className?: string;
-  triggerClassName?: string;
-  label?: ReactNode | false;
-  showWhenUnavailable?: boolean;
-}) {
+}: RoleSwitcherProps) {
   const { data: identity, isLoading } = useGetIdentity<AclIdentity>();
   const acl = useAclSnapshot();
   const [switching, setSwitching] = useState(false);

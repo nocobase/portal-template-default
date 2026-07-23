@@ -2,6 +2,8 @@
 
 Reusable ACL composition components for the NocoBase Refine starter.
 
+After installation, import the components from `@/extensions/nocobase-acl`.
+
 - `AclPage` combines page-level permissions.
 - `AclRegion` hides or replaces individual data regions.
 - `AclField` applies NocoBase field whitelists.

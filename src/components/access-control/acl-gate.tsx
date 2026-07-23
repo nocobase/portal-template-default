@@ -1,0 +1,42 @@
+import { Loader2, RotateCcw } from "lucide-react";
+import type { PropsWithChildren } from "react";
+
+import { Button } from "@/components/ui/button";
+import { loadAcl, useAclSnapshot } from "@/lib/nocobase/acl";
+
+export function AclGate({ children }: PropsWithChildren) {
+  const snapshot = useAclSnapshot();
+
+  if (snapshot.status === "ready") return children;
+
+  if (snapshot.status === "error") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-6">
+        <div className="max-w-md text-center">
+          <h1 className="text-xl font-semibold">Unable to load permissions</h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            {snapshot.error?.message ??
+              "The current role permissions could not be loaded."}
+          </p>
+          <Button
+            className="mt-5"
+            variant="outline"
+            onClick={() =>
+              void loadAcl({ force: true }).catch(() => undefined)
+            }
+          >
+            <RotateCcw />
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <Loader2 className="size-7 animate-spin text-muted-foreground" />
+      <span className="sr-only">Loading permissions…</span>
+    </div>
+  );
+}

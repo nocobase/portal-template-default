@@ -40,7 +40,7 @@ Implementation contract
 - Use the Starter's built-in NocoBase accessControlProvider and ACL store.
 - NocoBase roles:check is the source of truth. Do not create a second permission store or hard-code role names.
 - Keep backend ACL enforcement in place; frontend checks only control presentation and navigation.
-- Use the reusable components from the @nocobase/acl-ui Registry item when page composition is needed.
+- Import reusable components from the installed local entry point at @/extensions/nocobase-acl when page composition is needed.
 - Resource actions use Refine names: list, show, create, edit, delete. Let the Starter map them to NocoBase list/get/create/update/destroy.
 - Preserve dataSourceKey when the collection belongs to a non-main data source.
 - Show an understandable forbidden or hidden state where appropriate.

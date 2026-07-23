@@ -8,8 +8,15 @@ const server = await createServer({
 });
 
 try {
-  const { canAccessWithSnapshot, resolveActionPermission } =
+  const {
+    canAccessWithSnapshot,
+    getAclDataForDataSource,
+    resolveActionPermission,
+  } =
     await server.ssrLoadModule("/src/lib/nocobase/acl/action.ts");
+  const { resolveAclDataSourceKey } = await server.ssrLoadModule(
+    "/src/lib/nocobase/acl/data-source.ts"
+  );
   const { filterMenuItemsByAcl, findFirstAccessibleRoute } =
     await server.ssrLoadModule("/src/lib/nocobase/acl/menu.ts");
   const {
@@ -63,6 +70,62 @@ try {
       action: "create",
     }),
     false
+  );
+
+  const externalSnapshot = {
+    ...snapshot,
+    data: {
+      ...snapshot.data,
+      allowAll: true,
+      actionAlias: { list: "view" },
+    },
+    meta: {
+      dataSources: {
+        analytics: {
+          allowAll: false,
+          resources: ["orders"],
+          actionAlias: { list: "read" },
+          actions: { "orders:read": {} },
+        },
+      },
+    },
+  };
+  assert.deepEqual(getAclDataForDataSource(externalSnapshot, "analytics"), {
+    ...externalSnapshot.data,
+    allowAll: false,
+    resources: ["orders"],
+    actionAlias: { list: "read" },
+    actions: { "orders:read": {} },
+    snippets: externalSnapshot.data.snippets,
+  });
+  assert.equal(
+    canAccessWithSnapshot(externalSnapshot, {
+      resource: "orders",
+      action: "list",
+      params: { meta: { dataSourceKey: "analytics" } },
+    }),
+    true
+  );
+  assert.equal(
+    resolveAclDataSourceKey({
+      acl: {
+        type: "collection",
+        dataSourceKey: "analytics",
+      },
+    }),
+    "analytics"
+  );
+  assert.equal(
+    resolveAclDataSourceKey(
+      { dataSourceKey: "reporting" },
+      {
+        acl: {
+          type: "collection",
+          dataSourceKey: "analytics",
+        },
+      }
+    ),
+    "reporting"
   );
   assert.equal(
     getRecordActionPermission({

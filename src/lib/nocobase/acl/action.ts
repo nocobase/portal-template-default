@@ -7,6 +7,7 @@ import type {
 } from "./types";
 import ignore from "ignore";
 import { getRecordActionPermission } from "./record-permissions";
+import { resolveAclDataSourceKey } from "./data-source";
 
 const REFINE_ACTION_MAP: Record<string, string> = {
   list: "list",
@@ -33,8 +34,6 @@ export const getAclDataForDataSource = (
         ...snapshot.data,
         ...dataSourceAcl,
         snippets: snapshot.data.snippets,
-        actionAlias: snapshot.data.actionAlias,
-        allowAll: snapshot.data.allowAll,
       }
     : snapshot.data;
 };
@@ -105,10 +104,13 @@ export const canAccessWithSnapshot = (
   if (!targetResource) return true;
 
   const dataSourceKey =
-    (resourceAcl?.type === "collection" && resourceAcl.dataSourceKey) ||
-    (typeof params?.dataSourceKey === "string"
-      ? params.dataSourceKey
-      : "main");
+    resolveAclDataSourceKey(
+      params,
+      params?.meta as { dataSourceKey?: unknown; acl?: ResourceAcl } | undefined,
+      params?.resource?.meta as
+        | { dataSourceKey?: unknown; acl?: ResourceAcl }
+        | undefined
+    ) ?? "main";
   const mappedAction =
     (resourceAcl?.type === "collection" && resourceAcl.actionMap?.[action]) ||
     mapRefineAction(action);

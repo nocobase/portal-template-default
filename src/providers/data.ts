@@ -25,6 +25,8 @@ import type {
 import { nocobaseClient } from "@/lib/nocobase/client";
 import {
   notifyRecordPermissionsChanged,
+  resolveAclDataSourceKey,
+  type ResourceAcl,
   updateRecordPermissions,
 } from "@/lib/nocobase/acl";
 
@@ -51,6 +53,7 @@ type NocoBaseMeta = MetaQuery & {
   token?: string;
   dataSourceKey?: string;
   idField?: string;
+  acl?: ResourceAcl;
 };
 
 type NocoBaseFilter = Record<string, unknown>;
@@ -102,6 +105,7 @@ const request = async <T>(
     unwrapData?: boolean;
   } = {}
 ): Promise<T> => {
+  const dataSourceKey = resolveAclDataSourceKey(options.meta);
   const fields = Array.isArray(options.meta?.fields)
     ? options.meta.fields.filter(
         (field): field is string => typeof field === "string"
@@ -118,8 +122,8 @@ const request = async <T>(
     },
     body: options.body,
     token: options.meta?.token,
-    headers: options.meta?.dataSourceKey
-      ? { "X-Data-Source": options.meta.dataSourceKey }
+    headers: dataSourceKey
+      ? { "X-Data-Source": dataSourceKey }
       : undefined,
     unwrap: options.unwrapData === false ? "none" : "data",
   });
@@ -144,6 +148,7 @@ const cacheAllowedActions = <TData extends BaseRecord>({
   meta?: NocoBaseMeta;
 }) => {
   const idField = meta?.idField ?? "id";
+  const dataSourceKey = resolveAclDataSourceKey(meta);
   const recordIds = records
     .map((record) => record[idField])
     .filter(
@@ -151,7 +156,7 @@ const cacheAllowedActions = <TData extends BaseRecord>({
         typeof id === "string" || typeof id === "number"
     );
   return updateRecordPermissions({
-    dataSourceKey: meta?.dataSourceKey,
+    dataSourceKey,
     resource,
     recordIds,
     allowedActions: getAllowedActions(response),

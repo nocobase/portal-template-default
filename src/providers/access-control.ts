@@ -24,7 +24,7 @@ export const accessControlProvider: AccessControlProvider = {
       hideIfUnauthorized: true,
     },
     queryOptions: {
-      staleTime: 30_000,
+      staleTime: Infinity,
     },
   },
 };
