@@ -1,10 +1,18 @@
 import { AIChatPage } from "./demo";
 import { FloatingChatPage } from "./demo/floating";
+import { PageContextPage } from "./demo/page-context";
 import { ShortcutPage } from "./demo/shortcut";
 import { ToolCardsPage } from "./demo/tool-cards";
 import { NocoBaseAIExtensionProvider } from "./global-ai-chat";
 import type { AppExtension } from "@/app/extension";
-import { Bot, MessageSquare, PanelRight, Sparkles, Wrench } from "lucide-react";
+import {
+  Bot,
+  MessageSquare,
+  MousePointer2,
+  PanelRight,
+  Sparkles,
+  Wrench,
+} from "lucide-react";
 import { Outlet, Route } from "react-router";
 
 const nocobaseAIExtension: AppExtension = {
@@ -48,6 +56,15 @@ const nocobaseAIExtension: AppExtension = {
       },
     },
     {
+      name: "ai-page-context",
+      list: "/ai-chat/context",
+      meta: {
+        parent: "ai-components",
+        label: "Page context",
+        icon: <MousePointer2 />,
+      },
+    },
+    {
       name: "ai-tool-cards",
       list: "/ai-chat/tools",
       meta: {
@@ -62,6 +79,7 @@ const nocobaseAIExtension: AppExtension = {
       <Route index element={<AIChatPage />} />
       <Route path="floating" element={<FloatingChatPage />} />
       <Route path="shortcut" element={<ShortcutPage />} />
+      <Route path="context" element={<PageContextPage />} />
       <Route path="tools" element={<ToolCardsPage />} />
     </Route>
   ),

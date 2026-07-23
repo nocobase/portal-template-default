@@ -24,7 +24,6 @@ import { ContainerShowcase, type ChatContainer } from "./container-showcase";
 import { InteractionShowcase } from "./interaction-showcase";
 import { AIConfigurationGate, AIConversationModeToggle } from "./mode-toggle";
 import { PromptGenerator } from "./prompt-generator";
-import { PageElementShowcase } from "./page-element-showcase";
 
 const propRows = [
   [
@@ -268,15 +267,6 @@ function AIChatPageContent() {
             description="Use the complete transcript for conversational work, or a compact worker surface that opens message history only when the user asks for it."
           />
           <InteractionShowcase />
-        </section>
-
-        <section className="space-y-5">
-          <SectionTitle
-            eyebrow="Page context"
-            title="Pick a React page element and attach its context"
-            description="Page components explicitly register the business context they can provide. The picker highlights only those elements and adds the selected context to the active conversation."
-          />
-          <PageElementShowcase />
         </section>
 
         <section className="space-y-5">

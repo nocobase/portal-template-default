@@ -76,11 +76,7 @@ function PageElementShowcaseContent() {
     kind: "form",
     getContext: () => ({
       form: "customer-intake",
-      values: {
-        customerName,
-        contactEmail,
-        priority,
-      },
+      values: { customerName, contactEmail, priority },
     }),
   });
   const detailRef = useAIPageElement({
@@ -146,9 +142,7 @@ function PageElementShowcaseContent() {
                 <Label>Priority</Label>
                 <Select
                   value={priority}
-                  onValueChange={(value) => {
-                    if (value) setPriority(value);
-                  }}
+                  onValueChange={(value) => value && setPriority(value)}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />

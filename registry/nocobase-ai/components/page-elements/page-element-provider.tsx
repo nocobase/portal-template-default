@@ -14,7 +14,10 @@ import {
   type RefCallback,
 } from "react";
 import { createPortal } from "react-dom";
-import type { AIWorkContextItem } from "../../providers";
+import {
+  AIPageContextResolverProvider,
+  type AIWorkContextItem,
+} from "../../providers";
 
 const PAGE_ELEMENT_ATTRIBUTE = "data-ai-page-element";
 
@@ -26,7 +29,7 @@ export type AIPageElementDescriptor = {
 };
 
 export type AIPageElementPickerOptions = {
-  chatId: string;
+  chatId?: string;
   onSelect: (item: AIWorkContextItem) => void;
   onCancel?: () => void;
 };
@@ -129,6 +132,33 @@ export function AIPageElementProvider({ children }: PropsWithChildren) {
     current?.onCancel?.();
   }, []);
 
+  const resolvePageContext = useCallback(async (items: AIWorkContextItem[]) => {
+    const resolved = await Promise.allSettled(
+      items.map(async (item) => {
+        if (item.type !== "page-element" || item.content !== undefined) {
+          return item;
+        }
+        const registeredEntry = [...registryRef.current.entries()].find(
+          ([runtimeId, entry]) =>
+            (entry.getDescriptor().id ?? runtimeId) === item.id
+        );
+        if (!registeredEntry) return item;
+        const [runtimeId, entry] = registeredEntry;
+        const descriptor = entry.getDescriptor();
+        return {
+          ...item,
+          id: item.id ?? descriptor.id ?? runtimeId,
+          title: item.title ?? descriptor.title,
+          kind: item.kind ?? descriptor.kind,
+          content: await descriptor.getContext(),
+        } satisfies AIWorkContextItem;
+      })
+    );
+    return resolved.map((result, index) =>
+      result.status === "fulfilled" ? result.value : items[index]
+    );
+  }, []);
+
   useEffect(() => {
     if (!picking) return;
 
@@ -220,67 +250,69 @@ export function AIPageElementProvider({ children }: PropsWithChildren) {
   );
 
   return (
-    <AIPageElementContext.Provider value={value}>
-      {children}
-      {request && typeof document !== "undefined"
-        ? createPortal(
-            <>
-              {hoveredRect ? (
-                <div
-                  className="pointer-events-none fixed z-[2000] rounded-lg border-2 border-foreground bg-foreground/5 shadow-[0_0_0_9999px_rgba(0,0,0,0.08)]"
-                  style={{
-                    left: hoveredRect.left,
-                    top: hoveredRect.top,
-                    width: hoveredRect.width,
-                    height: hoveredRect.height,
-                  }}
-                >
-                  <div className="absolute -top-7 left-0 max-w-[min(320px,80vw)] truncate rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background shadow-sm">
-                    {hoveredId
-                      ? registryRef.current.get(hoveredId)?.getDescriptor()
-                          .title
-                      : null}
-                  </div>
-                </div>
-              ) : null}
-              <div className="fixed bottom-6 left-1/2 z-[2001] flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-3 rounded-xl border bg-background px-3 py-2 shadow-xl">
-                <MousePointer2
-                  className={cn(
-                    "size-4 shrink-0",
-                    request.resolving && "animate-pulse"
-                  )}
-                />
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">
-                    {request.resolving
-                      ? "Reading page element…"
-                      : "Pick a page element"}
-                  </div>
+    <AIPageContextResolverProvider resolve={resolvePageContext}>
+      <AIPageElementContext.Provider value={value}>
+        {children}
+        {request && typeof document !== "undefined"
+          ? createPortal(
+              <>
+                {hoveredRect ? (
                   <div
-                    className={cn(
-                      "truncate text-xs text-muted-foreground",
-                      request.error && "text-destructive"
-                    )}
+                    className="pointer-events-none fixed z-[2000] rounded-lg border-2 border-foreground bg-foreground/5 shadow-[0_0_0_9999px_rgba(0,0,0,0.08)]"
+                    style={{
+                      left: hoveredRect.left,
+                      top: hoveredRect.top,
+                      width: hoveredRect.width,
+                      height: hoveredRect.height,
+                    }}
                   >
-                    {request.error ??
-                      "Hover a highlighted element, then click to add it."}
+                    <div className="absolute -top-7 left-0 max-w-[min(320px,80vw)] truncate rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background shadow-sm">
+                      {hoveredId
+                        ? registryRef.current.get(hoveredId)?.getDescriptor()
+                            .title
+                        : null}
+                    </div>
                   </div>
+                ) : null}
+                <div className="fixed bottom-6 left-1/2 z-[2001] flex max-w-[calc(100vw-2rem)] -translate-x-1/2 items-center gap-3 rounded-xl border bg-background px-3 py-2 shadow-xl">
+                  <MousePointer2
+                    className={cn(
+                      "size-4 shrink-0",
+                      request.resolving && "animate-pulse"
+                    )}
+                  />
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">
+                      {request.resolving
+                        ? "Reading page element…"
+                        : "Pick a page element"}
+                    </div>
+                    <div
+                      className={cn(
+                        "truncate text-xs text-muted-foreground",
+                        request.error && "text-destructive"
+                      )}
+                    >
+                      {request.error ??
+                        "Hover a highlighted element, then click to add it."}
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Cancel picking page element"
+                    disabled={request.resolving}
+                    onClick={cancelPicking}
+                  >
+                    <X />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Cancel picking page element"
-                  disabled={request.resolving}
-                  onClick={cancelPicking}
-                >
-                  <X />
-                </Button>
-              </div>
-            </>,
-            document.body
-          )
-        : null}
-    </AIPageElementContext.Provider>
+              </>,
+              document.body
+            )
+          : null}
+      </AIPageElementContext.Provider>
+    </AIPageContextResolverProvider>
   );
 }
 

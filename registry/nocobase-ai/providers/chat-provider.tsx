@@ -25,6 +25,10 @@ import { useChatWorkContext } from "./use-chat-work-context";
 import { useConversationCatalog } from "./use-conversation-catalog";
 import { useConversationHistory } from "./use-conversation-history";
 import {
+  useAIPageContextResolver,
+  useAIPageContextScope,
+} from "./page-context";
+import {
   AI_DRAFT_CONVERSATION_ID,
   type AIChatAttachment,
   type AIChatMessage,
@@ -152,7 +156,7 @@ type AIChatContextValue = {
   startEditingMessage: (message: AIChatMessage) => Promise<void>;
   cancelEditingMessage: () => void;
   saveUserPrompt: (prompt: string) => Promise<void>;
-  triggerTask: (options: AIEmployeeTaskTrigger) => void;
+  triggerTask: (options: AIEmployeeTaskTrigger) => Promise<void>;
   runTask: (task: AIEmployeeTask) => void;
   focusComposer: () => void;
 };
@@ -176,6 +180,8 @@ export function AIChatProvider({
   webSearch?: boolean;
 }>) {
   const ai = useAI();
+  const resolvePageContext = useAIPageContextResolver();
+  const inheritedPageContext = useAIPageContextScope();
   const { open: chatSurfaceOpen } = useAIChatControllerState(controller);
   const chatSurfaceOpenRef = useRef(chatSurfaceOpen);
   chatSurfaceOpenRef.current = chatSurfaceOpen;
@@ -280,11 +286,11 @@ export function AIChatProvider({
         ? {
             employeeUsername,
             tasks,
-            context: undefined,
+            context: inheritedPageContext,
           }
         : undefined;
     },
-    [defaultEmployeeUsername, defaultTasks, employeeTasks]
+    [defaultEmployeeUsername, defaultTasks, employeeTasks, inheritedPageContext]
   );
   const [activeTaskSet, setActiveTaskSet] = useState<
     | {
@@ -1089,7 +1095,7 @@ export function AIChatProvider({
   }, [chat, setConversationAttachments, setConversationWorkContext]);
 
   const triggerTask = useCallback(
-    (options: AIEmployeeTaskTrigger) => {
+    async (options: AIEmployeeTaskTrigger) => {
       cancelEditingMessage();
       const requestedEmployee = options.aiEmployee;
       const employee =
@@ -1113,25 +1119,30 @@ export function AIChatProvider({
         (options.tasks?.length === 1 && options.auto !== false
           ? options.tasks[0]
           : undefined);
-      const workContext = [
-        ...(options.context ?? []),
-        ...(task?.message?.workContext ?? []),
-      ];
+      const taskContext = task?.message?.workContext ?? [];
+      const contextItems = taskContext.length
+        ? taskContext
+        : options.context?.length
+        ? options.context
+        : inheritedPageContext;
+      const workContext = resolvePageContext
+        ? await resolvePageContext(contextItems)
+        : contextItems;
       taskRuntimeRef.current = task
         ? {
             systemMessage: task.message?.system,
-            workContext,
+            workContext: [],
             skillSettings: task.skillSettings,
             webSearch: task.webSearch,
           }
-        : { workContext };
+        : { workContext: [] };
 
       chatsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
       transportsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
       runtimeContextsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
       invalidateConversationHistory();
       setConversationAttachments(AI_DRAFT_CONVERSATION_ID, []);
-      setConversationWorkContext(AI_DRAFT_CONVERSATION_ID, []);
+      setConversationWorkContext(AI_DRAFT_CONVERSATION_ID, workContext);
       dispatch({ type: "select-employee", username: employee.username });
       dispatch({ type: "start-new-conversation" });
 
@@ -1178,7 +1189,9 @@ export function AIChatProvider({
       cancelEditingMessage,
       controller,
       getConfiguredTaskSet,
+      inheritedPageContext,
       invalidateConversationHistory,
+      resolvePageContext,
       setConversationAttachments,
       setConversationWorkContext,
     ]
@@ -1220,7 +1233,7 @@ export function AIChatProvider({
   const runTask = useCallback(
     (task: AIEmployeeTask) => {
       if (!activeTaskSet) return;
-      triggerTask({
+      void triggerTask({
         aiEmployee: activeTaskSet.employeeUsername,
         task,
         context: activeTaskSet.context,

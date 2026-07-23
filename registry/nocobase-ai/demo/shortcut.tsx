@@ -3,6 +3,8 @@ import {
   AIEmployeeShortcut,
   AIModelSelectOptions,
   ChatInline,
+  useAIPageElement,
+  useAIPageElementPicker,
 } from "../components";
 import {
   Accordion,
@@ -27,14 +29,16 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AIChatProvider,
+  AIPageContextScope,
   findAIModel,
   useAI,
   useAIChatController,
   type AIChatController,
   type AIEmployeeTask,
   type AIEmployeeTasks,
+  type AIWorkContextItem,
 } from "../providers";
-import { Plus, Trash2 } from "lucide-react";
+import { MousePointer2, Plus, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PromptCard } from "./prompt-card";
 import { AIConfigurationGate, AIConversationModeToggle } from "./mode-toggle";
@@ -128,6 +132,15 @@ function ShortcutPageContent() {
       (employee) => employee.username !== primaryEmployee.username
     ) ??
     primaryEmployee;
+  const ticketDetailRef = useAIPageElement({
+    id: "support-ticket-detail",
+    title: `${ticketDetail.id} · ${ticketDetail.title}`,
+    kind: "record-detail",
+    getContext: () => ({
+      resource: "supportTickets",
+      record: ticketDetail,
+    }),
+  });
   const chatEmployeeTasks = useMemo<AIEmployeeTasks>(
     () => ({
       [primaryEmployee.username]: [analyzeTicketTask, draftReplyTask],
@@ -174,55 +187,55 @@ function ShortcutPageContent() {
             analysis and reply tasks below the employee greeting.
           </p>
         </div>
-        <Card className="gap-0 overflow-hidden py-0">
-          <div className="flex flex-wrap items-start justify-between gap-4 border-b p-5">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs text-muted-foreground">
-                  {ticketDetail.id}
-                </span>
-                <Badge variant="outline">{ticketDetail.status}</Badge>
+        <AIPageContextScope
+          context={{
+            type: "page-element",
+            id: "support-ticket-detail",
+            title: `${ticketDetail.id} · ${ticketDetail.title}`,
+          }}
+        >
+          <Card ref={ticketDetailRef} className="gap-0 overflow-hidden py-0">
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b p-5">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {ticketDetail.id}
+                  </span>
+                  <Badge variant="outline">{ticketDetail.status}</Badge>
+                </div>
+                <h3 className="mt-2 text-lg font-semibold tracking-tight">
+                  {ticketDetail.title}
+                </h3>
               </div>
-              <h3 className="mt-2 text-lg font-semibold tracking-tight">
-                {ticketDetail.title}
-              </h3>
+              <AIEmployeeShortcut
+                aiEmployee={primaryEmployee.username}
+                tasks={[analyzeTicketTask, draftReplyTask]}
+                label={`Ask ${primaryEmployee.nickname}`}
+                size={34}
+              />
             </div>
-            <AIEmployeeShortcut
-              aiEmployee={primaryEmployee.username}
-              tasks={[analyzeTicketTask, draftReplyTask]}
-              context={[
-                {
-                  type: "record",
-                  id: ticketDetail.id,
-                  title: ticketDetail.title,
-                  content: ticketDetail,
-                },
-              ]}
-              label={`Ask ${primaryEmployee.nickname}`}
-              size={34}
-            />
-          </div>
-          <div className="grid gap-5 p-5 sm:grid-cols-2">
-            <div>
-              <div className="text-xs text-muted-foreground">Requester</div>
-              <div className="mt-1 text-sm font-medium">
-                {ticketDetail.requester}
+            <div className="grid gap-5 p-5 sm:grid-cols-2">
+              <div>
+                <div className="text-xs text-muted-foreground">Requester</div>
+                <div className="mt-1 text-sm font-medium">
+                  {ticketDetail.requester}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Created</div>
+                <div className="mt-1 text-sm font-medium">
+                  {ticketDetail.createdAt}
+                </div>
               </div>
             </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Created</div>
-              <div className="mt-1 text-sm font-medium">
-                {ticketDetail.createdAt}
-              </div>
+            <div className="border-t p-5">
+              <div className="text-xs text-muted-foreground">Description</div>
+              <p className="mt-2 max-w-3xl text-sm leading-6">
+                {ticketDetail.description}
+              </p>
             </div>
-          </div>
-          <div className="border-t p-5">
-            <div className="text-xs text-muted-foreground">Description</div>
-            <p className="mt-2 max-w-3xl text-sm leading-6">
-              {ticketDetail.description}
-            </p>
-          </div>
-        </Card>
+          </Card>
+        </AIPageContextScope>
       </section>
 
       <section className="space-y-5">
@@ -355,6 +368,7 @@ type ConfigTask = {
   background: string;
   userMessage: string;
   autoSend: boolean;
+  workContext: AIWorkContextItem[];
   model: string;
   webSearch: boolean;
   skillsMode: CapabilityMode;
@@ -383,6 +397,13 @@ const initialConfigTasks: ConfigTask[] = [
     background: "Identify operational risk and recommend the next action.",
     userMessage: "Analyze the current ticket and recommend the next action.",
     autoSend: true,
+    workContext: [
+      {
+        type: "page-element",
+        id: "support-ticket-detail",
+        title: `${ticketDetail.id} · ${ticketDetail.title}`,
+      },
+    ],
     model: "gpt-5",
     webSearch: true,
     skillsMode: "custom",
@@ -398,6 +419,7 @@ const initialConfigTasks: ConfigTask[] = [
       "Write a concise and helpful response using the ticket context.",
     userMessage: "Draft a customer reply for the current ticket.",
     autoSend: false,
+    workContext: [],
     model: "default",
     webSearch: false,
     skillsMode: "custom",
@@ -413,6 +435,7 @@ function ShortcutPromptGenerator({
   embeddedController: AIChatController;
 }) {
   const { employees, models } = useAI();
+  const { registeredCount, startPicking } = useAIPageElementPicker();
   const businessEmployees = employees.filter(isBusinessEmployee);
   const defaultBusinessEmployee =
     businessEmployees.find((item) => item.username.toLowerCase() === "atlas") ??
@@ -456,6 +479,7 @@ function ShortcutPromptGenerator({
           message: {
             system: task.background || undefined,
             user: task.userMessage || undefined,
+            workContext: task.workContext.length ? task.workContext : undefined,
           },
           autoSend: task.autoSend,
           model: selectedModel
@@ -487,6 +511,10 @@ function ShortcutPromptGenerator({
    - Background: ${task.background || "None"}
    - Default user message: ${task.userMessage || "None"}
    - Send automatically: ${task.autoSend}
+   - Work context: ${
+     task.workContext.map((item) => item.title ?? item.id).join(", ") ||
+     "Inherit the surrounding context"
+   }
    - Model: ${model}
    - Web search: ${task.webSearch}
    - Skills: ${
@@ -533,6 +561,8 @@ Implementation requirements:
 - When the user starts a new conversation or switches AI employees, show the matching tasks below that employee’s greeting.
 - Employees without configured tasks must keep the greeting-only empty state.
 - Selecting a task must respect autoSend: either send immediately or fill the composer for review.
+- Resolve task message.workContext when the task starts so selected page elements use their latest values.
+- When a task has no message.workContext, inherit the context surrounding the Shortcut or AIChatProvider.
 - Preserve every task’s background prompt, model override, Web search setting, Skills, Tools, and work context.
 - Keep the employeeTasks capability independent of the container so the same configuration works in page, embedded, side-panel, dialog, and mobile layouts.
 - Use the existing AIProvider/AIChatProvider runtime with shadcn/Base UI components.`;
@@ -556,6 +586,8 @@ Implementation requirements:
 - Use AIEmployeeShortcut and pass all configured tasks through its tasks prop.
 - When multiple tasks are provided, open a new conversation and show the tasks below the AI employee greeting.
 - Selecting a task must respect that task's autoSend setting: either send immediately or fill the composer for review.
+- Resolve task message.workContext when the task starts so selected page elements use their latest values.
+- When a task has no message.workContext, inherit the context surrounding the Shortcut or AIChatProvider.
 - Preserve each task's background prompt, work context, model override, Web search setting, Skills, and Tools.
 - ${
       target === "global-side-panel"
@@ -593,6 +625,7 @@ Implementation requirements:
         background: "",
         userMessage: "",
         autoSend: false,
+        workContext: [],
         model: "default",
         webSearch: false,
         skillsMode: "preset",
@@ -851,6 +884,7 @@ Implementation requirements:
                       </span>
                       <span className="block text-[10px] text-muted-foreground">
                         {task.autoSend ? "Auto send" : "Fill composer"}
+                        {task.workContext.length ? " · Task context" : ""}
                         {task.webSearch ? " · Web search" : ""}
                       </span>
                     </button>
@@ -941,6 +975,59 @@ Implementation requirements:
                     }
                   />
                 </label>
+                <div className="space-y-3 rounded-lg border px-3 py-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <span>
+                      <span className="block text-sm font-medium">
+                        Work context
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        Select a page context for this task. Without one, the
+                        task inherits its surrounding context.
+                      </span>
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={registeredCount === 0}
+                      onClick={() =>
+                        startPicking({
+                          onSelect: (item) =>
+                            updateSelectedTask({
+                              workContext: [
+                                {
+                                  type: item.type,
+                                  id: item.id,
+                                  title: item.title,
+                                  kind: item.kind,
+                                },
+                              ],
+                            }),
+                        })
+                      }
+                    >
+                      <MousePointer2 /> Pick context
+                    </Button>
+                  </div>
+                  {selectedTask.workContext.map((item, index) => (
+                    <div
+                      key={`${item.type}:${item.id ?? index}`}
+                      className="flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1.5 text-xs"
+                    >
+                      <span className="min-w-0 flex-1 truncate">
+                        {item.title ?? item.id ?? item.type}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label="Remove task context"
+                        onClick={() => updateSelectedTask({ workContext: [] })}
+                      >
+                        <X />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
 
                 <Accordion>
                   <AccordionItem

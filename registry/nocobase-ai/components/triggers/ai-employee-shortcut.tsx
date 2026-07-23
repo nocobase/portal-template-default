@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   useAI,
+  useAIPageContextScope,
   useGlobalAIChatController,
   type AIChatController,
   type AIEmployee,
@@ -43,6 +44,7 @@ export function AIEmployeeShortcut({
   const ai = useAI();
   const [focused, setFocused] = useState(false);
   const globalController = useGlobalAIChatController();
+  const inheritedContext = useAIPageContextScope();
   const controller = target ?? globalController;
   const employee =
     typeof aiEmployee === "string"
@@ -58,7 +60,7 @@ export function AIEmployeeShortcut({
       aiEmployee: employee,
       task,
       tasks: task ? undefined : tasks,
-      context,
+      context: context?.length ? context : inheritedContext,
       auto,
       open: true,
     });
