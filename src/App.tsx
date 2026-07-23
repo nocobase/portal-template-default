@@ -5,7 +5,6 @@ import routerProvider, {
   NavigateToResource,
   CatchAllNavigate,
   UnsavedChangesNotifier,
-  DocumentTitleHandler,
 } from "@refinedev/react-router";
 import {
   BlogPostList,
@@ -25,6 +24,7 @@ import { Register } from "./pages/register";
 import { ForgotPassword } from "./pages/forgot-password";
 import { ErrorComponent } from "./components/app-shell/error-component";
 import { Layout } from "./components/app-shell/layout";
+import { DocumentTitleHandler } from "./components/app-shell/document-title-handler";
 import { useNotificationProvider } from "./components/notifications/use-notification-provider";
 import { Toaster } from "./components/notifications/toaster";
 import { ThemeProvider } from "./components/theme/theme-provider";
@@ -147,7 +147,7 @@ function App() {
 
             <Toaster />
             <UnsavedChangesNotifier />
-            <DocumentTitleHandler />
+            <DocumentTitleHandler appName="NocoBase" />
           </Refine>
         </TooltipProvider>
       </ThemeProvider>
