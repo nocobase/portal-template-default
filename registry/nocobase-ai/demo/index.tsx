@@ -3,6 +3,7 @@ import {
   ChatDialog,
   ChatSurfaceActions,
   ChatSidePanelLayout,
+  useAIPageElementPicker,
   type AIChatComposerAction,
   type AIChatWindowProps,
 } from "../components";
@@ -16,13 +17,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AIChatProvider } from "../providers";
-import { Blocks, Globe2 } from "lucide-react";
+import { AIChatProvider, useAIChat } from "../providers";
+import { Globe2, MousePointer2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ContainerShowcase, type ChatContainer } from "./container-showcase";
 import { InteractionShowcase } from "./interaction-showcase";
 import { AIConfigurationGate, AIConversationModeToggle } from "./mode-toggle";
 import { PromptGenerator } from "./prompt-generator";
+import { PageElementShowcase } from "./page-element-showcase";
 
 const propRows = [
   [
@@ -108,7 +110,9 @@ const propRows = [
 export function AIChatPage() {
   return (
     <AIConfigurationGate>
-      <AIChatPageContent />
+      <AIChatProvider id="ai-chat-demo">
+        <AIChatPageContent />
+      </AIChatProvider>
     </AIConfigurationGate>
   );
 }
@@ -118,13 +122,30 @@ function AIChatPageContent() {
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [webSearch, setWebSearch] = useState(false);
+  const { id: chatId, addWorkContext, focusComposer } = useAIChat();
+  const { registeredCount, startPicking } = useAIPageElementPicker();
 
   const composerActions = useMemo<AIChatComposerAction[]>(
     () => [
       {
-        key: "add-block",
-        label: "Add block",
-        icon: <Blocks />,
+        key: "pick-page-element",
+        label: "Pick page element",
+        icon: <MousePointer2 />,
+        disabled: registeredCount === 0,
+        onClick: () => {
+          if (dialogOpen) {
+            setDialogOpen(false);
+            setSidePanelOpen(true);
+            setContainer("side-panel");
+          }
+          startPicking({
+            chatId,
+            onSelect: (item) => {
+              addWorkContext(item);
+              focusComposer();
+            },
+          });
+        },
       },
       {
         key: "web-search",
@@ -136,7 +157,15 @@ function AIChatPageContent() {
         },
       },
     ],
-    [webSearch]
+    [
+      addWorkContext,
+      chatId,
+      dialogOpen,
+      focusComposer,
+      registeredCount,
+      startPicking,
+      webSearch,
+    ]
   );
 
   const windowProps = useMemo<AIChatWindowProps>(
@@ -192,109 +221,116 @@ function AIChatPageContent() {
   };
 
   return (
-    <AIChatProvider id="ai-chat-demo">
-      <ChatSidePanelLayout
-        open={sidePanelOpen}
-        onOpenChange={setSidePanelOpen}
-        width={450}
-        panel={<AIChatWindow {...sidePanelWindowProps} />}
-        showCloseHandle={false}
-      >
-        <div className="space-y-14 pb-12">
-          <section className="flex flex-wrap items-start justify-between gap-5 border-b pb-8">
-            <div>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">AI Components</Badge>
-                <Badge variant="outline">Preview</Badge>
-              </div>
-              <h1 className="mt-4 text-3xl font-semibold tracking-[-0.035em]">
-                AI Chat Window
-              </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-                A position-independent NocoBase AI employee conversation
-                component. Explore message interactions independently, place the
-                same chat in different containers, then generate an
-                implementation prompt for a target page.
-              </p>
+    <ChatSidePanelLayout
+      open={sidePanelOpen}
+      onOpenChange={setSidePanelOpen}
+      width={450}
+      panel={<AIChatWindow {...sidePanelWindowProps} />}
+      showCloseHandle={false}
+    >
+      <div className="space-y-14 pb-12">
+        <section className="flex flex-wrap items-start justify-between gap-5 border-b pb-8">
+          <div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">AI Components</Badge>
+              <Badge variant="outline">Preview</Badge>
             </div>
-            <AIConversationModeToggle />
-          </section>
+            <h1 className="mt-4 text-3xl font-semibold tracking-[-0.035em]">
+              AI Chat Window
+            </h1>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
+              A position-independent NocoBase AI employee conversation
+              component. Explore message interactions independently, place the
+              same chat in different containers, then generate an implementation
+              prompt for a target page.
+            </p>
+          </div>
+          <AIConversationModeToggle />
+        </section>
 
-          <section className="space-y-5">
-            <SectionTitle
-              eyebrow="Container patterns"
-              title="Use the same conversation window wherever the product needs it"
-              description="The provider owns conversation state. Page, embedded block, push side panel, dialog, and mobile containers only decide placement and dimensions."
-            />
-            <ContainerShowcase
-              value={container}
-              onValueChange={selectContainer}
-              windowProps={windowProps}
-            />
-          </section>
+        <section className="space-y-5">
+          <SectionTitle
+            eyebrow="Container patterns"
+            title="Use the same conversation window wherever the product needs it"
+            description="The provider owns conversation state. Page, embedded block, push side panel, dialog, and mobile containers only decide placement and dimensions."
+          />
+          <ContainerShowcase
+            value={container}
+            onValueChange={selectContainer}
+            windowProps={windowProps}
+          />
+        </section>
 
-          <section className="space-y-5">
-            <SectionTitle
-              eyebrow="Message presentation"
-              title="Choose how much conversation history the page should expose"
-              description="Use the complete transcript for conversational work, or a compact worker surface that opens message history only when the user asks for it."
-            />
-            <InteractionShowcase />
-          </section>
+        <section className="space-y-5">
+          <SectionTitle
+            eyebrow="Message presentation"
+            title="Choose how much conversation history the page should expose"
+            description="Use the complete transcript for conversational work, or a compact worker surface that opens message history only when the user asks for it."
+          />
+          <InteractionShowcase />
+        </section>
 
-          <section className="space-y-5">
-            <SectionTitle
-              eyebrow="Prompt generator"
-              title="Describe where chat belongs, then copy an implementation prompt"
-              description="This replaces a generic prop configuration panel with a task-oriented generator: choose the target area, placement mode, and required capabilities."
-            />
-            <PromptGenerator />
-          </section>
+        <section className="space-y-5">
+          <SectionTitle
+            eyebrow="Page context"
+            title="Pick a React page element and attach its context"
+            description="Page components explicitly register the business context they can provide. The picker highlights only those elements and adds the selected context to the active conversation."
+          />
+          <PageElementShowcase />
+        </section>
 
-          <section className="space-y-5">
-            <SectionTitle
-              eyebrow="Component API"
-              title="AIChatWindow props"
-              description="The core window stays reusable while business pages provide placement, composer actions, and tool-approval behavior."
-            />
-            <Card className="gap-0 overflow-hidden py-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Prop</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Default</TableHead>
-                    <TableHead>Description</TableHead>
+        <section className="space-y-5">
+          <SectionTitle
+            eyebrow="Prompt generator"
+            title="Describe where chat belongs, then copy an implementation prompt"
+            description="This replaces a generic prop configuration panel with a task-oriented generator: choose the target area, placement mode, and required capabilities."
+          />
+          <PromptGenerator />
+        </section>
+
+        <section className="space-y-5">
+          <SectionTitle
+            eyebrow="Component API"
+            title="AIChatWindow props"
+            description="The core window stays reusable while business pages provide placement, composer actions, and tool-approval behavior."
+          />
+          <Card className="gap-0 overflow-hidden py-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Prop</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Default</TableHead>
+                  <TableHead>Description</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {propRows.map(([name, type, defaultValue, description]) => (
+                  <TableRow key={name}>
+                    <TableCell className="font-mono text-xs font-medium">
+                      {name}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {type}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {defaultValue}
+                    </TableCell>
+                    <TableCell className="min-w-80 whitespace-normal text-muted-foreground">
+                      {description}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {propRows.map(([name, type, defaultValue, description]) => (
-                    <TableRow key={name}>
-                      <TableCell className="font-mono text-xs font-medium">
-                        {name}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
-                        {type}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
-                        {defaultValue}
-                      </TableCell>
-                      <TableCell className="min-w-80 whitespace-normal text-muted-foreground">
-                        {description}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          </section>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </section>
 
-          <ChatDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <AIChatWindow {...dialogWindowProps} />
-          </ChatDialog>
-        </div>
-      </ChatSidePanelLayout>
-    </AIChatProvider>
+        <ChatDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <AIChatWindow {...dialogWindowProps} />
+        </ChatDialog>
+      </div>
+    </ChatSidePanelLayout>
   );
 }
 

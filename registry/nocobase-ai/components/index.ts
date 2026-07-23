@@ -19,6 +19,13 @@ export {
 export { AIChatFloatingTrigger } from "./triggers/ai-chat-floating-trigger";
 export { AIEmployeeShortcut } from "./triggers/ai-employee-shortcut";
 export {
+  AIPageElementProvider,
+  useAIPageElement,
+  useAIPageElementPicker,
+  type AIPageElementDescriptor,
+  type AIPageElementPickerOptions,
+} from "./page-elements/page-element-provider";
+export {
   AIToolRendererProvider,
   useAIToolRenderer,
   type AIToolRenderer,

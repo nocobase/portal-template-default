@@ -15,6 +15,7 @@ import {
 import { ChatAttachment } from "./chat-attachment";
 import { useAIToolRenderer } from "../tools/tool-renderer-provider";
 import { SubAgentConversation } from "./sub-agent-conversation";
+import { WorkContextChip } from "./work-context-chip";
 
 type ChatMessageProps = {
   message: AIChatMessageType;
@@ -60,10 +61,22 @@ function ChatMessageComponent({
   );
   const showGenerating = !assistantParts.length && interactionPending;
   const attachments = message.metadata?.attachments ?? [];
+  const workContext = message.metadata?.workContext ?? [];
   if (isUser) {
     return (
       <article className="group/message flex flex-col items-end px-4 py-2 sm:px-5">
         <div className="flex max-w-[80%] flex-col items-end">
+          {workContext.length ? (
+            <div className="mb-1.5 flex max-w-full flex-wrap justify-end gap-1.5">
+              {workContext.map((item, index) => (
+                <WorkContextChip
+                  key={`${item.type}:${item.id ?? item.title ?? index}`}
+                  item={item}
+                  className="bg-background"
+                />
+              ))}
+            </div>
+          ) : null}
           {attachments.length ? (
             <div className="mb-1.5 flex max-w-full flex-wrap justify-end gap-1.5">
               {attachments.map((attachment) => (
@@ -216,8 +229,7 @@ function ChatMessageComponent({
           </div>
         ) : null}
       </div>
-      {showActions &&
-      (text || (toolCalls.length && !useInlineToolActions)) ? (
+      {showActions && (text || (toolCalls.length && !useInlineToolActions)) ? (
         <div className="pointer-events-none mt-1 flex h-6 items-center gap-1 opacity-0 transition-opacity group-hover/message:pointer-events-auto group-hover/message:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
           {messageActions}
         </div>

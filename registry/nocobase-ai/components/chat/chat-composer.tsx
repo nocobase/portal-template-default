@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { ArrowUp, Paperclip, Pencil, Square, X } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { AIEmployeeAvatar } from "./ai-employee-avatar";
+import { WorkContextChip } from "./work-context-chip";
 import {
   Tooltip,
   TooltipContent,
@@ -73,6 +74,8 @@ export function ChatComposer({
     uploadingAttachments,
     uploadFiles,
     removeAttachment,
+    workContext,
+    removeWorkContext,
     editingMessageId,
     cancelEditingMessage,
   } = useAIChat();
@@ -144,6 +147,20 @@ export function ChatComposer({
               >
                 <X />
               </InputGroupButton>
+            </InputGroupAddon>
+          ) : null}
+          {workContext.length ? (
+            <InputGroupAddon
+              align="block-start"
+              className="flex-wrap justify-start gap-1.5 px-3 pt-2"
+            >
+              {workContext.map((item, index) => (
+                <WorkContextChip
+                  key={`${item.type}:${item.id ?? item.title ?? index}`}
+                  item={item}
+                  onRemove={() => removeWorkContext(item)}
+                />
+              ))}
             </InputGroupAddon>
           ) : null}
           {enableAttachments && attachments.length ? (
@@ -321,7 +338,8 @@ export function ChatComposer({
                   (!draft.trim() &&
                     !attachments.some(
                       (attachment) => attachment.status === "done"
-                    ))
+                    ) &&
+                    !workContext.length)
                 }
                 onClick={() => void send()}
               >

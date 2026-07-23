@@ -9,7 +9,9 @@ import {
 } from "react";
 import {
   AIChatFloatingTrigger,
+  AIPageElementProvider,
   AIToolRendererProvider,
+  useAIPageElementPicker,
   type AIChatComposerAction,
 } from "./components";
 import { AIChatWindow } from "./components/chat/chat-window";
@@ -26,11 +28,9 @@ import {
   useGlobalAIChatController,
 } from "./providers";
 import { nocobaseAIService } from "./services";
-import { Blocks, Globe2 } from "lucide-react";
+import { Globe2, MousePointer2 } from "lucide-react";
 
 const DEFAULT_SIDE_PANEL_WIDTH = 450;
-export const NOCOBASE_AI_ADD_BLOCK_EVENT = "nocobase-ai:add-block";
-
 export function NocoBaseAIExtensionProvider({
   children,
   toolInvokers,
@@ -38,7 +38,9 @@ export function NocoBaseAIExtensionProvider({
   return (
     <AIProvider service={nocobaseAIService} toolInvokers={toolInvokers}>
       <AIToolRendererProvider>
-        <NocoBaseAIGlobalEntry>{children}</NocoBaseAIGlobalEntry>
+        <AIPageElementProvider>
+          <NocoBaseAIGlobalEntry>{children}</NocoBaseAIGlobalEntry>
+        </AIPageElementProvider>
       </AIToolRendererProvider>
     </AIProvider>
   );
@@ -102,7 +104,14 @@ function StarterGlobalAIChat({
   expanded: boolean;
   setExpanded: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { conversations, currentModel } = useAIChat();
+  const {
+    id: chatId,
+    conversations,
+    currentModel,
+    addWorkContext,
+    focusComposer,
+  } = useAIChat();
+  const { registeredCount, startPicking } = useAIPageElementPicker();
   const supportsWebSearch = currentModel.supportWebSearch === true;
   const unreadCount = conversations.filter(
     (conversation) => conversation.unread
@@ -115,11 +124,19 @@ function StarterGlobalAIChat({
   const composerActions = useMemo<AIChatComposerAction[]>(
     () => [
       {
-        key: "add-block",
-        label: "Add block",
-        icon: <Blocks />,
+        key: "pick-page-element",
+        label: "Pick page element",
+        icon: <MousePointer2 />,
+        disabled: registeredCount === 0,
         onClick: () => {
-          window.dispatchEvent(new CustomEvent(NOCOBASE_AI_ADD_BLOCK_EVENT));
+          if (expanded) setExpanded(false);
+          startPicking({
+            chatId,
+            onSelect: (item) => {
+              addWorkContext(item);
+              focusComposer();
+            },
+          });
         },
       },
       {
@@ -135,7 +152,18 @@ function StarterGlobalAIChat({
         onClick: () => setWebSearch((active) => !active),
       },
     ],
-    [setWebSearch, supportsWebSearch, webSearch]
+    [
+      addWorkContext,
+      chatId,
+      expanded,
+      focusComposer,
+      registeredCount,
+      setExpanded,
+      setWebSearch,
+      startPicking,
+      supportsWebSearch,
+      webSearch,
+    ]
   );
   const closeChat = () => {
     setExpanded(false);

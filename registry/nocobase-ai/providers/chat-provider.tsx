@@ -18,12 +18,10 @@ import {
 import { useAI } from "./ai-provider";
 import { findAIModel, getAIModelKey } from "./model";
 import { NocoBaseChatTransport } from "./chat-transport";
-import {
-  findChatMessage,
-  isAIToolPart,
-} from "./chat-message-utils";
+import { findChatMessage, isAIToolPart } from "./chat-message-utils";
 import { useAutomaticToolApproval } from "./use-automatic-tool-approval";
 import { useChatAttachments } from "./use-chat-attachments";
+import { useChatWorkContext } from "./use-chat-work-context";
 import { useConversationCatalog } from "./use-conversation-catalog";
 import { useConversationHistory } from "./use-conversation-history";
 import {
@@ -38,6 +36,7 @@ import {
   type AIEmployeeTaskTrigger,
   type AIModel,
   type AIToolCallDecision,
+  type AIWorkContextItem,
 } from "./types";
 
 const now = new Date();
@@ -130,10 +129,13 @@ type AIChatContextValue = {
   draft: string;
   attachments: AIChatAttachment[];
   uploadingAttachments: boolean;
+  workContext: AIWorkContextItem[];
   editingMessageId?: string;
   setDraft: (value: string) => void;
   uploadFiles: (files: File[]) => Promise<void>;
   removeAttachment: (uid: string) => void;
+  addWorkContext: (item: AIWorkContextItem) => void;
+  removeWorkContext: (item: AIWorkContextItem) => void;
   send: () => Promise<void>;
   stop: () => Promise<void>;
   regenerate: () => Promise<void>;
@@ -201,9 +203,10 @@ export function AIChatProvider({
   const runtimeContextsRef = useRef(
     new Map<string, AIConversationRuntimeContext>()
   );
-  const conversationFinishedHandlerRef = useRef<
-    (conversationId: string, chat: Chat<AIChatMessage>) => Promise<void>
-  >(undefined);
+  const conversationFinishedHandlerRef =
+    useRef<
+      (conversationId: string, chat: Chat<AIChatMessage>) => Promise<void>
+    >(undefined);
   const [historyError, setHistoryError] = useState<Error>();
   const setConversationList = useCallback(
     (conversations: AIConversation[]) =>
@@ -237,12 +240,23 @@ export function AIChatProvider({
     clearAttachments,
     getConversationAttachments,
   } = useChatAttachments(state.activeConversationId);
+  const {
+    workContext,
+    addWorkContext,
+    removeWorkContext,
+    setConversationWorkContext,
+    moveWorkContext,
+    removeConversationWorkContext,
+    clearWorkContext,
+    getConversationWorkContext,
+  } = useChatWorkContext(state.activeConversationId);
   const [editingMessageId, setEditingMessageId] = useState<string>();
   const editingSnapshotRef = useRef<
     | {
         conversationId: string;
         messages: AIChatMessage[];
         attachments: AIChatAttachment[];
+        workContext: AIWorkContextItem[];
       }
     | undefined
   >(undefined);
@@ -296,6 +310,7 @@ export function AIChatProvider({
     runtimeContextsRef.current.clear();
     taskRuntimeRef.current = undefined;
     clearAttachments();
+    clearWorkContext();
     setEditingMessageId(undefined);
     editingSnapshotRef.current = undefined;
     setPendingTask(undefined);
@@ -319,6 +334,7 @@ export function AIChatProvider({
     ai.models,
     defaultEmployeeUsername,
     clearAttachments,
+    clearWorkContext,
     getConfiguredTaskSet,
     hasConfiguredTasks,
     resetConversationCatalog,
@@ -354,7 +370,8 @@ export function AIChatProvider({
         : undefined;
       const context = {
         employeeUsername:
-          conversation?.employeeUsername ?? latestState.selectedEmployeeUsername,
+          conversation?.employeeUsername ??
+          latestState.selectedEmployeeUsername,
         model: conversationModel
           ? getAIModelKey(conversationModel)
           : latestState.selectedModel,
@@ -424,6 +441,7 @@ export function AIChatProvider({
             runtimeContextsRef.current.set(sessionId, runtimeContext);
           }
           moveAttachments(previousConversationId, sessionId);
+          moveWorkContext(previousConversationId, sessionId);
           dispatch({
             type: "replace-conversation-id",
             from: runtimeConversationId,
@@ -458,7 +476,7 @@ export function AIChatProvider({
       }
       return chat;
     },
-    [ai, getRuntimeContext, id, moveAttachments]
+    [ai, getRuntimeContext, id, moveAttachments, moveWorkContext]
   );
 
   const getActiveConversationId = useCallback(
@@ -524,6 +542,7 @@ export function AIChatProvider({
       const value = rawValue.trim();
       const currentId = stateRef.current.activeConversationId;
       const currentAttachments = getConversationAttachments(currentId);
+      const currentWorkContext = getConversationWorkContext(currentId);
       if (
         currentAttachments.some(
           (attachment) => attachment.status === "uploading"
@@ -531,7 +550,8 @@ export function AIChatProvider({
         (!value &&
           !currentAttachments.some(
             (attachment) => attachment.status === "done"
-          )) ||
+          ) &&
+          !currentWorkContext.length) ||
         chat.status === "streaming" ||
         chat.status === "submitted"
       )
@@ -546,7 +566,10 @@ export function AIChatProvider({
         task: taskRuntimeRef.current,
       });
       const title =
-        value || completedAttachments[0]?.filename || "New conversation";
+        value ||
+        completedAttachments[0]?.filename ||
+        currentWorkContext[0]?.title ||
+        "New conversation";
       if (currentId === AI_DRAFT_CONVERSATION_ID && ai.mode === "mock") {
         const conversationId = `conversation-${crypto.randomUUID()}`;
         const conversation = {
@@ -587,6 +610,7 @@ export function AIChatProvider({
 
       dispatch({ type: "set-draft", conversationId: currentId, value: "" });
       setConversationAttachments(currentId, []);
+      setConversationWorkContext(currentId, []);
       const activeEditingMessageId = editingMessageId;
       setEditingMessageId(undefined);
       editingSnapshotRef.current = undefined;
@@ -607,6 +631,7 @@ export function AIChatProvider({
           employeeUsername: currentEmployee.username,
           editingMessageId: activeEditingMessageId,
           attachments: completedAttachments,
+          workContext: currentWorkContext,
         },
       });
     },
@@ -619,7 +644,9 @@ export function AIChatProvider({
       currentModel,
       editingMessageId,
       getConversationAttachments,
+      getConversationWorkContext,
       setConversationAttachments,
+      setConversationWorkContext,
       updateConversationCatalog,
     ]
   );
@@ -877,12 +904,7 @@ export function AIChatProvider({
         throw error;
       }
     },
-    [
-      ai,
-      getRuntimeContext,
-      refreshConversationMessages,
-      resolveServerMessage,
-    ]
+    [ai, getRuntimeContext, refreshConversationMessages, resolveServerMessage]
   );
 
   const decideToolCall = useCallback(
@@ -944,6 +966,7 @@ export function AIChatProvider({
     ) {
       chat.setMessages(snapshot.messages);
       setConversationAttachments(snapshot.conversationId, snapshot.attachments);
+      setConversationWorkContext(snapshot.conversationId, snapshot.workContext);
     }
     chatsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
     transportsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
@@ -954,6 +977,7 @@ export function AIChatProvider({
     setEditingMessageId(undefined);
     editingSnapshotRef.current = undefined;
     setConversationAttachments(AI_DRAFT_CONVERSATION_ID, []);
+    setConversationWorkContext(AI_DRAFT_CONVERSATION_ID, []);
     setActiveTaskSet(
       getConfiguredTaskSet(stateRef.current.selectedEmployeeUsername)
     );
@@ -964,6 +988,7 @@ export function AIChatProvider({
     getConfiguredTaskSet,
     invalidateConversationHistory,
     setConversationAttachments,
+    setConversationWorkContext,
   ]);
 
   const startEditingMessage = useCallback(
@@ -1010,12 +1035,17 @@ export function AIChatProvider({
         conversationId,
         messages: [...messages],
         attachments: getConversationAttachments(conversationId),
+        workContext: getConversationWorkContext(conversationId),
       };
       setEditingMessageId(serverMessageId ?? targetMessage.id);
       chat.setMessages(messages.slice(0, index));
       setConversationAttachments(
         conversationId,
         targetMessage.metadata?.attachments ?? []
+      );
+      setConversationWorkContext(
+        conversationId,
+        targetMessage.metadata?.workContext ?? []
       );
       dispatch({
         type: "set-draft",
@@ -1033,7 +1063,9 @@ export function AIChatProvider({
       chat,
       refreshConversationMessages,
       getConversationAttachments,
+      getConversationWorkContext,
       setConversationAttachments,
+      setConversationWorkContext,
     ]
   );
 
@@ -1045,6 +1077,7 @@ export function AIChatProvider({
     ) {
       chat.setMessages(snapshot.messages);
       setConversationAttachments(snapshot.conversationId, snapshot.attachments);
+      setConversationWorkContext(snapshot.conversationId, snapshot.workContext);
       dispatch({
         type: "set-draft",
         conversationId: snapshot.conversationId,
@@ -1053,7 +1086,7 @@ export function AIChatProvider({
     }
     setEditingMessageId(undefined);
     editingSnapshotRef.current = undefined;
-  }, [chat, setConversationAttachments]);
+  }, [chat, setConversationAttachments, setConversationWorkContext]);
 
   const triggerTask = useCallback(
     (options: AIEmployeeTaskTrigger) => {
@@ -1097,6 +1130,8 @@ export function AIChatProvider({
       transportsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
       runtimeContextsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
       invalidateConversationHistory();
+      setConversationAttachments(AI_DRAFT_CONVERSATION_ID, []);
+      setConversationWorkContext(AI_DRAFT_CONVERSATION_ID, []);
       dispatch({ type: "select-employee", username: employee.username });
       dispatch({ type: "start-new-conversation" });
 
@@ -1144,6 +1179,8 @@ export function AIChatProvider({
       controller,
       getConfiguredTaskSet,
       invalidateConversationHistory,
+      setConversationAttachments,
+      setConversationWorkContext,
     ]
   );
 
@@ -1213,6 +1250,7 @@ export function AIChatProvider({
       runtimeContextsRef.current.delete(conversationId);
       clearAutomaticToolApproval(conversationId);
       removeConversationAttachments(conversationId);
+      removeConversationWorkContext(conversationId);
       dispatch({ type: "remove-conversation", conversationId });
       updateConversationCatalog((items) =>
         items.filter((conversation) => conversation.id !== conversationId)
@@ -1227,6 +1265,7 @@ export function AIChatProvider({
         setEditingMessageId(undefined);
         editingSnapshotRef.current = undefined;
         setConversationAttachments(AI_DRAFT_CONVERSATION_ID, []);
+        setConversationWorkContext(AI_DRAFT_CONVERSATION_ID, []);
         setActiveTaskSet(
           getConfiguredTaskSet(stateRef.current.selectedEmployeeUsername)
         );
@@ -1240,7 +1279,9 @@ export function AIChatProvider({
       getConfiguredTaskSet,
       invalidateConversationHistory,
       removeConversationAttachments,
+      removeConversationWorkContext,
       setConversationAttachments,
+      setConversationWorkContext,
       updateConversationCatalog,
     ]
   );
@@ -1289,10 +1330,13 @@ export function AIChatProvider({
       draft,
       attachments,
       uploadingAttachments,
+      workContext,
       editingMessageId,
       setDraft,
       uploadFiles,
       removeAttachment,
+      addWorkContext,
+      removeWorkContext,
       send,
       stop: chat.stop,
       regenerate: chat.regenerate,
@@ -1342,6 +1386,8 @@ export function AIChatProvider({
         taskRuntimeRef.current = undefined;
         setPendingTask(undefined);
         setActiveTaskSet(getConfiguredTaskSet(username));
+        setConversationAttachments(AI_DRAFT_CONVERSATION_ID, []);
+        setConversationWorkContext(AI_DRAFT_CONVERSATION_ID, []);
         dispatch({ type: "select-employee", username });
         dispatch({ type: "start-new-conversation" });
         requestComposerFocus();
@@ -1370,6 +1416,7 @@ export function AIChatProvider({
       historyError,
       attachments,
       uploadingAttachments,
+      workContext,
       editingMessageId,
       currentEmployee,
       currentModel,
@@ -1381,6 +1428,10 @@ export function AIChatProvider({
       searchConversations,
       renameConversation,
       removeAttachment,
+      addWorkContext,
+      removeWorkContext,
+      setConversationAttachments,
+      setConversationWorkContext,
       runTask,
       retryMessage,
       decideToolCall,

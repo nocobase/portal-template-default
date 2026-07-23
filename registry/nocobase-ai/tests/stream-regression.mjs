@@ -136,6 +136,56 @@ try {
     );
   }
 
+  {
+    let request;
+    const service = {
+      sendMessagesStream: async (input) => {
+        request = input;
+        return encodeSSE([
+          { type: "content", body: "ok", from: "main-agent" },
+          { type: "stream_end", from: "main-agent" },
+        ]);
+      },
+    };
+    const transport = new NocoBaseChatTransport({
+      service,
+      getContext: () => ({
+        sessionId: "conversation-context",
+        employee: { username: "mira", nickname: "Mira" },
+        model: { value: "test", label: "Test" },
+      }),
+    });
+    await collectStream(
+      await transport.sendMessages({
+        messages: [
+          {
+            id: "user-context",
+            role: "user",
+            metadata: {
+              workContext: [
+                {
+                  type: "page-element",
+                  id: "customer-form",
+                  title: "Customer form",
+                  content: { values: { name: "Northwind" } },
+                },
+              ],
+            },
+            parts: [{ type: "text", text: "Review this form" }],
+          },
+        ],
+      })
+    );
+    assert.deepEqual(request.messages[0].workContext, [
+      {
+        type: "page-element",
+        id: "customer-form",
+        title: "Customer form",
+        content: { values: { name: "Northwind" } },
+      },
+    ]);
+  }
+
   console.log("AI stream regression tests passed");
 } finally {
   await server.close();

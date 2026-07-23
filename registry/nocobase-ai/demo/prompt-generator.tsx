@@ -3,6 +3,7 @@ import {
   AIChatWindow,
   ChatInline,
   ChatPage,
+  useAIPageElementPicker,
   type AIChatComposerAction,
 } from "../components";
 import { Button } from "@/components/ui/button";
@@ -16,8 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { AIChatProvider } from "../providers";
-import { Blocks, Check, Copy, Globe2 } from "lucide-react";
+import { AIChatProvider, useAIChat } from "../providers";
+import { Check, Copy, Globe2, MousePointer2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ChatContainer } from "./container-showcase";
 
@@ -26,7 +27,7 @@ type PromptCapabilities = {
   employeeSelector: boolean;
   modelSelector: boolean;
   userPrompt: boolean;
-  addBlock: boolean;
+  pageElement: boolean;
   upload: boolean;
   webSearch: boolean;
   panelExpansion: boolean;
@@ -71,13 +72,23 @@ const DEFAULT_CAPABILITIES: PromptCapabilities = {
   employeeSelector: true,
   modelSelector: true,
   userPrompt: true,
-  addBlock: true,
+  pageElement: true,
   upload: true,
   webSearch: true,
   panelExpansion: true,
 };
 
 export function PromptGenerator() {
+  return (
+    <AIChatProvider id="prompt-generator-preview">
+      <PromptGeneratorContent />
+    </AIChatProvider>
+  );
+}
+
+function PromptGeneratorContent() {
+  const { id: chatId, addWorkContext, focusComposer } = useAIChat();
+  const { registeredCount, startPicking } = useAIPageElementPicker();
   const [target, setTarget] = useState("the current page's main content area");
   const [placement, setPlacement] = useState<ChatContainer>("embedded");
   const [panelWidth, setPanelWidth] = useState("450");
@@ -88,8 +99,21 @@ export function PromptGenerator() {
 
   const previewActions = useMemo<AIChatComposerAction[]>(() => {
     const actions: AIChatComposerAction[] = [];
-    if (capabilities.addBlock) {
-      actions.push({ key: "add-block", label: "Add block", icon: <Blocks /> });
+    if (capabilities.pageElement) {
+      actions.push({
+        key: "pick-page-element",
+        label: "Pick page element",
+        icon: <MousePointer2 />,
+        disabled: registeredCount === 0,
+        onClick: () =>
+          startPicking({
+            chatId,
+            onSelect: (item) => {
+              addWorkContext(item);
+              focusComposer();
+            },
+          }),
+      });
     }
     if (capabilities.webSearch) {
       actions.push({
@@ -99,7 +123,15 @@ export function PromptGenerator() {
       });
     }
     return actions;
-  }, [capabilities.addBlock, capabilities.webSearch]);
+  }, [
+    addWorkContext,
+    capabilities.pageElement,
+    capabilities.webSearch,
+    chatId,
+    focusComposer,
+    registeredCount,
+    startPicking,
+  ]);
 
   const updateCapability = (key: keyof PromptCapabilities, value: boolean) => {
     setCapabilities((current) => ({ ...current, [key]: value }));
@@ -137,7 +169,7 @@ Conversation capabilities:
 - AI employee selector: ${capabilities.employeeSelector}
 - Model selector: ${capabilities.modelSelector}
 - Personalized prompt editor: ${capabilities.userPrompt}
-- Add block action: ${capabilities.addBlock}
+- Pick page element: ${capabilities.pageElement}
 - Upload action: ${capabilities.upload}
 - Web search action: ${capabilities.webSearch}
 - Side panel can expand to a 95% dialog and collapse back: ${
@@ -147,6 +179,8 @@ Conversation capabilities:
 
 Implementation requirements:
 - Use AIProvider at application level and AIChatProvider with a stable id for this chat instance.
+- Wrap the application content with AIPageElementProvider when page-element picking is enabled.
+- Register selectable React components with useAIPageElement and return serializable business context from getContext.
 - Reuse AIChatWindow and the existing providers; do not duplicate message, streaming, reasoning, or tool-call state.
 - When the right panel is expandable, keep one AIChatProvider mounted while switching between ChatSidePanel and ChatDialog. Put ChatSurfaceActions in the window header.
 - Keep the generic Tool Call shell responsible for status, ASK approval, errors, and disclosure. Register business-specific bodies through AIToolRendererProvider.
@@ -167,7 +201,7 @@ Implementation requirements:
         showModelSelector={capabilities.modelSelector}
         showUserPrompt={capabilities.userPrompt}
         enableAttachments={capabilities.upload}
-        attachmentActionIndex={capabilities.addBlock ? 1 : 0}
+        attachmentActionIndex={capabilities.pageElement ? 1 : 0}
         disclaimer={false}
         onToolCallDecision={async () => undefined}
       />
@@ -367,9 +401,7 @@ Implementation requirements:
             </code>
           </div>
           <div className="flex justify-center bg-muted/20 p-3 sm:p-4">
-            <AIChatProvider id="prompt-generator-preview">
-              {previewSurface}
-            </AIChatProvider>
+            {previewSurface}
           </div>
         </Card>
 
@@ -410,7 +442,7 @@ const capabilityLabel = (key: keyof PromptCapabilities) =>
     employeeSelector: "AI employee selector",
     modelSelector: "Model selector",
     userPrompt: "Personalized prompt editor",
-    addBlock: "Add block",
+    pageElement: "Pick page element",
     upload: "Upload files",
     webSearch: "Web search",
     panelExpansion: "Panel expand / collapse",
