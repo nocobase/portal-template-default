@@ -29,10 +29,19 @@ import { Button } from "@/components/ui/button";
 import { ChevronRight, ListIcon, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Brand } from "@/components/app-shell/brand";
+import {
+  filterMenuItemsByAcl,
+  useNocoBaseAclSnapshot,
+} from "@/lib/nocobase/acl";
 
 export function Sidebar() {
   const { open } = useShadcnSidebar();
   const { menuItems, selectedKey } = useMenu();
+  const acl = useNocoBaseAclSnapshot();
+  const allowedMenuItems = React.useMemo(
+    () => filterMenuItemsByAcl(menuItems, acl),
+    [acl, menuItems]
+  );
 
   return (
     <ShadcnSidebar
@@ -55,7 +64,7 @@ export function Sidebar() {
           }
         )}
       >
-        {menuItems.map((item: TreeMenuItem) => (
+        {allowedMenuItems.map((item: TreeMenuItem) => (
           <SidebarItem
             key={item.key || item.name}
             item={item}

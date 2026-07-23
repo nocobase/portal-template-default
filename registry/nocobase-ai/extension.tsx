@@ -58,6 +58,7 @@ const nocobaseAIExtension: AppExtension = {
       meta: {
         label: "AI Components",
         icon: <Bot />,
+        acl: { type: "authenticated" },
       },
     },
     {
@@ -69,6 +70,7 @@ const nocobaseAIExtension: AppExtension = {
         icon: <MessageSquare />,
         description:
           "Build freely with AI while NocoBase keeps the application reliable.",
+        acl: { type: "authenticated" },
       },
     },
     {
@@ -78,6 +80,7 @@ const nocobaseAIExtension: AppExtension = {
         parent: "ai-components",
         label: "Floating chat",
         icon: <PanelRight />,
+        acl: { type: "authenticated" },
       },
     },
     {
@@ -87,6 +90,7 @@ const nocobaseAIExtension: AppExtension = {
         parent: "ai-components",
         label: "Employee tasks",
         icon: <Sparkles />,
+        acl: { type: "authenticated" },
       },
     },
     {
@@ -96,6 +100,7 @@ const nocobaseAIExtension: AppExtension = {
         parent: "ai-components",
         label: "Page context",
         icon: <MousePointer2 />,
+        acl: { type: "authenticated" },
       },
     },
     {
@@ -105,6 +110,7 @@ const nocobaseAIExtension: AppExtension = {
         parent: "ai-components",
         label: "Tool cards",
         icon: <Wrench />,
+        acl: { type: "authenticated" },
       },
     },
   ],

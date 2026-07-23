@@ -2,6 +2,7 @@ import {
   API_ORIGIN,
   API_URL,
   NOCOBASE_AUTHENTICATOR,
+  NOCOBASE_ROLE_KEY,
   NOCOBASE_TOKEN_KEY,
 } from "@/providers/constants";
 import { getNocoBaseErrorMessage, NocoBaseHttpError } from "./error";
@@ -14,13 +15,17 @@ type QueryValue =
   | undefined
   | Array<string | number | boolean>;
 
-type RequestOptions = {
+export type NocoBaseRequestOptions = {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   query?: Record<string, QueryValue>;
   body?: unknown;
   signal?: AbortSignal;
   token?: string;
+  role?: string;
+  includeRole?: boolean;
   includeAuthenticator?: boolean;
+  withAclMeta?: boolean;
+  headers?: Record<string, string>;
   accept?: "json" | "stream";
   unwrap?: "data" | "deep-data" | "none";
 };
@@ -37,7 +42,10 @@ const getClientTimezone = () => {
   return `${sign}${hours}:${minutes}`;
 };
 
-const unwrapPayload = (payload: unknown, mode: RequestOptions["unwrap"]) => {
+const unwrapPayload = (
+  payload: unknown,
+  mode: NocoBaseRequestOptions["unwrap"]
+) => {
   if (mode === "none") return payload;
   if (!payload || typeof payload !== "object") return payload;
   const data = (payload as { data?: unknown }).data;
@@ -89,6 +97,18 @@ export class NocoBaseClient {
     else localStorage.removeItem(NOCOBASE_TOKEN_KEY);
   }
 
+  getRole() {
+    return typeof localStorage === "undefined"
+      ? undefined
+      : localStorage.getItem(NOCOBASE_ROLE_KEY) ?? undefined;
+  }
+
+  setRole(role?: string | null) {
+    if (typeof localStorage === "undefined") return;
+    if (role) localStorage.setItem(NOCOBASE_ROLE_KEY, role);
+    else localStorage.removeItem(NOCOBASE_ROLE_KEY);
+  }
+
   buildUrl(endpoint: string, query?: Record<string, QueryValue>) {
     const base = `${this.apiUrl.replace(/\/$/, "")}/${endpoint.replace(
       /^\//,
@@ -111,12 +131,23 @@ export class NocoBaseClient {
 
   getHeaders({
     token = this.getToken(),
+    role = this.getRole(),
+    includeRole = true,
     includeAuthenticator = false,
+    withAclMeta = true,
+    headers,
     accept = "json",
     body,
   }: Pick<
-    RequestOptions,
-    "token" | "includeAuthenticator" | "accept" | "body"
+    NocoBaseRequestOptions,
+    | "token"
+    | "role"
+    | "includeRole"
+    | "includeAuthenticator"
+    | "withAclMeta"
+    | "headers"
+    | "accept"
+    | "body"
   > = {}) {
     const locale = getClientLocale();
     const formData =
@@ -132,13 +163,19 @@ export class NocoBaseClient {
       ...(includeAuthenticator
         ? { "X-Authenticator": NOCOBASE_AUTHENTICATOR }
         : {}),
+      ...(includeRole && role ? { "X-Role": role } : {}),
+      ...(withAclMeta ? { "X-With-ACL-Meta": "true" } : {}),
       ...(locale ? { "X-Locale": locale } : {}),
       "X-Timezone": getClientTimezone(),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...headers,
     };
   }
 
-  async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+  async request<T>(
+    endpoint: string,
+    options: NocoBaseRequestOptions = {}
+  ): Promise<T> {
     const method =
       options.method ?? (options.body === undefined ? "GET" : "POST");
     const response = await fetch(this.buildUrl(endpoint, options.query), {
@@ -170,7 +207,7 @@ export class NocoBaseClient {
   action<T>(
     resource: string,
     action: string,
-    options: Omit<RequestOptions, "accept"> = {}
+    options: Omit<NocoBaseRequestOptions, "accept"> = {}
   ) {
     const method =
       options.method ?? (["get", "list"].includes(action) ? "GET" : "POST");
@@ -179,7 +216,7 @@ export class NocoBaseClient {
 
   async stream(
     endpoint: string,
-    options: Omit<RequestOptions, "accept" | "unwrap"> = {}
+    options: Omit<NocoBaseRequestOptions, "accept" | "unwrap"> = {}
   ) {
     const response = await fetch(this.buildUrl(endpoint, options.query), {
       method: options.method ?? "POST",

@@ -2,7 +2,6 @@ import { Refine, Authenticated, type ResourceProps } from "@refinedev/core";
 
 import { BrowserRouter, Route, Routes, Outlet } from "react-router";
 import routerProvider, {
-  NavigateToResource,
   CatchAllNavigate,
   UnsavedChangesNotifier,
 } from "@refinedev/react-router";
@@ -37,6 +36,10 @@ import {
 } from "./app/extensions";
 import "./App.css";
 import { authProvider } from "./providers/auth";
+import { accessControlProvider } from "./providers/access-control";
+import { NocoBaseAclBootstrap } from "./components/access-control/acl-bootstrap";
+import { ResourceAccessGuard } from "./components/access-control/resource-access-guard";
+import { NavigateToAccessibleResource } from "./components/access-control/navigate-to-accessible-resource";
 import { FileText, Tags } from "lucide-react";
 
 const coreResources: ResourceProps[] = [
@@ -53,6 +56,9 @@ const coreResources: ResourceProps[] = [
         "Create and publish content on a reliable NocoBase data foundation.",
       canCreate: true,
       canDelete: true,
+      acl: {
+        type: "collection",
+      },
     },
   },
   {
@@ -68,6 +74,9 @@ const coreResources: ResourceProps[] = [
         "Organize reusable structures while NocoBase keeps the underlying data consistent.",
       canCreate: true,
       canDelete: true,
+      acl: {
+        type: "collection",
+      },
     },
   },
 ];
@@ -84,6 +93,7 @@ function App() {
             notificationProvider={useNotificationProvider()}
             routerProvider={routerProvider}
             authProvider={authProvider}
+            accessControlProvider={accessControlProvider}
             resources={[...coreResources, ...extensionResources]}
             options={{
               syncWithLocation: true,
@@ -102,29 +112,87 @@ function App() {
                     key="authenticated-inner"
                     fallback={<CatchAllNavigate to="/login" />}
                   >
-                    <AppExtensionProviders>
-                      <Layout>
-                        <Outlet />
-                      </Layout>
-                    </AppExtensionProviders>
+                    <NocoBaseAclBootstrap>
+                      <AppExtensionProviders>
+                        <Layout>
+                          <Outlet />
+                        </Layout>
+                      </AppExtensionProviders>
+                    </NocoBaseAclBootstrap>
                   </Authenticated>
                 }
               >
                 <Route
                   index
-                  element={<NavigateToResource resource="blog_posts" />}
+                  element={<NavigateToAccessibleResource />}
                 />
                 <Route path="/blog-posts">
-                  <Route index element={<BlogPostList />} />
-                  <Route path="create" element={<BlogPostCreate />} />
-                  <Route path="edit/:id" element={<BlogPostEdit />} />
-                  <Route path="show/:id" element={<BlogPostShow />} />
+                  <Route
+                    index
+                    element={
+                      <ResourceAccessGuard resource="blog_posts" action="list">
+                        <BlogPostList />
+                      </ResourceAccessGuard>
+                    }
+                  />
+                  <Route
+                    path="create"
+                    element={
+                      <ResourceAccessGuard resource="blog_posts" action="create">
+                        <BlogPostCreate />
+                      </ResourceAccessGuard>
+                    }
+                  />
+                  <Route
+                    path="edit/:id"
+                    element={
+                      <ResourceAccessGuard resource="blog_posts" action="edit">
+                        <BlogPostEdit />
+                      </ResourceAccessGuard>
+                    }
+                  />
+                  <Route
+                    path="show/:id"
+                    element={
+                      <ResourceAccessGuard resource="blog_posts" action="show">
+                        <BlogPostShow />
+                      </ResourceAccessGuard>
+                    }
+                  />
                 </Route>
                 <Route path="/categories">
-                  <Route index element={<CategoryList />} />
-                  <Route path="create" element={<CategoryCreate />} />
-                  <Route path="edit/:id" element={<CategoryEdit />} />
-                  <Route path="show/:id" element={<CategoryShow />} />
+                  <Route
+                    index
+                    element={
+                      <ResourceAccessGuard resource="categories" action="list">
+                        <CategoryList />
+                      </ResourceAccessGuard>
+                    }
+                  />
+                  <Route
+                    path="create"
+                    element={
+                      <ResourceAccessGuard resource="categories" action="create">
+                        <CategoryCreate />
+                      </ResourceAccessGuard>
+                    }
+                  />
+                  <Route
+                    path="edit/:id"
+                    element={
+                      <ResourceAccessGuard resource="categories" action="edit">
+                        <CategoryEdit />
+                      </ResourceAccessGuard>
+                    }
+                  />
+                  <Route
+                    path="show/:id"
+                    element={
+                      <ResourceAccessGuard resource="categories" action="show">
+                        <CategoryShow />
+                      </ResourceAccessGuard>
+                    }
+                  />
                 </Route>
                 {extensionRouteElements}
                 <Route path="*" element={<ErrorComponent />} />
@@ -135,7 +203,9 @@ function App() {
                     key="authenticated-outer"
                     fallback={<Outlet />}
                   >
-                    <NavigateToResource />
+                    <NocoBaseAclBootstrap>
+                      <NavigateToAccessibleResource />
+                    </NocoBaseAclBootstrap>
                   </Authenticated>
                 }
               >

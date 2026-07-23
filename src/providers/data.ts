@@ -23,6 +23,10 @@ import type {
 } from "@refinedev/core";
 
 import { nocobaseClient } from "@/lib/nocobase/client";
+import {
+  notifyRecordPermissionsChanged,
+  updateRecordPermissions,
+} from "@/lib/nocobase/acl";
 
 type NocoBaseListResponse<T> = {
   rows?: T[];
@@ -30,12 +34,23 @@ type NocoBaseListResponse<T> = {
   data?: T[] | NocoBaseListResponse<T>;
   meta?: {
     count?: number;
+    allowedActions?: Record<string, Array<string | number>>;
+  };
+  allowedActions?: Record<string, Array<string | number>>;
+};
+
+type NocoBaseGetResponse<T> = {
+  data?: T;
+  meta?: {
+    allowedActions?: Record<string, Array<string | number>>;
   };
 };
 
 type NocoBaseMeta = MetaQuery & {
   appends?: string[];
   token?: string;
+  dataSourceKey?: string;
+  idField?: string;
 };
 
 type NocoBaseFilter = Record<string, unknown>;
@@ -103,9 +118,49 @@ const request = async <T>(
     },
     body: options.body,
     token: options.meta?.token,
+    headers: options.meta?.dataSourceKey
+      ? { "X-Data-Source": options.meta.dataSourceKey }
+      : undefined,
     unwrap: options.unwrapData === false ? "none" : "data",
   });
 };
+
+const getAllowedActions = (response: NocoBaseListResponse<unknown>) =>
+  response.meta?.allowedActions ??
+  response.allowedActions ??
+  (!Array.isArray(response.data) && response.data
+    ? response.data.meta?.allowedActions ?? response.data.allowedActions
+    : undefined);
+
+const cacheAllowedActions = <TData extends BaseRecord>({
+  resource,
+  records,
+  response,
+  meta,
+}: {
+  resource: string;
+  records: TData[];
+  response: NocoBaseListResponse<TData>;
+  meta?: NocoBaseMeta;
+}) => {
+  const idField = meta?.idField ?? "id";
+  const recordIds = records
+    .map((record) => record[idField])
+    .filter(
+      (id): id is string | number =>
+        typeof id === "string" || typeof id === "number"
+    );
+  return updateRecordPermissions({
+    dataSourceKey: meta?.dataSourceKey,
+    resource,
+    recordIds,
+    allowedActions: getAllowedActions(response),
+  });
+};
+
+const getResponseData = <TData extends BaseRecord>(
+  response: NocoBaseGetResponse<TData>
+) => response.data ?? (response as TData);
 
 export const dataProvider: DataProvider = {
   async getList<TData extends BaseRecord = BaseRecord>({
@@ -139,10 +194,15 @@ export const dataProvider: DataProvider = {
     const list = Array.isArray(response.data)
       ? { rows: response.data, count: response.meta?.count }
       : response.data ?? response;
+    const records = list.rows ?? [];
+    if (cacheAllowedActions({ resource, records, response, meta })) {
+      notifyRecordPermissionsChanged();
+    }
 
     return {
-      data: list.rows ?? [],
-      total: list.count ?? list.rows?.length ?? 0,
+      data: records,
+      total: list.count ?? records.length,
+      meta: response.meta,
     };
   },
 
@@ -151,11 +211,28 @@ export const dataProvider: DataProvider = {
     id,
     meta,
   }: GetOneParams): Promise<GetOneResponse<TData>> {
-    return {
-      data: await request<TData>(resource, "get", {
+    const response = await request<NocoBaseGetResponse<TData>>(
+      resource,
+      "get",
+      {
         query: { filterByTk: id },
         meta,
-      }),
+        unwrapData: false,
+      }
+    );
+    const data = getResponseData(response);
+    if (
+      cacheAllowedActions({
+        resource,
+        records: [data],
+        response: response as NocoBaseListResponse<TData>,
+        meta,
+      })
+    ) {
+      notifyRecordPermissionsChanged();
+    }
+    return {
+      data,
     };
   },
 
@@ -164,11 +241,27 @@ export const dataProvider: DataProvider = {
     ids,
     meta,
   }: GetManyParams): Promise<GetManyResponse<TData>> {
-    const data = await Promise.all(
+    const responses = await Promise.all(
       ids.map((id) =>
-        request<TData>(resource, "get", { query: { filterByTk: id }, meta })
+        request<NocoBaseGetResponse<TData>>(resource, "get", {
+          query: { filterByTk: id },
+          meta,
+          unwrapData: false,
+        })
       )
     );
+    const data = responses.map(getResponseData);
+    let permissionsChanged = false;
+    responses.forEach((response, index) => {
+      permissionsChanged =
+        cacheAllowedActions({
+          resource,
+          records: [data[index]],
+          response: response as NocoBaseListResponse<TData>,
+          meta,
+        }) || permissionsChanged;
+    });
+    if (permissionsChanged) notifyRecordPermissionsChanged();
     return { data };
   },
 
