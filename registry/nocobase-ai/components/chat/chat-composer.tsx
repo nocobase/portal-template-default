@@ -19,7 +19,7 @@ import {
 import { getAIModelKey, useAIChat, type AIEmployee } from "../../providers";
 import { cn } from "@/lib/utils";
 import { ArrowUp, Paperclip, Pencil, Square, X } from "lucide-react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AIEmployeeAvatar } from "./ai-employee-avatar";
 import { WorkContextChip } from "./work-context-chip";
 import {
@@ -82,6 +82,8 @@ export function ChatComposer({
   const busy = status === "submitted" || status === "streaming";
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [employeeSelectOpen, setEmployeeSelectOpen] = useState(false);
+  const [previewedEmployee, setPreviewedEmployee] = useState<string>();
   const visibleEmployees = employees.filter(
     (employee) =>
       (employee.category === undefined || employee.category === "business") &&
@@ -232,8 +234,16 @@ export function ChatComposer({
               {actions.slice(normalizedAttachmentActionIndex).map(renderAction)}
               {showEmployeeSelector ? (
                 <Select
+                  open={employeeSelectOpen}
                   value={currentEmployee.username}
-                  onValueChange={(value) => value && selectEmployee(value)}
+                  onOpenChange={(open) => {
+                    setEmployeeSelectOpen(open);
+                    if (!open) setPreviewedEmployee(undefined);
+                  }}
+                  onValueChange={(value) => {
+                    setPreviewedEmployee(undefined);
+                    if (value) selectEmployee(value);
+                  }}
                 >
                   <SelectTrigger
                     size="sm"
@@ -258,7 +268,18 @@ export function ChatComposer({
                         value={employee.username}
                         className="py-1.5"
                       >
-                        <HoverCard>
+                        <HoverCard
+                          open={
+                            employeeSelectOpen &&
+                            previewedEmployee === employee.username
+                          }
+                          onOpenChange={(open) => {
+                            if (!employeeSelectOpen) return;
+                            setPreviewedEmployee(
+                              open ? employee.username : undefined
+                            );
+                          }}
+                        >
                           <HoverCardTrigger
                             delay={250}
                             closeDelay={100}
@@ -285,7 +306,7 @@ export function ChatComposer({
                             side="left"
                             align="start"
                             sideOffset={8}
-                            className="w-65 p-3"
+                            className="w-65 p-3 data-closed:hidden"
                           >
                             <AIEmployeeProfile employee={employee} />
                           </HoverCardContent>
