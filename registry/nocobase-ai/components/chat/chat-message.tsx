@@ -1,11 +1,10 @@
 import { Button } from "@/components/ui/button";
 import {
-  useAIChat,
   type AIChatMessage as AIChatMessageType,
   type AIToolCallDecision,
 } from "../../providers";
 import { Check, Copy, Pencil, RefreshCcw } from "lucide-react";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { MarkdownMessage } from "./markdown-message";
 import { ReasoningPanel } from "./reasoning-panel";
 import {
@@ -17,22 +16,27 @@ import { ChatAttachment } from "./chat-attachment";
 import { useAIToolRenderer } from "../tools/tool-renderer-provider";
 import { SubAgentConversation } from "./sub-agent-conversation";
 
-export function ChatMessage({
-  message,
-  onToolCallDecision,
-  showActions = true,
-}: {
+type ChatMessageProps = {
   message: AIChatMessageType;
   onToolCallDecision?: (decision: AIToolCallDecision) => void | Promise<void>;
   showActions?: boolean;
-}) {
-  const {
-    retryMessage,
-    decideToolCall,
-    status,
-    startEditingMessage,
-    focusComposer,
-  } = useAIChat();
+  status?: "submitted" | "streaming" | "ready" | "error";
+  retryMessage?: (message: AIChatMessageType) => Promise<void>;
+  decideToolCall?: (decision: AIToolCallDecision) => Promise<void>;
+  startEditingMessage?: (message: AIChatMessageType) => Promise<void>;
+  focusComposer?: () => void;
+};
+
+function ChatMessageComponent({
+  message,
+  onToolCallDecision,
+  showActions = true,
+  status = "ready",
+  retryMessage,
+  decideToolCall,
+  startEditingMessage,
+  focusComposer,
+}: ChatMessageProps) {
   const interactionPending = status === "streaming" || status === "submitted";
   const [copied, setCopied] = useState(false);
   const isUser = message.role === "user";
@@ -79,8 +83,8 @@ export function ChatMessage({
               variant="ghost"
               size="icon-xs"
               aria-label="Edit message"
-              disabled={interactionPending}
-              onClick={() => void startEditingMessage(message)}
+              disabled={interactionPending || !startEditingMessage}
+              onClick={() => void startEditingMessage?.(message)}
             >
               <Pencil />
             </Button>
@@ -124,8 +128,8 @@ export function ChatMessage({
         variant="ghost"
         size="icon-xs"
         aria-label="Retry response"
-        disabled={interactionPending}
-        onClick={() => void retryMessage(message)}
+        disabled={interactionPending || !retryMessage}
+        onClick={() => void retryMessage?.(message)}
       >
         <RefreshCcw />
       </Button>
@@ -162,6 +166,9 @@ export function ChatMessage({
                 key={part.id ?? part.data.sessionId}
                 conversation={part.data}
                 onToolCallDecision={onToolCallDecision}
+                status={status}
+                decideToolCall={decideToolCall}
+                focusComposer={focusComposer}
               />
             );
           }
@@ -186,7 +193,7 @@ export function ChatMessage({
                   decision,
                   input,
                 } satisfies AIToolCallDecision;
-                await decideToolCall(toolDecision);
+                await decideToolCall?.(toolDecision);
                 try {
                   await onToolCallDecision?.(toolDecision);
                 } catch (error) {
@@ -218,3 +225,16 @@ export function ChatMessage({
     </article>
   );
 }
+
+export const ChatMessage = memo(
+  ChatMessageComponent,
+  (previous, next) =>
+    previous.message === next.message &&
+    previous.status === next.status &&
+    previous.showActions === next.showActions &&
+    previous.onToolCallDecision === next.onToolCallDecision &&
+    previous.retryMessage === next.retryMessage &&
+    previous.decideToolCall === next.decideToolCall &&
+    previous.startEditingMessage === next.startEditingMessage &&
+    previous.focusComposer === next.focusComposer
+);

@@ -5,7 +5,11 @@ import type {
   AIEmployee,
   AIModel,
 } from "../providers/types";
-import type { AIService, CreateAIConversationOptions } from "./types";
+import type {
+  AIConversationActiveState,
+  AIService,
+  CreateAIConversationOptions,
+} from "./types";
 import type { UpdateToolCallDecisionOptions } from "./types";
 import {
   getToolCallState,
@@ -285,11 +289,18 @@ export class NocoBaseAIService implements AIService {
     });
   }
 
-  async getConversationMessages(sessionId: string) {
+  async getConversationMessages(
+    sessionId: string,
+    options: { updateRead?: boolean } = {}
+  ) {
     const response = await this.client.action<
       { data?: unknown[]; rows?: unknown[] } | unknown[]
     >("aiConversations", "getMessages", {
-      query: { sessionId, paginate: false, updateRead: true },
+      query: {
+        sessionId,
+        paginate: false,
+        updateRead: options.updateRead === true,
+      },
       body: {},
     });
     const rows = Array.isArray(response)
@@ -302,6 +313,18 @@ export class NocoBaseAIService implements AIService {
         return value.role !== "tool" && value.role !== "system";
       })
       .map(toHistoryMessage);
+  }
+
+  async getConversationActiveState(sessionId: string) {
+    const response = await this.client.action<{
+      llmActiveState?: unknown;
+    }>("aiConversations", "get", {
+      query: { filter: JSON.stringify({ sessionId }) },
+    });
+    const state = response?.llmActiveState;
+    return state === "idle" || state === "streaming" || state === "invoking"
+      ? (state as AIConversationActiveState)
+      : undefined;
   }
 
   async updateConversationTitle(sessionId: string, title: string) {
@@ -390,6 +413,13 @@ export class NocoBaseAIService implements AIService {
   resumeToolCallStream(body: unknown, signal?: AbortSignal) {
     return this.client.stream("aiConversations:resumeToolCall", {
       body,
+      signal,
+    });
+  }
+
+  resumeConversationStream(sessionId: string, signal?: AbortSignal) {
+    return this.client.stream("aiConversations:resumeStream", {
+      body: { sessionId },
       signal,
     });
   }

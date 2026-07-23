@@ -4,7 +4,6 @@ import { ChevronDown, ChevronRight, LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import {
   useAI,
-  useAIChat,
   type AISubAgentConversation as AISubAgentConversationType,
   type AIToolCallDecision,
 } from "../../providers";
@@ -20,12 +19,17 @@ import {
 export function SubAgentConversation({
   conversation,
   onToolCallDecision,
+  status = "ready",
+  decideToolCall,
+  focusComposer,
 }: {
   conversation: AISubAgentConversationType;
   onToolCallDecision?: (decision: AIToolCallDecision) => void | Promise<void>;
+  status?: "submitted" | "streaming" | "ready" | "error";
+  decideToolCall?: (decision: AIToolCallDecision) => Promise<void>;
+  focusComposer?: () => void;
 }) {
   const ai = useAI();
-  const { decideToolCall, focusComposer, status } = useAIChat();
   const completed = conversation.status === "completed";
   const [expanded, setExpanded] = useState(true);
   const employee = ai.employees.find(
@@ -92,6 +96,9 @@ export function SubAgentConversation({
                     key={part.id ?? part.data.sessionId}
                     conversation={part.data}
                     onToolCallDecision={onToolCallDecision}
+                    status={status}
+                    decideToolCall={decideToolCall}
+                    focusComposer={focusComposer}
                   />
                 );
               }
@@ -111,7 +118,7 @@ export function SubAgentConversation({
                       decision,
                       input,
                     } satisfies AIToolCallDecision;
-                    await decideToolCall(toolDecision);
+                    await decideToolCall?.(toolDecision);
                     await onToolCallDecision?.(toolDecision);
                   }}
                 />

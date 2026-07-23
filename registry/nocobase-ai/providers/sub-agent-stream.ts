@@ -134,6 +134,20 @@ export class SubAgentStreamAccumulator {
     }
   >();
 
+  constructor(seedMessage?: AIChatMessage) {
+    if (!seedMessage) return;
+    const seed = (messages: AIChatMessage[]) => {
+      for (const message of messages) {
+        for (const part of message.parts) {
+          if (part.type !== "data-subAgent") continue;
+          this.conversations.set(part.data.sessionId, structuredClone(part.data));
+          seed(part.data.messages);
+        }
+      }
+    };
+    seed([seedMessage]);
+  }
+
   private getToolStream(sessionId: string) {
     const existing = this.toolStreams.get(sessionId);
     if (existing) return existing;

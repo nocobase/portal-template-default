@@ -13,7 +13,6 @@ import { useAIChatController, type AIChatController } from "./chat-controller";
 import { MockChatTransport } from "./testing/mock-chat";
 import type {
   AIConfigurationStatus,
-  AIChatMessage,
   AIConversation,
   AIEmployee,
   AIModel,
@@ -43,7 +42,8 @@ type AIProviderValue = {
   uploadFile: AIService["uploadFile"];
   updateEmployeeUserPrompt: (username: string, prompt: string) => Promise<void>;
   listConversations: (keyword?: string) => Promise<AIConversation[]>;
-  getConversationMessages: (sessionId: string) => Promise<AIChatMessage[]>;
+  getConversationMessages: AIService["getConversationMessages"];
+  getConversationActiveState: AIService["getConversationActiveState"];
   updateConversationTitle: (sessionId: string, title: string) => Promise<void>;
   destroyConversation: (sessionId: string) => Promise<void>;
   updateToolCallDecision: AIService["updateToolCallDecision"];
@@ -225,6 +225,8 @@ export function AIProvider({
       updateEmployeeUserPrompt,
       listConversations: service.listConversations.bind(service),
       getConversationMessages: service.getConversationMessages.bind(service),
+      getConversationActiveState:
+        service.getConversationActiveState.bind(service),
       updateConversationTitle: service.updateConversationTitle.bind(service),
       destroyConversation: service.destroyConversation.bind(service),
       updateToolCallDecision: service.updateToolCallDecision.bind(service),

@@ -39,12 +39,20 @@ export type UpdatedToolCall = {
   args?: unknown;
 };
 
+export type AIConversationActiveState = "idle" | "streaming" | "invoking";
+
 export interface AIService {
   listEmployees(): Promise<AIEmployee[]>;
   listModels(): Promise<AIModel[]>;
   updateEmployeeUserPrompt(username: string, prompt: string): Promise<void>;
   listConversations(keyword?: string): Promise<AIConversation[]>;
-  getConversationMessages(sessionId: string): Promise<AIChatMessage[]>;
+  getConversationMessages(
+    sessionId: string,
+    options?: { updateRead?: boolean }
+  ): Promise<AIChatMessage[]>;
+  getConversationActiveState(
+    sessionId: string
+  ): Promise<AIConversationActiveState | undefined>;
   updateConversationTitle(sessionId: string, title: string): Promise<void>;
   destroyConversation(sessionId: string): Promise<void>;
   uploadFile(
@@ -65,6 +73,10 @@ export interface AIService {
   ): Promise<{ updated: number; toolCalls: UpdatedToolCall[] }>;
   resumeToolCallStream(
     body: unknown,
+    signal?: AbortSignal
+  ): Promise<ReadableStream<Uint8Array>>;
+  resumeConversationStream(
+    sessionId: string,
     signal?: AbortSignal
   ): Promise<ReadableStream<Uint8Array>>;
 }

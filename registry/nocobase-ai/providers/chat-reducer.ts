@@ -20,6 +20,7 @@ export type AIChatAction =
   | { type: "add-conversation"; conversation: AIConversation }
   | { type: "set-conversations"; conversations: AIConversation[] }
   | { type: "remove-conversation"; conversationId: string }
+  | { type: "mark-conversation-read"; conversationId: string }
   | { type: "rename-conversation"; conversationId: string; title: string }
   | { type: "replace-conversation-id"; from: string; to: string };
 
@@ -54,6 +55,11 @@ export function aiChatReducer(
         ...state,
         activeConversationId: action.conversationId,
         conversationListOpen: false,
+        conversations: state.conversations.map((conversation) =>
+          conversation.id === action.conversationId
+            ? { ...conversation, unread: false }
+            : conversation
+        ),
       };
     case "set-conversation-list-open":
       return { ...state, conversationListOpen: action.open };
@@ -93,6 +99,15 @@ export function aiChatReducer(
       return {
         ...state,
         conversations: action.conversations,
+      };
+    case "mark-conversation-read":
+      return {
+        ...state,
+        conversations: state.conversations.map((conversation) =>
+          conversation.id === action.conversationId
+            ? { ...conversation, unread: false }
+            : conversation
+        ),
       };
     case "remove-conversation": {
       const conversations = state.conversations.filter(

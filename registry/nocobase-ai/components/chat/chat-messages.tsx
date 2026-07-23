@@ -15,8 +15,17 @@ export function ChatMessages({
 }: {
   onToolCallDecision?: (decision: AIToolCallDecision) => void | Promise<void>;
 }) {
-  const { messages, status, error, messagesLoading, historyError } =
-    useAIChat();
+  const {
+    messages,
+    status,
+    error,
+    messagesLoading,
+    historyError,
+    retryMessage,
+    decideToolCall,
+    startEditingMessage,
+    focusComposer,
+  } = useAIChat();
 
   return (
     <AIChatMessageList
@@ -26,6 +35,10 @@ export function ChatMessages({
       error={error}
       historyError={historyError}
       onToolCallDecision={onToolCallDecision}
+      retryMessage={retryMessage}
+      decideToolCall={decideToolCall}
+      startEditingMessage={startEditingMessage}
+      focusComposer={focusComposer}
     />
   );
 }
@@ -40,6 +53,10 @@ export function AIChatMessageList({
   className,
   onToolCallDecision,
   showMessageActions = true,
+  retryMessage,
+  decideToolCall,
+  startEditingMessage,
+  focusComposer,
 }: {
   messages: AIChatMessage[];
   status?: "submitted" | "streaming" | "ready" | "error";
@@ -50,6 +67,10 @@ export function AIChatMessageList({
   className?: string;
   onToolCallDecision?: (decision: AIToolCallDecision) => void | Promise<void>;
   showMessageActions?: boolean;
+  retryMessage?: (message: AIChatMessage) => Promise<void>;
+  decideToolCall?: (decision: AIToolCallDecision) => Promise<void>;
+  startEditingMessage?: (message: AIChatMessage) => Promise<void>;
+  focusComposer?: () => void;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [atBottom, setAtBottom] = useState(true);
@@ -90,6 +111,11 @@ export function AIChatMessageList({
                 message={message}
                 onToolCallDecision={onToolCallDecision}
                 showActions={showMessageActions}
+                status={status}
+                retryMessage={retryMessage}
+                decideToolCall={decideToolCall}
+                startEditingMessage={startEditingMessage}
+                focusComposer={focusComposer}
               />
             ))}
             {error ? (

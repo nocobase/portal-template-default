@@ -11,17 +11,21 @@ import {
   type PropsWithChildren,
 } from "react";
 import { aiChatReducer, createAIChatState } from "./chat-reducer";
-import type { AIChatController } from "./chat-controller";
+import {
+  useAIChatControllerState,
+  type AIChatController,
+} from "./chat-controller";
 import { useAI } from "./ai-provider";
 import { findAIModel, getAIModelKey } from "./model";
 import { NocoBaseChatTransport } from "./chat-transport";
 import {
   findChatMessage,
   isAIToolPart,
-  reconcileRefreshedMessages,
 } from "./chat-message-utils";
-import { useAutoToolApproval } from "./use-auto-tool-approval";
+import { useAutomaticToolApproval } from "./use-automatic-tool-approval";
 import { useChatAttachments } from "./use-chat-attachments";
+import { useConversationCatalog } from "./use-conversation-catalog";
+import { useConversationHistory } from "./use-conversation-history";
 import {
   AI_DRAFT_CONVERSATION_ID,
   type AIChatAttachment,
@@ -39,6 +43,15 @@ import {
 const now = new Date();
 const EMPTY_TASKS: AIEmployeeTask[] = [];
 const EMPTY_EMPLOYEE_TASKS: AIEmployeeTasks = {};
+
+type AIConversationRuntimeContext = {
+  employeeUsername: string;
+  model: string;
+  task?: AIChatTaskRuntime;
+};
+
+const isChatRunning = (chat: Chat<AIChatMessage>) =>
+  chat.status === "streaming" || chat.status === "submitted";
 
 const INITIAL_CONVERSATIONS: AIConversation[] = [
   {
@@ -161,6 +174,9 @@ export function AIChatProvider({
   webSearch?: boolean;
 }>) {
   const ai = useAI();
+  const { open: chatSurfaceOpen } = useAIChatControllerState(controller);
+  const chatSurfaceOpenRef = useRef(chatSurfaceOpen);
+  chatSurfaceOpenRef.current = chatSurfaceOpen;
   const { configurationStatus, listConversations, mode: aiMode } = ai;
   const defaultEmployeeUsername =
     ai.employees.find((employee) => employee.username === defaultEmployee)
@@ -182,16 +198,34 @@ export function AIChatProvider({
   );
   const chatsRef = useRef(new Map<string, Chat<AIChatMessage>>());
   const transportsRef = useRef(new Map<string, NocoBaseChatTransport>());
-  const messageRefreshRequestsRef = useRef(
-    new Map<string, Promise<AIChatMessage[]>>()
+  const runtimeContextsRef = useRef(
+    new Map<string, AIConversationRuntimeContext>()
   );
-  const [conversationsLoading, setConversationsLoading] = useState(false);
-  const [conversationSearch, setConversationSearch] = useState("");
-  const conversationSearchRef = useRef("");
-  const conversationSearchRequestRef = useRef(0);
-  const conversationCatalogRef = useRef(initialConversations);
-  const [messageLoadingId, setMessageLoadingId] = useState<string>();
+  const conversationFinishedHandlerRef = useRef<
+    (conversationId: string, chat: Chat<AIChatMessage>) => Promise<void>
+  >(undefined);
   const [historyError, setHistoryError] = useState<Error>();
+  const setConversationList = useCallback(
+    (conversations: AIConversation[]) =>
+      dispatch({ type: "set-conversations", conversations }),
+    []
+  );
+  const {
+    loading: conversationsLoading,
+    search: conversationSearch,
+    searchRef: conversationSearchRef,
+    refresh: refreshConversationCatalog,
+    reset: resetConversationCatalog,
+    searchConversations,
+    updateCatalog: updateConversationCatalog,
+  } = useConversationCatalog({
+    mode: aiMode,
+    configurationStatus,
+    initialConversations,
+    listConversations,
+    onChange: setConversationList,
+    onError: setHistoryError,
+  });
   const {
     attachments,
     uploadingAttachments,
@@ -259,16 +293,15 @@ export function AIChatProvider({
     resetModeEffectRef.current = ai.mode;
     chatsRef.current.clear();
     transportsRef.current.clear();
-    messageRefreshRequestsRef.current.clear();
+    runtimeContextsRef.current.clear();
     taskRuntimeRef.current = undefined;
     clearAttachments();
     setEditingMessageId(undefined);
     editingSnapshotRef.current = undefined;
     setPendingTask(undefined);
-    setConversationSearch("");
-    conversationSearchRef.current = "";
-    conversationCatalogRef.current =
-      ai.mode === "mock" && !hasConfiguredTasks ? INITIAL_CONVERSATIONS : [];
+    resetConversationCatalog(
+      ai.mode === "mock" && !hasConfiguredTasks ? INITIAL_CONVERSATIONS : []
+    );
     setActiveTaskSet(getConfiguredTaskSet(defaultEmployeeUsername));
     dispatch({
       type: "reset",
@@ -288,81 +321,8 @@ export function AIChatProvider({
     clearAttachments,
     getConfiguredTaskSet,
     hasConfiguredTasks,
+    resetConversationCatalog,
   ]);
-
-  useEffect(() => {
-    if (aiMode !== "nocobase" || configurationStatus !== "ready") return;
-    let active = true;
-    setConversationsLoading(true);
-    setHistoryError(undefined);
-    void listConversations()
-      .then((conversations) => {
-        if (!active || conversationSearchRef.current) return;
-        conversationCatalogRef.current = conversations;
-        dispatch({ type: "set-conversations", conversations });
-      })
-      .catch((error: unknown) => {
-        if (!active) return;
-        setHistoryError(
-          error instanceof Error
-            ? error
-            : new Error("Unable to load conversations")
-        );
-      })
-      .finally(() => {
-        if (active) setConversationsLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [aiMode, configurationStatus, listConversations]);
-
-  const searchConversations = useCallback(
-    async (keyword: string) => {
-      const normalizedKeyword = keyword.trim();
-      setConversationSearch(keyword);
-      conversationSearchRef.current = normalizedKeyword;
-
-      if (ai.mode === "mock") {
-        const normalizedSearch = normalizedKeyword.toLocaleLowerCase();
-        dispatch({
-          type: "set-conversations",
-          conversations: normalizedSearch
-            ? conversationCatalogRef.current.filter((conversation) =>
-                conversation.title
-                  .toLocaleLowerCase()
-                  .includes(normalizedSearch)
-              )
-            : conversationCatalogRef.current,
-        });
-        return;
-      }
-
-      const requestId = conversationSearchRequestRef.current + 1;
-      conversationSearchRequestRef.current = requestId;
-      setConversationsLoading(true);
-      setHistoryError(undefined);
-      try {
-        const conversations = await listConversations(normalizedKeyword);
-        if (conversationSearchRequestRef.current !== requestId) return;
-        if (!normalizedKeyword) conversationCatalogRef.current = conversations;
-        dispatch({ type: "set-conversations", conversations });
-      } catch (error) {
-        if (conversationSearchRequestRef.current !== requestId) return;
-        const resolvedError =
-          error instanceof Error
-            ? error
-            : new Error("Unable to search conversations");
-        setHistoryError(resolvedError);
-        throw resolvedError;
-      } finally {
-        if (conversationSearchRequestRef.current === requestId) {
-          setConversationsLoading(false);
-        }
-      }
-    },
-    [ai.mode, listConversations]
-  );
 
   const currentEmployee =
     ai.employees.find(
@@ -375,30 +335,38 @@ export function AIChatProvider({
     throw new Error("AIProvider requires at least one employee and model");
   }
 
-  const refreshConversationMessages = useCallback(
-    (conversationId: string, targetChat: Chat<AIChatMessage>) => {
-      const pending = messageRefreshRequestsRef.current.get(conversationId);
-      if (pending) return pending;
+  const getRuntimeContext = useCallback(
+    (conversationId: string): AIConversationRuntimeContext => {
+      const existing = runtimeContextsRef.current.get(conversationId);
+      if (existing) return existing;
 
-      const request = ai
-        .getConversationMessages(conversationId)
-        .then((messages) => {
-          const reconciled = reconcileRefreshedMessages(
-            targetChat.messages,
-            messages
-          );
-          if (chatsRef.current.get(conversationId) === targetChat) {
-            targetChat.messages = reconciled;
-          }
-          return reconciled;
-        })
-        .finally(() => {
-          messageRefreshRequestsRef.current.delete(conversationId);
-        });
-      messageRefreshRequestsRef.current.set(conversationId, request);
-      return request;
+      const latestState = stateRef.current;
+      const conversation = latestState.conversations.find(
+        (item) => item.id === conversationId
+      );
+      const conversationModel = conversation?.model
+        ? ai.models.find(
+            (item) =>
+              item.value === conversation.model?.model &&
+              (!conversation.model.llmService ||
+                item.llmService === conversation.model.llmService)
+          )
+        : undefined;
+      const context = {
+        employeeUsername:
+          conversation?.employeeUsername ?? latestState.selectedEmployeeUsername,
+        model: conversationModel
+          ? getAIModelKey(conversationModel)
+          : latestState.selectedModel,
+        task:
+          conversationId === AI_DRAFT_CONVERSATION_ID
+            ? taskRuntimeRef.current
+            : undefined,
+      };
+      runtimeContextsRef.current.set(conversationId, context);
+      return context;
     },
-    [ai]
+    [ai.models]
   );
 
   const getChat = useCallback(
@@ -410,19 +378,19 @@ export function AIChatProvider({
       const transport = ai.createTransport({
         chatId: `${id}:${conversationId}`,
         getContext: () => {
-          const latestState = stateRef.current;
+          const runtimeContext = getRuntimeContext(runtimeConversationId);
           const employee =
             ai.employees.find(
-              (item) => item.username === latestState.selectedEmployeeUsername
+              (item) => item.username === runtimeContext.employeeUsername
             ) ?? ai.employees[0];
           const model =
-            findAIModel(ai.models, latestState.selectedModel) ?? ai.models[0];
+            findAIModel(ai.models, runtimeContext.model) ?? ai.models[0];
           if (!employee || !model) {
             throw new Error(
               "AIProvider requires at least one employee and model"
             );
           }
-          const task = taskRuntimeRef.current;
+          const task = runtimeContext.task;
           return {
             sessionId:
               runtimeConversationId === AI_DRAFT_CONVERSATION_ID
@@ -448,6 +416,13 @@ export function AIChatProvider({
             transportsRef.current.delete(previousConversationId);
             transportsRef.current.set(sessionId, transport);
           }
+          const runtimeContext = runtimeContextsRef.current.get(
+            previousConversationId
+          );
+          if (runtimeContext) {
+            runtimeContextsRef.current.delete(previousConversationId);
+            runtimeContextsRef.current.set(sessionId, runtimeContext);
+          }
           moveAttachments(previousConversationId, sessionId);
           dispatch({
             type: "replace-conversation-id",
@@ -468,21 +443,10 @@ export function AIChatProvider({
           ) {
             return;
           }
-          void Promise.all([
-            refreshConversationMessages(finishedConversationId, chat),
-            listConversations(conversationSearchRef.current).then(
-              (conversations) => {
-                if (!conversationSearchRef.current) {
-                  conversationCatalogRef.current = conversations;
-                }
-                dispatch({ type: "set-conversations", conversations });
-              }
-            ),
-          ]).catch((error: unknown) => {
-            setHistoryError(
-              error instanceof Error
-                ? error
-                : new Error("Unable to refresh the conversation")
+          queueMicrotask(() => {
+            void conversationFinishedHandlerRef.current?.(
+              finishedConversationId,
+              chat
             );
           });
         },
@@ -494,43 +458,54 @@ export function AIChatProvider({
       }
       return chat;
     },
-    [ai, id, listConversations, moveAttachments, refreshConversationMessages]
+    [ai, getRuntimeContext, id, moveAttachments]
+  );
+
+  const getActiveConversationId = useCallback(
+    () => stateRef.current.activeConversationId,
+    []
+  );
+  const getTransport = useCallback(
+    (conversationId: string) => transportsRef.current.get(conversationId),
+    []
+  );
+  const markConversationRead = useCallback(
+    (conversationId: string) =>
+      dispatch({ type: "mark-conversation-read", conversationId }),
+    []
+  );
+  const {
+    invalidate: invalidateConversationHistory,
+    load: loadConversationMessages,
+    loadingId: messageLoadingId,
+    refresh: refreshConversationMessages,
+    reset: resetConversationHistory,
+  } = useConversationHistory({
+    mode: ai.mode,
+    chatSurfaceOpen,
+    activeConversationId: state.activeConversationId,
+    getActiveConversationId,
+    getChat,
+    getTransport,
+    getConversationMessages: ai.getConversationMessages,
+    getConversationActiveState: ai.getConversationActiveState,
+    onMarkRead: markConversationRead,
+    onError: setHistoryError,
+  });
+
+  useEffect(
+    () => resetConversationHistory(),
+    [ai.mode, resetConversationHistory]
   );
 
   const activeChat = getChat(state.activeConversationId);
-  const chat = useChat<AIChatMessage>({ chat: activeChat });
+  const chat = useChat<AIChatMessage>({
+    chat: activeChat,
+    experimental_throttle: 32,
+  });
   const draft = state.drafts[state.activeConversationId] ?? "";
   const activeConversation = state.conversations.find(
     (conversation) => conversation.id === state.activeConversationId
-  );
-
-  const loadConversationMessages = useCallback(
-    async (conversationId: string) => {
-      if (ai.mode !== "nocobase") return;
-      const targetChat = getChat(conversationId);
-      if (
-        targetChat.status === "streaming" ||
-        targetChat.status === "submitted"
-      ) {
-        return;
-      }
-      setMessageLoadingId(conversationId);
-      setHistoryError(undefined);
-      try {
-        await refreshConversationMessages(conversationId, targetChat);
-      } catch (error) {
-        setHistoryError(
-          error instanceof Error
-            ? error
-            : new Error("Unable to load conversation messages")
-        );
-      } finally {
-        setMessageLoadingId((current) =>
-          current === conversationId ? undefined : current
-        );
-      }
-    },
-    [ai.mode, getChat, refreshConversationMessages]
   );
 
   const setDraft = useCallback(
@@ -565,33 +540,39 @@ export function AIChatProvider({
       const completedAttachments = currentAttachments.filter(
         (attachment) => attachment.status === "done"
       );
+      runtimeContextsRef.current.set(currentId, {
+        employeeUsername: currentEmployee.username,
+        model: getAIModelKey(currentModel),
+        task: taskRuntimeRef.current,
+      });
       const title =
         value || completedAttachments[0]?.filename || "New conversation";
       if (currentId === AI_DRAFT_CONVERSATION_ID && ai.mode === "mock") {
         const conversationId = `conversation-${crypto.randomUUID()}`;
+        const conversation = {
+          id: conversationId,
+          title: title.slice(0, 42),
+          employeeUsername: currentEmployee.username,
+          updatedAt: new Date().toISOString(),
+        };
         chatsRef.current.set(conversationId, activeChat);
         chatsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
         transportsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
+        const runtimeContext = runtimeContextsRef.current.get(
+          AI_DRAFT_CONVERSATION_ID
+        );
+        runtimeContextsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
+        if (runtimeContext) {
+          runtimeContextsRef.current.set(conversationId, runtimeContext);
+        }
         dispatch({
           type: "add-conversation",
-          conversation: {
-            id: conversationId,
-            title: title.slice(0, 42),
-            employeeUsername: currentEmployee.username,
-            updatedAt: new Date().toISOString(),
-          },
+          conversation,
         });
-        conversationCatalogRef.current = [
-          {
-            id: conversationId,
-            title: title.slice(0, 42),
-            employeeUsername: currentEmployee.username,
-            updatedAt: new Date().toISOString(),
-          },
-          ...conversationCatalogRef.current.filter(
-            (conversation) => conversation.id !== conversationId
-          ),
-        ];
+        updateConversationCatalog((items) => [
+          conversation,
+          ...items.filter((item) => item.id !== conversationId),
+        ]);
       } else if (!activeConversation) {
         dispatch({
           type: "add-conversation",
@@ -635,9 +616,11 @@ export function AIChatProvider({
       ai.mode,
       chat,
       currentEmployee.username,
+      currentModel,
       editingMessageId,
       getConversationAttachments,
       setConversationAttachments,
+      updateConversationCatalog,
     ]
   );
 
@@ -648,9 +631,12 @@ export function AIChatProvider({
   }, [sendText]);
 
   const resolveServerMessage = useCallback(
-    async (message: AIChatMessage) => {
-      const conversationId = stateRef.current.activeConversationId;
-      let messages = activeChat.messages;
+    async (
+      conversationId: string,
+      targetChat: Chat<AIChatMessage>,
+      message: AIChatMessage
+    ) => {
+      let messages = targetChat.messages;
       const resolvedMessage = findChatMessage(messages, message.id);
       if (!resolvedMessage) {
         throw new Error(
@@ -662,7 +648,12 @@ export function AIChatProvider({
       if (ai.mode === "nocobase" && !targetMessage.metadata?.serverMessageId) {
         messages = await refreshConversationMessages(
           conversationId,
-          activeChat
+          targetChat,
+          {
+            updateRead:
+              stateRef.current.activeConversationId === conversationId &&
+              chatSurfaceOpenRef.current,
+          }
         );
         const refreshedMatch = findChatMessage(messages, message.id);
         const refreshedTarget = refreshedMatch?.targetMessage;
@@ -683,7 +674,7 @@ export function AIChatProvider({
         serverMessageId: targetMessage.metadata?.serverMessageId,
       };
     },
-    [activeChat, ai.mode, refreshConversationMessages]
+    [ai.mode, refreshConversationMessages]
   );
 
   const retryMessage = useCallback(
@@ -703,7 +694,11 @@ export function AIChatProvider({
           return;
         }
 
-        const resolved = await resolveServerMessage(message);
+        const resolved = await resolveServerMessage(
+          stateRef.current.activeConversationId,
+          activeChat,
+          message
+        );
         if (!resolved.serverMessageId) {
           throw new Error("The server message id is unavailable for retry.");
         }
@@ -727,21 +722,31 @@ export function AIChatProvider({
     [ai.mode, chat, resolveServerMessage]
   );
 
-  const decideToolCall = useCallback(
-    async (decision: AIToolCallDecision) => {
+  const decideConversationToolCall = useCallback(
+    async (
+      conversationId: string,
+      targetChat: Chat<AIChatMessage>,
+      decision: AIToolCallDecision
+    ) => {
       if (ai.mode === "mock") return;
-      if (chat.status === "streaming" || chat.status === "submitted") return;
+      if (isChatRunning(targetChat)) {
+        return;
+      }
 
       setHistoryError(undefined);
       try {
         const message = findChatMessage(
-          activeChat.messages,
+          targetChat.messages,
           decision.messageId
         )?.targetMessage;
         if (!message) {
           throw new Error("The tool-call message is no longer available.");
         }
-        const resolved = await resolveServerMessage(message);
+        const resolved = await resolveServerMessage(
+          conversationId,
+          targetChat,
+          message
+        );
         if (!resolved.serverMessageId) {
           throw new Error(
             "The server message id is unavailable for this tool decision."
@@ -779,7 +784,12 @@ export function AIChatProvider({
         if (!result.updated) {
           await refreshConversationMessages(
             resolved.conversationId,
-            activeChat
+            targetChat,
+            {
+              updateRead:
+                stateRef.current.activeConversationId ===
+                  resolved.conversationId && chatSurfaceOpenRef.current,
+            }
           );
           return;
         }
@@ -823,21 +833,22 @@ export function AIChatProvider({
         if (!transport) {
           throw new Error("The NocoBase chat transport is unavailable.");
         }
-        if (resolved.rootIndex !== activeChat.messages.length - 1) {
-          activeChat.messages = resolved.messages.slice(
+        if (resolved.rootIndex !== targetChat.messages.length - 1) {
+          targetChat.messages = resolved.messages.slice(
             0,
             resolved.rootIndex + 1
           );
         }
         const responseMessageId = `assistant-${crypto.randomUUID()}`;
-        activeChat.messages = [
-          ...activeChat.messages,
+        const runtimeContext = getRuntimeContext(resolved.conversationId);
+        targetChat.messages = [
+          ...targetChat.messages,
           {
             id: responseMessageId,
             role: "assistant",
             metadata: {
               createdAt: new Date().toISOString(),
-              employeeUsername: currentEmployee.username,
+              employeeUsername: runtimeContext.employeeUsername,
             },
             parts: [],
           },
@@ -849,10 +860,10 @@ export function AIChatProvider({
           toolCallResults
         );
         try {
-          await chat.resumeStream();
+          await targetChat.resumeStream();
         } catch (error) {
           transport.cancelToolResume(resolved.serverMessageId);
-          activeChat.messages = activeChat.messages.filter(
+          targetChat.messages = targetChat.messages.filter(
             (item) => item.id !== responseMessageId
           );
           throw error;
@@ -867,22 +878,63 @@ export function AIChatProvider({
       }
     },
     [
-      activeChat,
       ai,
-      chat,
-      currentEmployee.username,
+      getRuntimeContext,
       refreshConversationMessages,
       resolveServerMessage,
     ]
   );
 
-  useAutoToolApproval({
-    mode: ai.mode,
-    messages: chat.messages,
-    status: chat.status,
-    conversationId: state.activeConversationId,
-    decideToolCall,
+  const decideToolCall = useCallback(
+    (decision: AIToolCallDecision) =>
+      decideConversationToolCall(
+        stateRef.current.activeConversationId,
+        activeChat,
+        decision
+      ),
+    [activeChat, decideConversationToolCall]
+  );
+
+  const {
+    clearConversation: clearAutomaticToolApproval,
+    process: processAutomaticToolApprovals,
+    reset: resetAutomaticToolApprovals,
+  } = useAutomaticToolApproval({
+    enabled: ai.mode === "nocobase",
+    decide: decideConversationToolCall,
   });
+
+  useEffect(
+    () => resetAutomaticToolApprovals(),
+    [ai.mode, resetAutomaticToolApprovals]
+  );
+
+  const handleConversationFinished = useCallback(
+    async (conversationId: string, targetChat: Chat<AIChatMessage>) => {
+      try {
+        const updateRead =
+          stateRef.current.activeConversationId === conversationId &&
+          chatSurfaceOpenRef.current;
+        await refreshConversationMessages(conversationId, targetChat, {
+          updateRead,
+        });
+        await refreshConversationCatalog();
+        await processAutomaticToolApprovals(conversationId, targetChat);
+      } catch (error) {
+        setHistoryError(
+          error instanceof Error
+            ? error
+            : new Error("Unable to refresh the conversation")
+        );
+      }
+    },
+    [
+      processAutomaticToolApprovals,
+      refreshConversationCatalog,
+      refreshConversationMessages,
+    ]
+  );
+  conversationFinishedHandlerRef.current = handleConversationFinished;
 
   const startNewConversation = useCallback(() => {
     const snapshot = editingSnapshotRef.current;
@@ -895,6 +947,8 @@ export function AIChatProvider({
     }
     chatsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
     transportsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
+    runtimeContextsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
+    invalidateConversationHistory();
     taskRuntimeRef.current = undefined;
     setPendingTask(undefined);
     setEditingMessageId(undefined);
@@ -905,7 +959,12 @@ export function AIChatProvider({
     );
     dispatch({ type: "start-new-conversation" });
     requestComposerFocus();
-  }, [chat, getConfiguredTaskSet, setConversationAttachments]);
+  }, [
+    chat,
+    getConfiguredTaskSet,
+    invalidateConversationHistory,
+    setConversationAttachments,
+  ]);
 
   const startEditingMessage = useCallback(
     async (message: AIChatMessage) => {
@@ -928,7 +987,8 @@ export function AIChatProvider({
         try {
           messages = await refreshConversationMessages(
             conversationId,
-            activeChat
+            activeChat,
+            { updateRead: true }
           );
         } catch (error) {
           setHistoryError(
@@ -1035,6 +1095,8 @@ export function AIChatProvider({
 
       chatsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
       transportsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
+      runtimeContextsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
+      invalidateConversationHistory();
       dispatch({ type: "select-employee", username: employee.username });
       dispatch({ type: "start-new-conversation" });
 
@@ -1081,6 +1143,7 @@ export function AIChatProvider({
       cancelEditingMessage,
       controller,
       getConfiguredTaskSet,
+      invalidateConversationHistory,
     ]
   );
 
@@ -1147,14 +1210,18 @@ export function AIChatProvider({
       }
       chatsRef.current.delete(conversationId);
       transportsRef.current.delete(conversationId);
+      runtimeContextsRef.current.delete(conversationId);
+      clearAutomaticToolApproval(conversationId);
       removeConversationAttachments(conversationId);
       dispatch({ type: "remove-conversation", conversationId });
-      conversationCatalogRef.current = conversationCatalogRef.current.filter(
-        (conversation) => conversation.id !== conversationId
+      updateConversationCatalog((items) =>
+        items.filter((conversation) => conversation.id !== conversationId)
       );
       if (stateRef.current.activeConversationId === conversationId) {
         chatsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
         transportsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
+        runtimeContextsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
+        invalidateConversationHistory();
         taskRuntimeRef.current = undefined;
         setPendingTask(undefined);
         setEditingMessageId(undefined);
@@ -1169,9 +1236,12 @@ export function AIChatProvider({
     },
     [
       ai,
+      clearAutomaticToolApproval,
       getConfiguredTaskSet,
+      invalidateConversationHistory,
       removeConversationAttachments,
       setConversationAttachments,
+      updateConversationCatalog,
     ]
   );
 
@@ -1187,11 +1257,13 @@ export function AIChatProvider({
         await ai.updateConversationTitle(conversationId, title);
       }
       dispatch({ type: "rename-conversation", conversationId, title });
-      conversationCatalogRef.current = conversationCatalogRef.current.map(
-        (item) => (item.id === conversationId ? { ...item, title } : item)
+      updateConversationCatalog((items) =>
+        items.map((item) =>
+          item.id === conversationId ? { ...item, title } : item
+        )
       );
     },
-    [ai]
+    [ai, updateConversationCatalog]
   );
 
   const value = useMemo<AIChatContextValue>(
@@ -1265,6 +1337,8 @@ export function AIChatProvider({
         cancelEditingMessage();
         chatsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
         transportsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
+        runtimeContextsRef.current.delete(AI_DRAFT_CONVERSATION_ID);
+        invalidateConversationHistory();
         taskRuntimeRef.current = undefined;
         setPendingTask(undefined);
         setActiveTaskSet(getConfiguredTaskSet(username));
@@ -1300,6 +1374,7 @@ export function AIChatProvider({
       currentEmployee,
       currentModel,
       getConfiguredTaskSet,
+      invalidateConversationHistory,
       draft,
       id,
       removeConversation,

@@ -188,9 +188,15 @@ export function ConversationList({
                 >
                   <button
                     type="button"
-                    className="flex min-w-0 flex-1 items-center px-2.5 py-2.5 text-left"
+                    className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2.5 text-left"
                     onClick={() => selectConversation(conversation.id)}
                   >
+                    {conversation.unread && !active ? (
+                      <span
+                        className="size-2 shrink-0 rounded-full bg-destructive"
+                        aria-label="Unread conversation"
+                      />
+                    ) : null}
                     <span className="block min-w-0 flex-1 truncate text-sm font-medium">
                       {conversation.title}
                     </span>

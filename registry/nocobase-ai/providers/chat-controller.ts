@@ -71,10 +71,14 @@ export function useAIChatController() {
   return controllerRef.current;
 }
 
-export function useAIChatControllerState(controller: AIChatController) {
+const visibleControllerSnapshot: AIChatControllerSnapshot = { open: true };
+const subscribeToVisibleController = () => () => undefined;
+const getVisibleControllerSnapshot = () => visibleControllerSnapshot;
+
+export function useAIChatControllerState(controller?: AIChatController) {
   return useSyncExternalStore(
-    controller.subscribe,
-    controller.getSnapshot,
-    controller.getSnapshot
+    controller?.subscribe ?? subscribeToVisibleController,
+    controller?.getSnapshot ?? getVisibleControllerSnapshot,
+    controller?.getSnapshot ?? getVisibleControllerSnapshot
   );
 }

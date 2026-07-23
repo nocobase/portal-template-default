@@ -104,14 +104,7 @@ export const getNocoBaseToolCallMetadata = (part: ToolCallPart) => {
     : undefined;
 };
 
-export function ToolCallCard({
-  part,
-  approval,
-  onDecision,
-  onRevise,
-  inlineActions,
-  disabled = false,
-}: {
+type ToolCallCardProps = {
   part: ToolCallPart;
   approval?: AIToolCallApproval;
   onDecision?: (
@@ -121,7 +114,16 @@ export function ToolCallCard({
   onRevise?: () => void;
   inlineActions?: ReactNode;
   disabled?: boolean;
-}) {
+};
+
+export function ToolCallCard({
+  part,
+  approval,
+  onDecision,
+  onRevise,
+  inlineActions,
+  disabled = false,
+}: ToolCallCardProps) {
   const resolvedApproval = approval ?? approvalFromPart(part);
   const [approvalStatus, setApprovalStatus] = useState(
     resolvedApproval?.status ?? "pending"

@@ -7,7 +7,11 @@ import {
   type PropsWithChildren,
   type SetStateAction,
 } from "react";
-import { AIChatFloatingTrigger, type AIChatComposerAction } from "./components";
+import {
+  AIChatFloatingTrigger,
+  AIToolRendererProvider,
+  type AIChatComposerAction,
+} from "./components";
 import { AIChatWindow } from "./components/chat/chat-window";
 import { ChatDialog } from "./components/surfaces/chat-dialog";
 import { ChatSidePanel } from "./components/surfaces/chat-side-panel";
@@ -33,7 +37,9 @@ export function NocoBaseAIExtensionProvider({
 }: PropsWithChildren<{ toolInvokers?: AIToolInvokerMap }>) {
   return (
     <AIProvider service={nocobaseAIService} toolInvokers={toolInvokers}>
-      <NocoBaseAIGlobalEntry>{children}</NocoBaseAIGlobalEntry>
+      <AIToolRendererProvider>
+        <NocoBaseAIGlobalEntry>{children}</NocoBaseAIGlobalEntry>
+      </AIToolRendererProvider>
     </AIProvider>
   );
 }
@@ -96,8 +102,11 @@ function StarterGlobalAIChat({
   expanded: boolean;
   setExpanded: Dispatch<SetStateAction<boolean>>;
 }) {
-  const { currentModel } = useAIChat();
+  const { conversations, currentModel } = useAIChat();
   const supportsWebSearch = currentModel.supportWebSearch === true;
+  const unreadCount = conversations.filter(
+    (conversation) => conversation.unread
+  ).length;
 
   useEffect(() => {
     if (!supportsWebSearch && webSearch) setWebSearch(false);
@@ -173,7 +182,7 @@ function StarterGlobalAIChat({
           attachmentActionIndex={1}
         />
       </ChatDialog>
-      <AIChatFloatingTrigger />
+      <AIChatFloatingTrigger unreadCount={unreadCount} />
     </>
   );
 }

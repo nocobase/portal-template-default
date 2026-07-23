@@ -22,10 +22,14 @@ export function ChatHeader({
 }) {
   const {
     activeConversation,
+    conversations,
     conversationListOpen,
     setConversationListOpen,
     startNewConversation,
   } = useAIChat();
+  const unreadCount = conversations.filter(
+    (conversation) => conversation.unread
+  ).length;
 
   return (
     <header className="grid h-12 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center border-b bg-card px-2.5">
@@ -42,7 +46,12 @@ export function ChatHeader({
                 />
               }
             >
-              {conversationListOpen ? <PanelLeftClose /> : <Menu />}
+              <span className="relative">
+                {conversationListOpen ? <PanelLeftClose /> : <Menu />}
+                {!conversationListOpen && unreadCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 size-2 rounded-full bg-destructive ring-2 ring-card" />
+                ) : null}
+              </span>
             </TooltipTrigger>
             <TooltipContent>Conversation list</TooltipContent>
           </Tooltip>
