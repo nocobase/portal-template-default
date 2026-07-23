@@ -2,9 +2,9 @@ import type { AuthProvider } from "@refinedev/core";
 
 import { nocobaseClient } from "@/lib/nocobase/client";
 import {
-  clearNocoBaseAcl,
-  loadNocoBaseAcl,
-  type NocoBaseRole,
+  clearAcl,
+  loadAcl,
+  type Role,
 } from "@/lib/nocobase/acl";
 import {
   getNocoBaseErrorMessage,
@@ -17,7 +17,7 @@ type NocoBaseUser = {
   username?: string;
   email?: string;
   avatar?: string;
-  roles?: NocoBaseRole[];
+  roles?: Role[];
 };
 
 type NocoBaseSignInResponse = {
@@ -123,7 +123,7 @@ export const authProvider: AuthProvider = {
       nocobaseClient.setToken(result.token);
       nocobaseClient.setRole(null);
       clearCurrentUserCache();
-      clearNocoBaseAcl();
+      clearAcl();
       return { success: true, redirectTo: "/" };
     } catch (error) {
       return {
@@ -154,7 +154,7 @@ export const authProvider: AuthProvider = {
       nocobaseClient.setToken(null);
       nocobaseClient.setRole(null);
       clearCurrentUserCache();
-      clearNocoBaseAcl();
+      clearAcl();
     }
 
     return { success: true, redirectTo: "/login" };
@@ -168,14 +168,14 @@ export const authProvider: AuthProvider = {
       nocobaseClient.setToken(null);
       nocobaseClient.setRole(null);
       clearCurrentUserCache();
-      clearNocoBaseAcl();
+      clearAcl();
       return { authenticated: false, redirectTo: "/login" };
     }
   },
 
   getPermissions: async () => {
     try {
-      return await loadNocoBaseAcl();
+      return await loadAcl();
     } catch {
       return null;
     }
@@ -209,7 +209,7 @@ export const authProvider: AuthProvider = {
       nocobaseClient.setToken(null);
       nocobaseClient.setRole(null);
       clearCurrentUserCache();
-      clearNocoBaseAcl();
+      clearAcl();
       return { logout: true, redirectTo: "/login" };
     }
 

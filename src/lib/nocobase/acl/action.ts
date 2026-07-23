@@ -1,9 +1,9 @@
 import type {
-  NocoBaseAclActionParams,
-  NocoBaseAclRoleData,
-  NocoBaseAclSnapshot,
-  NocoBaseCanParams,
-  NocoBaseResourceAcl,
+  AclActionParams,
+  AclCanParams,
+  AclRoleData,
+  AclSnapshot,
+  ResourceAcl,
 } from "./types";
 import ignore from "ignore";
 import { getRecordActionPermission } from "./record-permissions";
@@ -17,16 +17,16 @@ const REFINE_ACTION_MAP: Record<string, string> = {
   clone: "create",
 };
 
-const getResourceAcl = (params?: NocoBaseCanParams["params"]) =>
-  params?.resource?.meta?.acl as NocoBaseResourceAcl | undefined;
+const getResourceAcl = (params?: AclCanParams["params"]) =>
+  params?.resource?.meta?.acl as ResourceAcl | undefined;
 
 export const mapRefineAction = (action: string) =>
   REFINE_ACTION_MAP[action] ?? action;
 
 export const getAclDataForDataSource = (
-  snapshot: NocoBaseAclSnapshot,
+  snapshot: AclSnapshot,
   dataSourceKey = "main"
-): NocoBaseAclRoleData => {
+): AclRoleData => {
   const dataSourceAcl = snapshot.meta.dataSources?.[dataSourceKey];
   return dataSourceAcl
     ? {
@@ -45,11 +45,11 @@ export const resolveActionPermission = ({
   action,
   dataSourceKey = "main",
 }: {
-  snapshot: NocoBaseAclSnapshot;
+  snapshot: AclSnapshot;
   resource: string;
   action: string;
   dataSourceKey?: string;
-}): NocoBaseAclActionParams | null => {
+}): AclActionParams | null => {
   const data = getAclDataForDataSource(snapshot, dataSourceKey);
   if (data.allowAll) return {};
 
@@ -72,8 +72,8 @@ const matchesSnippet = (snippets: string[], target: string) =>
   !target || target === "*" || ignore().add(snippets).ignores(target);
 
 export const canAccessWithSnapshot = (
-  snapshot: NocoBaseAclSnapshot,
-  { resource, action, params }: NocoBaseCanParams
+  snapshot: AclSnapshot,
+  { resource, action, params }: AclCanParams
 ) => {
   if (snapshot.status !== "ready") return false;
 

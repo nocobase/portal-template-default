@@ -2,13 +2,13 @@ import type { AccessControlProvider } from "@refinedev/core";
 
 import {
   canAccessWithSnapshot,
-  getNocoBaseAclSnapshot,
-  loadNocoBaseAcl,
+  getAclSnapshot,
+  loadAcl,
 } from "@/lib/nocobase/acl";
 
 export const accessControlProvider: AccessControlProvider = {
   can: async ({ resource, action, params }) => {
-    const snapshot = await loadNocoBaseAcl();
+    const snapshot = await loadAcl();
     const can = canAccessWithSnapshot(snapshot, { resource, action, params });
 
     return {
@@ -29,6 +29,6 @@ export const accessControlProvider: AccessControlProvider = {
   },
 };
 
-export const canAccessCurrentNocoBaseAcl = (
+export const canAccessCurrentAcl = (
   params: Parameters<typeof canAccessWithSnapshot>[1]
-) => canAccessWithSnapshot(getNocoBaseAclSnapshot(), params);
+) => canAccessWithSnapshot(getAclSnapshot(), params);

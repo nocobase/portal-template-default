@@ -4,7 +4,7 @@ import type { PropsWithChildren, ReactNode } from "react";
 import { AccessDenied } from "@/components/access-control/access-denied";
 import {
   canAccessWithSnapshot,
-  useNocoBaseAclSnapshot,
+  useAclSnapshot,
 } from "@/lib/nocobase/acl";
 
 export type AclPermission = {
@@ -16,7 +16,7 @@ export type AclPermission = {
 };
 
 const canAccess = (
-  snapshot: ReturnType<typeof useNocoBaseAclSnapshot>,
+  snapshot: ReturnType<typeof useAclSnapshot>,
   permission: AclPermission
 ) =>
   canAccessWithSnapshot(snapshot, {
@@ -39,7 +39,7 @@ export function AclPage({
   allOf?: AclPermission[];
   fallback?: ReactNode;
 }>) {
-  const snapshot = useNocoBaseAclSnapshot();
+  const snapshot = useAclSnapshot();
   const anyAllowed = !anyOf?.length || anyOf.some((item) => canAccess(snapshot, item));
   const allAllowed = !allOf?.length || allOf.every((item) => canAccess(snapshot, item));
 
@@ -56,7 +56,7 @@ export function AclRegion({
 }: PropsWithChildren<AclPermission & {
   fallback?: "hidden" | "forbidden" | ReactNode;
 }>) {
-  const snapshot = useNocoBaseAclSnapshot();
+  const snapshot = useAclSnapshot();
   const allowed = canAccess(snapshot, {
     resource,
     action,
@@ -86,7 +86,7 @@ export function AclField({
   dataSourceKey?: string;
   fallback?: ReactNode;
 }>) {
-  const snapshot = useNocoBaseAclSnapshot();
+  const snapshot = useAclSnapshot();
   return canAccess(snapshot, {
     resource,
     action,

@@ -4,8 +4,8 @@ import { nocobaseClient } from "@/lib/nocobase/client";
 import { NocoBaseHttpError } from "@/lib/nocobase/error";
 import { clearRecordPermissions } from "./record-permissions";
 import type {
-  NocoBaseAclResponse,
-  NocoBaseAclSnapshot,
+  AclResponse,
+  AclSnapshot,
 } from "./types";
 
 const listeners = new Set<() => void>();
@@ -13,11 +13,11 @@ let request:
   | {
       id: number;
       identity: string;
-      promise: Promise<NocoBaseAclSnapshot>;
+      promise: Promise<AclSnapshot>;
     }
   | undefined;
 let requestId = 0;
-let snapshot: NocoBaseAclSnapshot = {
+let snapshot: AclSnapshot = {
   status: "idle",
   data: {},
   meta: {},
@@ -26,7 +26,7 @@ let snapshot: NocoBaseAclSnapshot = {
 
 const emit = () => listeners.forEach((listener) => listener());
 
-const setSnapshot = (next: Partial<NocoBaseAclSnapshot>) => {
+const setSnapshot = (next: Partial<AclSnapshot>) => {
   snapshot = {
     ...snapshot,
     ...next,
@@ -42,7 +42,7 @@ const getIdentity = () => {
 };
 
 const requestAcl = async (role?: string) =>
-  nocobaseClient.request<NocoBaseAclResponse>("roles:check", {
+  nocobaseClient.request<AclResponse>("roles:check", {
     unwrap: "none",
     withAclMeta: false,
     role,
@@ -68,21 +68,21 @@ const isStaleRoleError = (error: unknown) => {
   );
 };
 
-export const getNocoBaseAclSnapshot = () => snapshot;
+export const getAclSnapshot = () => snapshot;
 
-export const subscribeNocoBaseAcl = (listener: () => void) => {
+export const subscribeAcl = (listener: () => void) => {
   listeners.add(listener);
   return () => listeners.delete(listener);
 };
 
-export const useNocoBaseAclSnapshot = () =>
+export const useAclSnapshot = () =>
   useSyncExternalStore(
-    subscribeNocoBaseAcl,
-    getNocoBaseAclSnapshot,
-    getNocoBaseAclSnapshot
+    subscribeAcl,
+    getAclSnapshot,
+    getAclSnapshot
   );
 
-export const clearNocoBaseAcl = ({ keepRole = false } = {}) => {
+export const clearAcl = ({ keepRole = false } = {}) => {
   requestId += 1;
   request = undefined;
   clearRecordPermissions();
@@ -100,10 +100,10 @@ export const notifyRecordPermissionsChanged = () => {
   setSnapshot({});
 };
 
-export const loadNocoBaseAcl = async ({ force = false } = {}) => {
+export const loadAcl = async ({ force = false } = {}) => {
   const identity = getIdentity();
   if (!identity) {
-    clearNocoBaseAcl();
+    clearAcl();
     return snapshot;
   }
 
@@ -117,7 +117,7 @@ export const loadNocoBaseAcl = async ({ force = false } = {}) => {
   const requestedRole = nocobaseClient.getRole();
   const promise = (async () => {
     try {
-      let response: NocoBaseAclResponse;
+      let response: AclResponse;
       let effectiveRole = requestedRole;
       try {
         response = await requestAcl(requestedRole);
@@ -154,7 +154,7 @@ export const loadNocoBaseAcl = async ({ force = false } = {}) => {
   return promise;
 };
 
-export const switchNocoBaseRole = async (
+export const switchRole = async (
   roleName: string,
   { reloadAcl = true } = {}
 ) => {
@@ -171,11 +171,11 @@ export const switchNocoBaseRole = async (
       clearRecordPermissions();
       return snapshot;
     }
-    return await loadNocoBaseAcl({ force: true });
+    return await loadAcl({ force: true });
   } catch (error) {
     nocobaseClient.setRole(previousRole);
     if (reloadAcl) {
-      await loadNocoBaseAcl({ force: true }).catch(() => undefined);
+      await loadAcl({ force: true }).catch(() => undefined);
     }
     throw error;
   }

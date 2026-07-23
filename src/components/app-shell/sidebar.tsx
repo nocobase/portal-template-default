@@ -31,13 +31,13 @@ import { cn } from "@/lib/utils";
 import { Brand } from "@/components/app-shell/brand";
 import {
   filterMenuItemsByAcl,
-  useNocoBaseAclSnapshot,
+  useAclSnapshot,
 } from "@/lib/nocobase/acl";
 
 export function Sidebar() {
   const { open } = useShadcnSidebar();
   const { menuItems, selectedKey } = useMenu();
-  const acl = useNocoBaseAclSnapshot();
+  const acl = useAclSnapshot();
   const allowedMenuItems = React.useMemo(
     () => filterMenuItemsByAcl(menuItems, acl),
     [acl, menuItems]

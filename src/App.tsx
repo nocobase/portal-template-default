@@ -37,7 +37,7 @@ import {
 import "./App.css";
 import { authProvider } from "./providers/auth";
 import { accessControlProvider } from "./providers/access-control";
-import { NocoBaseAclBootstrap } from "./components/access-control/acl-bootstrap";
+import { AclBootstrap } from "./components/access-control/acl-bootstrap";
 import { ResourceAccessGuard } from "./components/access-control/resource-access-guard";
 import { NavigateToAccessibleResource } from "./components/access-control/navigate-to-accessible-resource";
 import { FileText, Tags } from "lucide-react";
@@ -112,13 +112,13 @@ function App() {
                     key="authenticated-inner"
                     fallback={<CatchAllNavigate to="/login" />}
                   >
-                    <NocoBaseAclBootstrap>
+                    <AclBootstrap>
                       <AppExtensionProviders>
                         <Layout>
                           <Outlet />
                         </Layout>
                       </AppExtensionProviders>
-                    </NocoBaseAclBootstrap>
+                    </AclBootstrap>
                   </Authenticated>
                 }
               >
@@ -203,9 +203,9 @@ function App() {
                     key="authenticated-outer"
                     fallback={<Outlet />}
                   >
-                    <NocoBaseAclBootstrap>
+                    <AclBootstrap>
                       <NavigateToAccessibleResource />
-                    </NocoBaseAclBootstrap>
+                    </AclBootstrap>
                   </Authenticated>
                 }
               >

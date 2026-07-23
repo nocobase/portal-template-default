@@ -4,18 +4,18 @@ import { useEffect, useRef, type PropsWithChildren } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
-  loadNocoBaseAcl,
-  useNocoBaseAclSnapshot,
+  loadAcl,
+  useAclSnapshot,
 } from "@/lib/nocobase/acl";
 
-export function NocoBaseAclBootstrap({ children }: PropsWithChildren) {
-  const snapshot = useNocoBaseAclSnapshot();
+export function AclBootstrap({ children }: PropsWithChildren) {
+  const snapshot = useAclSnapshot();
   const queryClient = useQueryClient();
   const lastReadyVersion = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (snapshot.status === "idle") {
-      void loadNocoBaseAcl().catch(() => undefined);
+      void loadAcl().catch(() => undefined);
     }
   }, [snapshot.status]);
 
@@ -46,7 +46,7 @@ export function NocoBaseAclBootstrap({ children }: PropsWithChildren) {
             className="mt-5"
             variant="outline"
             onClick={() =>
-              void loadNocoBaseAcl({ force: true }).catch(() => undefined)
+              void loadAcl({ force: true }).catch(() => undefined)
             }
           >
             <RotateCcw />

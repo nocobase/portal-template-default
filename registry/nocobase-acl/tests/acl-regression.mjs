@@ -22,7 +22,7 @@ try {
   const { RoleSwitcher } = await server.ssrLoadModule(
     "/registry/nocobase-acl/components/role-switcher.tsx"
   );
-  const { getNocoBaseRoleOptions } = await server.ssrLoadModule(
+  const { getRoleOptions } = await server.ssrLoadModule(
     "/registry/nocobase-acl/components/role-options.ts"
   );
 
@@ -227,7 +227,7 @@ try {
   assert.equal(findFirstAccessibleRoute(filteredMenu), "/public-child");
 
   assert.deepEqual(
-    getNocoBaseRoleOptions({
+    getRoleOptions({
       roles: [
         { name: "admin", title: "Administrator" },
         { name: "member", title: "Member" },

@@ -1,15 +1,15 @@
-import type { NocoBaseRole, NocoBaseRoleMode } from "@/lib/nocobase/acl";
+import type { Role, RoleMode } from "@/lib/nocobase/acl";
 
 export const UNION_ROLE = "__union__";
 export const ANONYMOUS_ROLE = "anonymous";
 
-export function getNocoBaseRoleOptions({
+export function getRoleOptions({
   roles,
   roleMode,
   allowAnonymous = false,
 }: {
-  roles: NocoBaseRole[];
-  roleMode?: NocoBaseRoleMode;
+  roles: Role[];
+  roleMode?: RoleMode;
   allowAnonymous?: boolean;
 }) {
   if (roleMode === "only-use-union") {

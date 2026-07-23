@@ -12,13 +12,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  switchNocoBaseRole,
-  useNocoBaseAclSnapshot,
-  type NocoBaseIdentity,
-  type NocoBaseRole,
+  switchRole,
+  useAclSnapshot,
+  type AclIdentity,
+  type Role,
 } from "@/lib/nocobase/acl";
 import { cn } from "@/lib/utils";
-import { getNocoBaseRoleOptions, UNION_ROLE } from "./role-options";
+import { getRoleOptions, UNION_ROLE } from "./role-options";
 
 export function RoleSwitcher({
   className,
@@ -31,14 +31,14 @@ export function RoleSwitcher({
   label?: ReactNode | false;
   showWhenUnavailable?: boolean;
 }) {
-  const { data: identity, isLoading } = useGetIdentity<NocoBaseIdentity>();
-  const acl = useNocoBaseAclSnapshot();
+  const { data: identity, isLoading } = useGetIdentity<AclIdentity>();
+  const acl = useAclSnapshot();
   const [switching, setSwitching] = useState(false);
   const [error, setError] = useState<string>();
 
   const roles = useMemo(
     () =>
-      getNocoBaseRoleOptions({
+      getRoleOptions({
         roles: identity?.roles ?? [],
         roleMode: acl.data.roleMode,
         allowAnonymous: acl.data.allowAnonymous,
@@ -76,7 +76,7 @@ export function RoleSwitcher({
           if (!value || value === currentRole) return;
           setSwitching(true);
           setError(undefined);
-          void switchNocoBaseRole(value, { reloadAcl: false })
+          void switchRole(value, { reloadAcl: false })
             .then(() => window.location.reload())
             .catch((reason) => {
               setError(
@@ -112,7 +112,7 @@ function RoleOption({
   role,
   showSeparator,
 }: {
-  role: NocoBaseRole;
+  role: Role;
   showSeparator: boolean;
 }) {
   return (
@@ -123,6 +123,6 @@ function RoleOption({
   );
 }
 
-function getRoleTitle(roles: NocoBaseRole[], roleName?: string) {
+function getRoleTitle(roles: Role[], roleName?: string) {
   return roles.find((role) => role.name === roleName)?.title || roleName || "Role";
 }

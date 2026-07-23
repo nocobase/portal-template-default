@@ -1,27 +1,27 @@
 import type { BaseKey, IResourceItem } from "@refinedev/core";
 
-export type NocoBaseRoleMode =
+export type RoleMode =
   | "default"
   | "allow-use-union"
   | "only-use-union";
 
-export type NocoBaseRole = {
+export type Role = {
   name: string;
   title?: string;
 };
 
-export type NocoBaseAclActionParams = Record<string, unknown> & {
+export type AclActionParams = Record<string, unknown> & {
   fields?: string[];
   whitelist?: string[];
   appends?: string[];
 };
 
-export type NocoBaseAclRoleData = {
+export type AclRoleData = {
   snippets?: string[];
   role?: string;
-  roleMode?: NocoBaseRoleMode;
+  roleMode?: RoleMode;
   resources?: string[];
-  actions?: Record<string, NocoBaseAclActionParams>;
+  actions?: Record<string, AclActionParams>;
   actionAlias?: Record<string, string>;
   strategy?: {
     actions?: string[];
@@ -34,25 +34,25 @@ export type NocoBaseAclRoleData = {
   uiButtonSchemasBlacklist?: string[];
 };
 
-export type NocoBaseAclMeta = {
-  dataSources?: Record<string, Partial<NocoBaseAclRoleData>>;
+export type AclMeta = {
+  dataSources?: Record<string, Partial<AclRoleData>>;
 };
 
-export type NocoBaseAclResponse = {
-  data?: NocoBaseAclRoleData;
-  meta?: NocoBaseAclMeta;
+export type AclResponse = {
+  data?: AclRoleData;
+  meta?: AclMeta;
 };
 
-export type NocoBaseAclSnapshot = {
+export type AclSnapshot = {
   status: "idle" | "loading" | "ready" | "error";
   identity?: string;
-  data: NocoBaseAclRoleData;
-  meta: NocoBaseAclMeta;
+  data: AclRoleData;
+  meta: AclMeta;
   error?: Error;
   version: number;
 };
 
-export type NocoBaseResourceAcl =
+export type ResourceAcl =
   | false
   | {
       type: "authenticated";
@@ -72,7 +72,7 @@ export type NocoBaseResourceAcl =
       routeId: string | number;
     };
 
-export type NocoBaseCanParams = {
+export type AclCanParams = {
   resource?: string;
   action: string;
   params?: {
@@ -84,12 +84,12 @@ export type NocoBaseCanParams = {
   };
 };
 
-export type NocoBaseIdentity = {
+export type AclIdentity = {
   id: number | string;
   firstName: string;
   lastName: string;
   fullName: string;
   email: string;
   avatar?: string;
-  roles: NocoBaseRole[];
+  roles: Role[];
 };

@@ -1,11 +1,11 @@
 import type { TreeMenuItem } from "@refinedev/core";
 
 import { canAccessWithSnapshot } from "./action";
-import type { NocoBaseAclSnapshot } from "./types";
+import type { AclSnapshot } from "./types";
 
 export const filterMenuItemsByAcl = (
   items: TreeMenuItem[],
-  acl: NocoBaseAclSnapshot
+  acl: AclSnapshot
 ): TreeMenuItem[] =>
   items.flatMap((item) => {
     const children = filterMenuItemsByAcl(item.children ?? [], acl);
