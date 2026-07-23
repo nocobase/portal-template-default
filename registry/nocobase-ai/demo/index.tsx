@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AIChatProvider } from "../providers";
-import { Blocks, Globe2, Paperclip } from "lucide-react";
+import { Blocks, Globe2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ContainerShowcase, type ChatContainer } from "./container-showcase";
 import { InteractionShowcase } from "./interaction-showcase";
@@ -127,11 +127,6 @@ function AIChatPageContent() {
         icon: <Blocks />,
       },
       {
-        key: "upload-file",
-        label: "Upload files",
-        icon: <Paperclip />,
-      },
-      {
         key: "web-search",
         label: "Web search",
         icon: <Globe2 />,
@@ -147,6 +142,8 @@ function AIChatPageContent() {
   const windowProps = useMemo<AIChatWindowProps>(
     () => ({
       composerActions,
+      enableAttachments: true,
+      attachmentActionIndex: 1,
       onToolCallDecision: async () => undefined,
     }),
     [composerActions]
