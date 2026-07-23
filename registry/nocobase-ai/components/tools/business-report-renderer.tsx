@@ -1,5 +1,4 @@
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { FileText, LoaderCircle } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
@@ -14,6 +13,33 @@ import {
   updateBusinessReportDialog,
 } from "./business-report-dialog";
 import { asRecord, asString } from "./tool-renderer-utils";
+
+function ReportGeneratingProgress() {
+  return (
+    <div
+      role="progressbar"
+      aria-label="Generating business report"
+      className="mt-3 h-1 w-full overflow-hidden rounded-full bg-muted"
+    >
+      <svg
+        viewBox="0 0 100 4"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+        className="block size-full motion-reduce:hidden"
+      >
+        <rect x="-28" y="0" width="28" height="4" rx="2" className="fill-primary">
+          <animate
+            attributeName="x"
+            values="-28;100"
+            dur="1.35s"
+            repeatCount="indefinite"
+          />
+        </rect>
+      </svg>
+      <div className="hidden h-full w-2/3 rounded-full bg-primary motion-reduce:block" />
+    </div>
+  );
+}
 
 export function BusinessReportRenderer({ part }: AIToolRendererProps) {
   const input = asRecord(part.input);
@@ -88,7 +114,7 @@ export function BusinessReportRenderer({ part }: AIToolRendererProps) {
             <Badge variant="outline">{charts.length} charts</Badge>
             <Badge variant="outline">Preview and export</Badge>
           </div>
-          {generating ? <Progress className="mt-3" value={62} /> : null}
+          {generating ? <ReportGeneratingProgress /> : null}
         </div>
       </div>
     </button>

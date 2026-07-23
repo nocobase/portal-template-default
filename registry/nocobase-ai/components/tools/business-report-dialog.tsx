@@ -209,7 +209,9 @@ export function BusinessReportDialogHost() {
               {previewParts.map((item, index) =>
                 item.type === "markdown" ? (
                   <div key={index} className="ai-markdown">
-                    <MarkdownMessage>{item.content}</MarkdownMessage>
+                    <MarkdownMessage variant="document">
+                      {item.content}
+                    </MarkdownMessage>
                   </div>
                 ) : (
                   <div key={index} className="rounded-lg border p-3">
