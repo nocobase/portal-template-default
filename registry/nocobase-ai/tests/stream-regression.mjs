@@ -39,6 +39,21 @@ try {
   const { SubAgentStreamAccumulator } = await server.ssrLoadModule(
     "/registry/nocobase-ai/providers/sub-agent-stream.ts"
   );
+  const { NocoBaseClient } = await server.ssrLoadModule(
+    "/src/lib/nocobase/client.ts"
+  );
+
+  {
+    const client = new NocoBaseClient("http://localhost:13001/api");
+    assert.equal(
+      client.resolveUrl("/files/main/main/aiFiles/5.png?preview=1"),
+      "http://localhost:13001/files/main/main/aiFiles/5.png?preview=1"
+    );
+    assert.equal(
+      client.resolveUrl("https://cdn.example.com/file.png"),
+      "https://cdn.example.com/file.png"
+    );
+  }
 
   {
     const flushed = [];

@@ -29,7 +29,11 @@ const parseToolInput = (value: unknown) => {
   }
 };
 
-const toAttachment = (value: unknown, index: number) => {
+const toAttachment = (
+  value: unknown,
+  index: number,
+  resolveUrl: (value: string) => string
+) => {
   if (!isRecord(value)) return undefined;
   const filename = value.filename ?? value.name ?? value.title;
   if (typeof filename !== "string") return undefined;
@@ -45,12 +49,17 @@ const toAttachment = (value: unknown, index: number) => {
         : typeof value.type === "string"
         ? value.type
         : undefined,
-    url: typeof value.url === "string" ? value.url : undefined,
-    preview: typeof value.preview === "string" ? value.preview : undefined,
+    url: typeof value.url === "string" ? resolveUrl(value.url) : undefined,
+    preview:
+      typeof value.preview === "string" ? resolveUrl(value.preview) : undefined,
   };
 };
 
-const toHistoryMessage = (value: unknown, index: number): AIChatMessage => {
+const toHistoryMessage = (
+  value: unknown,
+  index: number,
+  resolveUrl: (value: string) => string
+): AIChatMessage => {
   const message = isRecord(value) ? value : {};
   const content = isRecord(message.content) ? message.content : {};
   const rawServerMessageId = content.messageId ?? message.messageId;
@@ -69,7 +78,9 @@ const toHistoryMessage = (value: unknown, index: number): AIChatMessage => {
       : "";
   const attachments = Array.isArray(content.attachments)
     ? content.attachments
-        .map(toAttachment)
+        .map((attachment, attachmentIndex) =>
+          toAttachment(attachment, attachmentIndex, resolveUrl)
+        )
         .filter((attachment) => attachment !== undefined)
     : [];
   const parts: AIChatMessage["parts"] = [];
@@ -133,7 +144,7 @@ const toHistoryMessage = (value: unknown, index: number): AIChatMessage => {
       ? rawConversation.messages
       : [];
     const messages = rawMessages.map((item, messageIndex) =>
-      toHistoryMessage(item, messageIndex)
+      toHistoryMessage(item, messageIndex, resolveUrl)
     );
     const username =
       typeof rawConversation.username === "string"
@@ -312,7 +323,9 @@ export class NocoBaseAIService implements AIService {
         if (!isRecord(value)) return true;
         return value.role !== "tool" && value.role !== "system";
       })
-      .map(toHistoryMessage);
+      .map((value, index) =>
+        toHistoryMessage(value, index, (url) => this.client.resolveUrl(url))
+      );
   }
 
   async getConversationActiveState(sessionId: string) {
@@ -342,14 +355,27 @@ export class NocoBaseAIService implements AIService {
     });
   }
 
-  uploadFile(file: File, signal?: AbortSignal) {
+  async uploadFile(file: File, signal?: AbortSignal) {
     const formData = new FormData();
     formData.append("file", file);
-    return this.client.action<Record<string, unknown>>("aiFiles", "create", {
-      body: formData,
-      signal,
-      unwrap: "deep-data",
-    });
+    const response = await this.client.action<Record<string, unknown>>(
+      "aiFiles",
+      "create",
+      {
+        body: formData,
+        signal,
+        unwrap: "deep-data",
+      }
+    );
+    return {
+      ...response,
+      ...(typeof response.url === "string"
+        ? { url: this.client.resolveUrl(response.url) }
+        : {}),
+      ...(typeof response.preview === "string"
+        ? { preview: this.client.resolveUrl(response.preview) }
+        : {}),
+    };
   }
 
   async createConversation(options: CreateAIConversationOptions) {

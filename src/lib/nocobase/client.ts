@@ -1,4 +1,5 @@
 import {
+  API_ORIGIN,
   API_URL,
   NOCOBASE_AUTHENTICATOR,
   NOCOBASE_TOKEN_KEY,
@@ -47,10 +48,30 @@ const unwrapPayload = (payload: unknown, mode: RequestOptions["unwrap"]) => {
 };
 
 export class NocoBaseClient {
-  constructor(private readonly apiUrl = API_URL) {}
+  private readonly apiOrigin?: string;
+
+  constructor(
+    private readonly apiUrl = API_URL,
+    apiOrigin = getUrlOrigin(apiUrl) ?? API_ORIGIN
+  ) {
+    this.apiOrigin = apiOrigin;
+  }
 
   getApiUrl() {
     return this.apiUrl;
+  }
+
+  resolveUrl(value: string) {
+    if (!value || /^[a-z][a-z\d+.-]*:/i.test(value)) return value;
+    const base =
+      this.apiOrigin ??
+      (typeof window === "undefined" ? undefined : window.location.origin);
+    if (!base) return value;
+    try {
+      return new URL(value, `${base.replace(/\/$/, "")}/`).toString();
+    } catch {
+      return value;
+    }
   }
 
   getToken() {
@@ -191,5 +212,14 @@ export class NocoBaseClient {
     if (token) this.setToken(token);
   }
 }
+
+const getUrlOrigin = (value: string) => {
+  if (!/^https?:\/\//i.test(value)) return undefined;
+  try {
+    return new URL(value).origin;
+  } catch {
+    return undefined;
+  }
+};
 
 export const nocobaseClient = new NocoBaseClient();
