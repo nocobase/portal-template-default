@@ -26,6 +26,11 @@ export {
   type AIPageElementPickerOptions,
 } from "./page-elements/page-element-provider";
 export {
+  applyReactHookFormValues,
+  useAIForm,
+  type AIFormDescriptor,
+} from "./page-elements/ai-form";
+export {
   AIToolRendererProvider,
   useAIToolRenderer,
   type AIToolRenderer,

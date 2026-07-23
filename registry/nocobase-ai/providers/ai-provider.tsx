@@ -10,6 +10,16 @@ import {
 import { nocobaseAIService, type AIService } from "../services";
 import { NocoBaseChatTransport } from "./chat-transport";
 import { useAIChatController, type AIChatController } from "./chat-controller";
+import {
+  AIFormRegistryProvider,
+  createFormFillerInvoker,
+  useAIFormRegistry,
+} from "./form-registry";
+import {
+  AIFrontendToolRegistryProvider,
+  createFrontendToolInvokers,
+  useAIFrontendToolRegistry,
+} from "./frontend-tool-registry";
 import { MockChatTransport } from "./testing/mock-chat";
 import type {
   AIConfigurationStatus,
@@ -56,7 +66,28 @@ type AIProviderValue = {
 
 const AIContext = createContext<AIProviderValue | null>(null);
 
-export function AIProvider({
+type AIProviderProps = PropsWithChildren<{
+  mode?: AIProviderMode;
+  defaultMode?: AIProviderMode;
+  onModeChange?: (mode: AIProviderMode) => void;
+  employees?: AIEmployee[];
+  models?: AIModel[];
+  service?: AIService;
+  toolInvokers?: AIToolInvokerMap;
+  globalController?: AIChatController;
+}>;
+
+export function AIProvider(props: AIProviderProps) {
+  return (
+    <AIFormRegistryProvider>
+      <AIFrontendToolRegistryProvider>
+        <AIProviderRuntime {...props} />
+      </AIFrontendToolRegistryProvider>
+    </AIFormRegistryProvider>
+  );
+}
+
+function AIProviderRuntime({
   children,
   mode: controlledMode,
   defaultMode = import.meta.env.NOCOBASE_AI_MODE === "mock"
@@ -68,16 +99,17 @@ export function AIProvider({
   service = nocobaseAIService,
   toolInvokers,
   globalController: providedGlobalController,
-}: PropsWithChildren<{
-  mode?: AIProviderMode;
-  defaultMode?: AIProviderMode;
-  onModeChange?: (mode: AIProviderMode) => void;
-  employees?: AIEmployee[];
-  models?: AIModel[];
-  service?: AIService;
-  toolInvokers?: AIToolInvokerMap;
-  globalController?: AIChatController;
-}>) {
+}: AIProviderProps) {
+  const formRegistry = useAIFormRegistry();
+  const frontendToolRegistry = useAIFrontendToolRegistry();
+  const resolvedToolInvokers = useMemo<AIToolInvokerMap>(
+    () => ({
+      ...toolInvokers,
+      ...createFrontendToolInvokers(frontendToolRegistry),
+      formFiller: createFormFillerInvoker(formRegistry),
+    }),
+    [formRegistry, frontendToolRegistry, toolInvokers]
+  );
   const [internalMode, setInternalMode] = useState(defaultMode);
   const mode = controlledMode ?? internalMode;
   const [liveConfiguration, setLiveConfiguration] = useState<{
@@ -203,11 +235,11 @@ export function AIProvider({
       input: unknown,
       context: AIToolCallInvocationContext
     ) => {
-      const invoke = toolInvokers?.[toolName];
+      const invoke = resolvedToolInvokers[toolName];
       if (!invoke) return { handled: false };
       return { handled: true, result: await invoke(input, context) };
     },
-    [toolInvokers]
+    [resolvedToolInvokers]
   );
 
   const value = useMemo<AIProviderValue>(

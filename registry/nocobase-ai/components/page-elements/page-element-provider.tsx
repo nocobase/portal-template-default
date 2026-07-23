@@ -16,6 +16,9 @@ import {
 import { createPortal } from "react-dom";
 import {
   AIPageContextResolverProvider,
+  useAIFrontendToolRegistry,
+  type AIFrontendToolManifest,
+  type AIFrontendToolRegistration,
   type AIWorkContextItem,
 } from "../../providers";
 
@@ -26,6 +29,11 @@ export type AIPageElementDescriptor = {
   title: string;
   kind?: string;
   getContext: () => unknown | Promise<unknown>;
+  tools?: AIFrontendToolRegistration[];
+};
+
+type AIPageElementRuntimeDescriptor = AIPageElementDescriptor & {
+  frontendTools?: AIFrontendToolManifest[];
 };
 
 export type AIPageElementPickerOptions = {
@@ -36,7 +44,7 @@ export type AIPageElementPickerOptions = {
 
 type RegisteredPageElement = {
   element: HTMLElement;
-  getDescriptor: () => AIPageElementDescriptor;
+  getDescriptor: () => AIPageElementRuntimeDescriptor;
 };
 
 type PickerRequest = AIPageElementPickerOptions & {
@@ -51,7 +59,7 @@ type AIPageElementContextValue = {
   register: (
     runtimeId: string,
     element: HTMLElement,
-    getDescriptor: () => AIPageElementDescriptor
+    getDescriptor: () => AIPageElementRuntimeDescriptor
   ) => () => void;
   startPicking: (options: AIPageElementPickerOptions) => void;
   cancelPicking: () => void;
@@ -145,12 +153,15 @@ export function AIPageElementProvider({ children }: PropsWithChildren) {
         if (!registeredEntry) return item;
         const [runtimeId, entry] = registeredEntry;
         const descriptor = entry.getDescriptor();
+        const contextId = item.id ?? descriptor.id ?? runtimeId;
+        const frontendTools = descriptor.frontendTools ?? [];
         return {
           ...item,
-          id: item.id ?? descriptor.id ?? runtimeId,
+          id: contextId,
           title: item.title ?? descriptor.title,
           kind: item.kind ?? descriptor.kind,
           content: await descriptor.getContext(),
+          ...(frontendTools.length ? { uid: contextId, frontendTools } : {}),
         } satisfies AIWorkContextItem;
       })
     );
@@ -197,12 +208,15 @@ export function AIPageElementProvider({ children }: PropsWithChildren) {
       try {
         const content = await descriptor.getContext();
         if (requestRef.current?.token !== currentRequest.token) return;
+        const contextId = descriptor.id ?? match.runtimeId;
+        const frontendTools = descriptor.frontendTools ?? [];
         currentRequest.onSelect({
           type: "page-element",
-          id: descriptor.id ?? match.runtimeId,
+          id: contextId,
           title: descriptor.title,
           kind: descriptor.kind,
           content,
+          ...(frontendTools.length ? { uid: contextId, frontendTools } : {}),
         });
         requestRef.current = undefined;
         setRequest(undefined);
@@ -330,17 +344,34 @@ export function useAIPageElement(
   descriptor: AIPageElementDescriptor
 ): RefCallback<HTMLElement> {
   const { register } = useAIPageElementPicker();
+  const frontendTools = useAIFrontendToolRegistry();
   const reactId = useId();
   const descriptorRef = useRef(descriptor);
   descriptorRef.current = descriptor;
   const runtimeIdRef = useRef(`page-element-${reactId.replace(/:/g, "")}`);
+  const toolManifestsRef = useRef<AIFrontendToolManifest[]>([]);
   const unregisterRef = useRef<() => void>(() => undefined);
+
+  useEffect(() => {
+    const contextId = descriptor.id ?? runtimeIdRef.current;
+    const unregisterTools = (descriptor.tools ?? []).map((tool) =>
+      frontendTools.register(contextId, tool)
+    );
+    toolManifestsRef.current = frontendTools.list(contextId);
+    return () => {
+      unregisterTools.forEach((unregister) => unregister());
+      toolManifestsRef.current = [];
+    };
+  }, [descriptor.id, descriptor.tools, frontendTools]);
 
   return useCallback(
     (element) => {
       unregisterRef.current();
       unregisterRef.current = element
-        ? register(runtimeIdRef.current, element, () => descriptorRef.current)
+        ? register(runtimeIdRef.current, element, () => ({
+            ...descriptorRef.current,
+            frontendTools: toolManifestsRef.current,
+          }))
         : () => undefined;
     },
     [register]

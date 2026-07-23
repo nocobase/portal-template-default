@@ -12,6 +12,23 @@ export { getAIEmployeeAvatar } from "./avatars";
 export { findAIModel, getAIModelKey, groupAIModels } from "./model";
 export type { AIModelGroup } from "./model";
 export {
+  AIFormRegistry,
+  AIFormRegistryProvider,
+  createFormFillerInvoker,
+  useAIFormRegistry,
+  type AIFormField,
+  type AIFormTarget,
+} from "./form-registry";
+export {
+  AIFrontendToolRegistry,
+  AIFrontendToolRegistryProvider,
+  createFrontendToolInvokers,
+  useAIFrontendToolRegistry,
+  type AIFrontendToolManifest,
+  type AIFrontendToolPermission,
+  type AIFrontendToolRegistration,
+} from "./frontend-tool-registry";
+export {
   AIPageContextResolverProvider,
   AIPageContextScope,
   useAIPageContextScope,
