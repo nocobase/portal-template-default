@@ -81,8 +81,10 @@ const items = sourceConfig.items.map((item) => {
     root: source.root,
     target: source.target,
     include: new Set(),
+    install: source.install !== false,
   };
   source.include.forEach((entry) => mapping.include.add(entry));
+  mapping.install = mapping.install || source.install !== false;
   sourceMappings.set(mappingKey, mapping);
 
   const allFiles = sourceFiles.get(source.root) ?? walkFiles(sourceRoot);
@@ -156,6 +158,7 @@ if (action === "build") {
   }
 } else {
   for (const source of sourceMappings.values()) {
+    if (action === "install-missing" && !source.install) continue;
     copySource(source, action === "preview");
   }
 }

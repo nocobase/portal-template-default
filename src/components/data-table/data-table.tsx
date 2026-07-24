@@ -1,8 +1,7 @@
 "use client";
 
-import type { HttpError, BaseRecord } from "@refinedev/core";
+import { useTranslate, type HttpError, type BaseRecord } from "@refinedev/core";
 import type { UseTableReturnType } from "@refinedev/react-table";
-import type { Column } from "@tanstack/react-table";
 import { flexRender } from "@tanstack/react-table";
 import { Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -16,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
+import { getCommonStyles } from "@/components/data-table/data-table-styles";
 import { cn } from "@/lib/utils";
 
 type DataTableProps<TData extends BaseRecord> = {
@@ -25,6 +25,7 @@ type DataTableProps<TData extends BaseRecord> = {
 export function DataTable<TData extends BaseRecord>({
   table,
 }: DataTableProps<TData>) {
+  const translate = useTranslate();
   const {
     reactTable: { getHeaderGroups, getRowModel, getAllColumns },
     refineCore: {
@@ -198,6 +199,11 @@ export function DataTable<TData extends BaseRecord>({
               <DataTableNoData
                 isOverflowing={isOverflowing}
                 columnsLength={columns.length}
+                title={translate("table.empty.title", "No data to display")}
+                description={translate(
+                  "table.empty.description",
+                  "This table is empty for the time being."
+                )}
               />
             )}
           </TableBody>
@@ -220,9 +226,13 @@ export function DataTable<TData extends BaseRecord>({
 function DataTableNoData({
   isOverflowing,
   columnsLength,
+  title,
+  description,
 }: {
   isOverflowing: { horizontal: boolean; vertical: boolean };
   columnsLength: number;
+  title: string;
+  description: string;
 }) {
   return (
     <TableRow className="hover:bg-transparent">
@@ -252,70 +262,15 @@ function DataTableNoData({
           }}
         >
           <div className={cn("text-lg", "font-semibold", "text-foreground")}>
-            No data to display
+            {title}
           </div>
           <div className={cn("text-sm", "text-muted-foreground")}>
-            This table is empty for the time being.
+            {description}
           </div>
         </div>
       </TableCell>
     </TableRow>
   );
-}
-
-export function getCommonStyles<TData>({
-  column,
-  isOverflowing,
-}: {
-  column: Column<TData>;
-  isOverflowing: {
-    horizontal: boolean;
-    vertical: boolean;
-  };
-}): React.CSSProperties {
-  const isPinned = column.getIsPinned();
-  const isLastLeftPinnedColumn =
-    isPinned === "left" && column.getIsLastColumn("left");
-  const isFirstRightPinnedColumn =
-    isPinned === "right" && column.getIsFirstColumn("right");
-
-  return {
-    boxShadow:
-      isOverflowing.horizontal && isLastLeftPinnedColumn
-        ? "-4px 0 4px -4px var(--border) inset"
-        : isOverflowing.horizontal && isFirstRightPinnedColumn
-        ? "4px 0 4px -4px var(--border) inset"
-        : undefined,
-    left:
-      isOverflowing.horizontal && isPinned === "left"
-        ? `${column.getStart("left")}px`
-        : undefined,
-    right:
-      isOverflowing.horizontal && isPinned === "right"
-        ? `${column.getAfter("right")}px`
-        : undefined,
-    opacity: 1,
-    position: isOverflowing.horizontal && isPinned ? "sticky" : "relative",
-    background: isOverflowing.horizontal && isPinned ? "var(--background)" : "",
-    borderTopRightRadius:
-      isOverflowing.horizontal && isPinned === "right"
-        ? "var(--radius)"
-        : undefined,
-    borderBottomRightRadius:
-      isOverflowing.horizontal && isPinned === "right"
-        ? "var(--radius)"
-        : undefined,
-    borderTopLeftRadius:
-      isOverflowing.horizontal && isPinned === "left"
-        ? "var(--radius)"
-        : undefined,
-    borderBottomLeftRadius:
-      isOverflowing.horizontal && isPinned === "left"
-        ? "var(--radius)"
-        : undefined,
-    width: column.getSize(),
-    zIndex: isOverflowing.horizontal && isPinned ? 1 : 0,
-  };
 }
 
 DataTable.displayName = "DataTable";

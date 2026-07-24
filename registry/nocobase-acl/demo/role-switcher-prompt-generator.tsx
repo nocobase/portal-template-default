@@ -2,7 +2,13 @@ import { Check, Copy } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -52,7 +58,7 @@ export function RoleSwitcherPromptGenerator() {
   const [copyError, setCopyError] = useState(false);
 
   const prompt = useMemo(
-    () => `Integrate the RoleSwitcher into the existing NocoBase Refine Starter.
+    () => `Integrate the RoleSwitcher into the existing NocoBase Admin Starter.
 
 Target placement
 - Placement: ${placementLabels[placement]}
@@ -71,7 +77,7 @@ Component presentation
 Integration requirements
 - Import and reuse RoleSwitcher from the installed local entry point at @/extensions/nocobase-acl.
 - Update the existing application surface instead of creating an isolated example page.
-- Do not fetch, hard-code, or pass a duplicate role list. The component reads roles from the current Refine identity.
+- Do not fetch, hard-code, or pass a duplicate role list. The component reads roles from the signed-in identity.
 - Do not reimplement Full permissions, Anonymous, or role-mode logic. The component derives these options from the Starter ACL store.
 - Do not add a separate role-switch mutation. The component already calls users:setDefaultRole and reloads the application after a successful switch.
 - Preserve existing account, responsive navigation, and sign-out behavior.
@@ -83,14 +89,20 @@ Integration requirements
     <div className="grid items-start gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
       <Card className="gap-0 py-0">
         <CardHeader className="border-b py-4">
-          <CardTitle>Placement settings</CardTitle>
+          <CardTitle className="text-base">Placement settings</CardTitle>
+          <CardDescription>
+            Choose where the shared role switcher belongs and how its compact
+            state should appear.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5 py-5">
           <div className="space-y-2">
             <Label>Placement</Label>
             <Select
               value={placement}
-              onValueChange={(value) => value && setPlacement(value as Placement)}
+              onValueChange={(value) =>
+                value && setPlacement(value as Placement)
+              }
             >
               <SelectTrigger className="w-full">
                 <SelectValue>{placementLabels[placement]}</SelectValue>
@@ -144,8 +156,15 @@ Integration requirements
       </Card>
 
       <Card className="gap-0 overflow-hidden py-0">
-        <CardHeader className="flex-row items-center justify-between gap-3 border-b py-3">
-          <CardTitle className="text-sm">Generated integration prompt</CardTitle>
+        <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+          <div>
+            <div className="text-sm font-medium">
+              Generated integration prompt
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Updates as you change placement and presentation settings.
+            </div>
+          </div>
           <Button
             size="sm"
             onClick={async () => {
@@ -162,14 +181,14 @@ Integration requirements
             {copied ? <Check /> : <Copy />}
             {copied ? "Copied" : "Copy prompt"}
           </Button>
-        </CardHeader>
+        </div>
         {copyError ? (
           <p className="border-b px-4 py-2 text-xs text-destructive">
             Clipboard access failed. Select the prompt and copy it manually.
           </p>
         ) : null}
         <CardContent className="p-0">
-          <pre className="max-h-[560px] overflow-auto whitespace-pre-wrap p-5 font-mono text-xs leading-5 text-muted-foreground">
+          <pre className="max-h-[560px] overflow-auto whitespace-pre-wrap bg-muted/25 p-5 font-mono text-xs leading-5 text-muted-foreground">
             {prompt}
           </pre>
         </CardContent>

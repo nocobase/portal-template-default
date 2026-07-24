@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/app-shell/loading-state";
 import {
   Dialog,
   DialogContent,
@@ -170,10 +171,7 @@ export function ConversationList({
       </form>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
         {conversationsLoading ? (
-          <div className="flex items-center justify-center gap-2 px-3 py-8 text-sm text-muted-foreground">
-            <LoaderCircle className="size-4 animate-spin" /> Loading
-            conversations…
-          </div>
+          <LoadingState className="py-8" />
         ) : conversations.length ? (
           <div className="space-y-1">
             {conversations.map((conversation) => {

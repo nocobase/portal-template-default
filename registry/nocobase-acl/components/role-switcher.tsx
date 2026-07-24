@@ -18,7 +18,7 @@ import {
   type Role,
 } from "@/lib/nocobase/acl";
 import { cn } from "@/lib/utils";
-import { getRoleOptions, UNION_ROLE } from "./role-options";
+import { getRoleOptions, resolveRoleTitle, UNION_ROLE } from "./role-options";
 
 export type RoleSwitcherProps = {
   className?: string;
@@ -82,7 +82,9 @@ export function RoleSwitcher({
             .then(() => window.location.reload())
             .catch((reason) => {
               setError(
-                reason instanceof Error ? reason.message : "Unable to switch role"
+                reason instanceof Error
+                  ? reason.message
+                  : "Unable to switch role"
               );
               setSwitching(false);
             });
@@ -120,11 +122,14 @@ function RoleOption({
   return (
     <>
       {showSeparator ? <SelectSeparator /> : null}
-      <SelectItem value={role.name}>{role.title || role.name}</SelectItem>
+      <SelectItem value={role.name}>{resolveRoleTitle(role)}</SelectItem>
     </>
   );
 }
 
 function getRoleTitle(roles: Role[], roleName?: string) {
-  return roles.find((role) => role.name === roleName)?.title || roleName || "Role";
+  return resolveRoleTitle(
+    roles.find((role) => role.name === roleName) ??
+      (roleName ? { name: roleName } : undefined)
+  );
 }

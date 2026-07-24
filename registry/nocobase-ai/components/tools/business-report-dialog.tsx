@@ -1,4 +1,5 @@
 import { MarkdownMessage } from "../chat/markdown-message";
+import { LoadingState } from "@/components/app-shell/loading-state";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -58,7 +59,11 @@ const sameReport = (
   sameCharts(left.charts, right.charts);
 
 type BusinessReportDialogController = {
-  open: (toolCallId: string, report: BusinessReportData, ready: boolean) => void;
+  open: (
+    toolCallId: string,
+    report: BusinessReportData,
+    ready: boolean
+  ) => void;
   update: (
     toolCallId: string,
     report: BusinessReportData,
@@ -79,9 +84,7 @@ export function useBusinessReportDialog() {
   return value;
 }
 
-export function BusinessReportDialogProvider({
-  children,
-}: PropsWithChildren) {
+export function BusinessReportDialogProvider({ children }: PropsWithChildren) {
   const [state, setState] = useState(closedSnapshot);
   const open = useCallback(
     (toolCallId: string, report: BusinessReportData, ready: boolean) =>
@@ -107,9 +110,7 @@ export function BusinessReportDialogProvider({
         state={state}
         onOpenChange={(nextOpen) =>
           setState((current) =>
-            current.open === nextOpen
-              ? current
-              : { ...current, open: nextOpen }
+            current.open === nextOpen ? current : { ...current, open: nextOpen }
           )
         }
       />
@@ -119,13 +120,7 @@ export function BusinessReportDialogProvider({
 
 function ChartPreview({ options }: { options: Record<string, unknown> }) {
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-[280px] items-center justify-center text-xs text-muted-foreground">
-          <LoaderCircle className="mr-2 size-4 animate-spin" /> Loading chart…
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingState className="h-[280px]" />}>
       <EChartsPreview options={options} />
     </Suspense>
   );
@@ -150,7 +145,10 @@ function BusinessReportDialogHost({
     [report, state.ready]
   );
   const reportMarkdown = useMemo(
-    () => (state.open && state.ready && report ? buildBusinessReportMarkdown(report) : ""),
+    () =>
+      state.open && state.ready && report
+        ? buildBusinessReportMarkdown(report)
+        : "",
     [report, state.open, state.ready]
   );
   const previewParts = useMemo(
@@ -270,12 +268,11 @@ function BusinessReportDialogHost({
                 srcDoc={htmlPreview}
                 className="size-full min-h-[480px] border-0 bg-white"
               />
+            ) : htmlLoading ? (
+              <LoadingState className="h-full min-h-[480px]" />
             ) : (
               <div className="flex h-full min-h-[480px] items-center justify-center gap-2 text-sm text-muted-foreground">
-                {htmlLoading ? (
-                  <LoaderCircle className="size-4 animate-spin" />
-                ) : null}
-                {htmlLoading ? "Preparing HTML preview…" : "HTML is unavailable"}
+                HTML is unavailable
               </div>
             )}
           </TabsContent>

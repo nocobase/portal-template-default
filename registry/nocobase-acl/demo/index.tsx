@@ -70,7 +70,7 @@ export function AclPatternsPage() {
         prompt={{
           title: "Resource navigation",
           description:
-            "Generate Refine resources, sidebar behavior, and guarded routes backed by NocoBase collections.",
+            "Generate application resources, sidebar behavior, and guarded routes backed by NocoBase collections.",
           defaultScene: "User and role administration",
           defaultTarget:
             "Allow the Users resource but remove Roles from navigation and block its direct URL.",
@@ -98,7 +98,8 @@ export function AclPatternsPage() {
           description:
             "Generate a complete page whose availability depends on NocoBase permissions.",
           defaultScene: "User directory and account administration page",
-          defaultTarget: "Require users:list before rendering the complete page.",
+          defaultTarget:
+            "Require users:list before rendering the complete page.",
           requirements: `- Wrap the complete business page with AclPage.
 - Use anyOf when one accessible collection is enough, or allOf when every permission is required.
 - Provide a useful page-level fallback instead of rendering an empty screen.
@@ -151,7 +152,7 @@ export function AclPatternsPage() {
           defaultTarget:
             "Allow all actions for one user record and show a view-only row when update and delete are denied.",
           requirements: `- Use the Starter dataProvider so X-With-ACL-Meta captures NocoBase allowedActions from list, get, and getMany responses.
-- Use Refine Create, Show, Edit, and Delete buttons; do not manually compare user IDs or role names.
+- Use the built-in Create, Show, Edit, and Delete buttons; do not manually compare user IDs or role names.
 - Collection-level denial hides the action everywhere.
 - Record-level allowedActions must hide or disable only the affected row action.
 - Keep 403 responses authenticated and let NocoBase perform the final action validation.`,
@@ -177,7 +178,7 @@ export function AclPatternsPage() {
           defaultTarget:
             "Allow nickname editing, make email read-only, and hide phone when those fields are denied.",
           requirements: `- Wrap each protected field or field group with AclField.
-- Pass the collection resource, Refine action, and exact field name.
+- Pass the collection resource, application action, and exact field name.
 - Choose whether a denied field is hidden, replaced by read-only output, or shown with a custom fallback.
 - Do not infer field access from the overall edit permission.
 - Submit only values the current UI is allowed to edit; NocoBase still performs final field validation.`,
@@ -231,9 +232,13 @@ function NavigationPreview({ showUsers }: { showUsers: boolean }) {
   return (
     <div className="grid min-h-48 grid-cols-[150px_minmax(0,1fr)] overflow-hidden rounded-xl border bg-background">
       <aside className="border-r bg-muted/35 p-3">
-        <div className="mb-3 text-xs font-semibold text-muted-foreground">Workspace</div>
+        <div className="mb-3 text-xs font-semibold text-muted-foreground">
+          Workspace
+        </div>
         <NavItem icon={<LayoutPanelTop />} label="Dashboard" />
-        {showUsers ? <NavItem icon={<UsersRound />} label="Users" active /> : null}
+        {showUsers ? (
+          <NavItem icon={<UsersRound />} label="Users" active />
+        ) : null}
         <NavItem icon={<UserRoundCog />} label="Roles" />
       </aside>
       <div className="flex items-center justify-center p-5 text-center">
@@ -241,7 +246,9 @@ function NavigationPreview({ showUsers }: { showUsers: boolean }) {
           <div>
             <UsersRound className="mx-auto size-7 text-primary" />
             <div className="mt-2 font-medium">Users</div>
-            <div className="mt-1 text-xs text-muted-foreground">Route is available</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Route is available
+            </div>
           </div>
         ) : (
           <div>
@@ -372,15 +379,27 @@ function ActionsPreview({ allowed }: { allowed: boolean }) {
                 <td className="py-3 text-muted-foreground">{user.role}</td>
                 <td className="py-3">
                   <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="icon-sm" aria-label="View user">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="View user"
+                    >
                       <Eye />
                     </Button>
                     {allowed ? (
                       <>
-                        <Button variant="ghost" size="icon-sm" aria-label="Edit user">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Edit user"
+                        >
                           <Pencil />
                         </Button>
-                        <Button variant="ghost" size="icon-sm" aria-label="Delete user">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Delete user"
+                        >
                           <Trash2 />
                         </Button>
                       </>
@@ -412,7 +431,9 @@ function ProfileFormPreview({ restricted }: { restricted: boolean }) {
           {restricted ? (
             <div className="rounded-md border bg-muted/45 px-3 py-2 text-sm text-muted-foreground">
               {user.email}
-              <Badge className="ml-2" variant="outline">Read only</Badge>
+              <Badge className="ml-2" variant="outline">
+                Read only
+              </Badge>
             </div>
           ) : (
             <Input defaultValue={user.email} />
@@ -429,7 +450,13 @@ function ProfileFormPreview({ restricted }: { restricted: boolean }) {
   );
 }
 
-function DemoField({ label, children }: { label: string; children: React.ReactNode }) {
+function DemoField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block space-y-2">
       <span className="text-xs font-medium">{label}</span>
@@ -453,7 +480,9 @@ function CompactUsersTable({ limit = 3 }: { limit?: number }) {
             <tr key={user.id} className="border-b last:border-0">
               <td className="py-3">
                 <div className="font-medium">{user.name}</div>
-                <div className="text-xs text-muted-foreground">{user.username}</div>
+                <div className="text-xs text-muted-foreground">
+                  {user.username}
+                </div>
               </td>
               <td className="py-3 text-muted-foreground">{user.email}</td>
             </tr>
@@ -468,7 +497,9 @@ function RoleRow({ title, name }: { title: string; name: string }) {
   return (
     <div className="rounded-lg border px-3 py-2">
       <div className="text-sm font-medium">{title}</div>
-      <div className="mt-0.5 font-mono text-xs text-muted-foreground">{name}</div>
+      <div className="mt-0.5 font-mono text-xs text-muted-foreground">
+        {name}
+      </div>
     </div>
   );
 }

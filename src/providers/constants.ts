@@ -36,5 +36,6 @@ export const API_URL = toProxyRelativeUrl(rawApiUrl, proxyTarget);
 export const API_ORIGIN = getDefaultProxyTarget(rawApiUrl);
 export const NOCOBASE_TOKEN_KEY = "nocobase-auth-token";
 export const NOCOBASE_ROLE_KEY = "nocobase-auth-role";
+export const NOCOBASE_LOCALE_KEY = "nocobase-locale";
 export const NOCOBASE_AUTHENTICATOR =
   import.meta.env.NOCOBASE_AUTHENTICATOR ?? "basic";

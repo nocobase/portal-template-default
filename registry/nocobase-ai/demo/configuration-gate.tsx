@@ -1,7 +1,8 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { LoadingState } from "@/components/app-shell/loading-state";
 import { useAI } from "../providers";
-import { CircleAlert, LoaderCircle } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 
 export function AIConfigurationGate({ children }: { children: ReactNode }) {
@@ -16,6 +17,8 @@ export function AIConfigurationGate({ children }: { children: ReactNode }) {
 
   const loading = configurationStatus === "loading";
   const error = configurationError ?? modelConfigurationError;
+
+  if (loading) return <LoadingState className="min-h-80" />;
 
   return (
     <div className="space-y-6 pb-12">
@@ -33,18 +36,12 @@ export function AIConfigurationGate({ children }: { children: ReactNode }) {
         </p>
       </section>
 
-      <Alert variant={loading ? "default" : "destructive"}>
-        {loading ? <LoaderCircle className="animate-spin" /> : <CircleAlert />}
-        <AlertTitle>
-          {loading
-            ? "Loading NocoBase AI configuration"
-            : "NocoBase AI is not available"}
-        </AlertTitle>
+      <Alert variant="destructive">
+        <CircleAlert />
+        <AlertTitle>NocoBase AI is not available</AlertTitle>
         <AlertDescription>
-          {loading
-            ? "Fetching the AI employees and enabled models available to the current user."
-            : error?.message ??
-              "Check the NocoBase connection and the AI employees available to the current user."}
+          {error?.message ??
+            "Check the NocoBase connection and the AI employees available to the current user."}
         </AlertDescription>
       </Alert>
     </div>

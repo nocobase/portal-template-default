@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/app-shell/loading-state";
 import {
   useAIChatBase,
   useAIChatMessages,
@@ -7,7 +8,7 @@ import {
   type AIToolCallDecision,
 } from "../../providers";
 import { cn } from "@/lib/utils";
-import { ArrowDown, LoaderCircle } from "lucide-react";
+import { ArrowDown } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChatEmptyState } from "./chat-empty-state";
 import { ChatMessage } from "./chat-message";
@@ -107,9 +108,7 @@ export function AIChatMessageList({
         }}
       >
         {loading ? (
-          <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
-            <LoaderCircle className="size-4 animate-spin" /> Loading messages…
-          </div>
+          <LoadingState className="h-full" />
         ) : (
           <>
             {messages.length ? (

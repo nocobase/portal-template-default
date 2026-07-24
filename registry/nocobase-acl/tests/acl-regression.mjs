@@ -12,8 +12,7 @@ try {
     canAccessWithSnapshot,
     getAclDataForDataSource,
     resolveActionPermission,
-  } =
-    await server.ssrLoadModule("/src/lib/nocobase/acl/action.ts");
+  } = await server.ssrLoadModule("/src/lib/nocobase/acl/action.ts");
   const { resolveAclDataSourceKey } = await server.ssrLoadModule(
     "/src/lib/nocobase/acl/data-source.ts"
   );
@@ -23,13 +22,11 @@ try {
     clearRecordPermissions,
     getRecordActionPermission,
     updateRecordPermissions,
-  } = await server.ssrLoadModule(
-    "/src/lib/nocobase/acl/record-permissions.ts"
-  );
+  } = await server.ssrLoadModule("/src/lib/nocobase/acl/record-permissions.ts");
   const { RoleSwitcher } = await server.ssrLoadModule(
     "/registry/nocobase-acl/components/role-switcher.tsx"
   );
-  const { getRoleOptions } = await server.ssrLoadModule(
+  const { getRoleOptions, resolveRoleTitle } = await server.ssrLoadModule(
     "/registry/nocobase-acl/components/role-options.ts"
   );
 
@@ -304,6 +301,10 @@ try {
       { name: "member", title: "Member" },
       { name: "anonymous", title: "Anonymous" },
     ]
+  );
+  assert.equal(
+    resolveRoleTitle({ name: "admin", title: '{{t("Admin")}}' }),
+    "Admin"
   );
 
   assert.equal(typeof RoleSwitcher, "function");

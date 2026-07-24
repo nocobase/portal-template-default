@@ -5,18 +5,7 @@ import routerProvider, {
   CatchAllNavigate,
   UnsavedChangesNotifier,
 } from "@refinedev/react-router";
-import {
-  BlogPostList,
-  BlogPostCreate,
-  BlogPostEdit,
-  BlogPostShow,
-} from "./pages/blog-posts";
-import {
-  CategoryList,
-  CategoryCreate,
-  CategoryEdit,
-  CategoryShow,
-} from "./pages/categories";
+import { UserCreate, UserEdit, UserList, UserShow } from "./pages/users";
 import { dataProvider } from "./providers/data";
 import { Login } from "./pages/login";
 import { Register } from "./pages/register";
@@ -31,6 +20,7 @@ import { TooltipProvider } from "./components/ui/tooltip";
 import { BrandLogo } from "./components/app-shell/brand";
 import {
   AppExtensionProviders,
+  extensionI18nProvider,
   extensionResources,
   extensionRouteElements,
 } from "./app/extensions";
@@ -40,38 +30,25 @@ import { accessControlProvider } from "./providers/access-control";
 import { AclBootstrap } from "./components/access-control/acl-bootstrap";
 import { ResourceAccessGuard } from "./components/access-control/resource-access-guard";
 import { NavigateToAccessibleResource } from "./components/access-control/navigate-to-accessible-resource";
-import { FileText, Tags } from "lucide-react";
+import { UsersRound } from "lucide-react";
 
 const coreResources: ResourceProps[] = [
   {
-    name: "blog_posts",
-    list: "/blog-posts",
-    create: "/blog-posts/create",
-    edit: "/blog-posts/edit/:id",
-    show: "/blog-posts/show/:id",
+    name: "users",
+    list: "/users",
+    create: "/users/create",
+    edit: "/users/edit/:id",
+    show: "/users/show/:id",
     meta: {
-      label: "Blog posts",
-      icon: <FileText />,
+      label: "Users",
+      singularLabel: "User",
+      i18nKey: "resources.users",
+      i18nSingularKey: "resources.user",
+      i18nOptions: { ns: "app" },
+      descriptionI18nKey: "resources.users.description",
+      icon: <UsersRound />,
       description:
-        "Create and publish content on a reliable NocoBase data foundation.",
-      canCreate: true,
-      canDelete: true,
-      acl: {
-        type: "collection",
-      },
-    },
-  },
-  {
-    name: "categories",
-    list: "/categories",
-    create: "/categories/create",
-    edit: "/categories/edit/:id",
-    show: "/categories/show/:id",
-    meta: {
-      label: "Categories",
-      icon: <Tags />,
-      description:
-        "Organize reusable structures while NocoBase keeps the underlying data consistent.",
+        "Manage the people who can sign in and work in this NocoBase application.",
       canCreate: true,
       canDelete: true,
       acl: {
@@ -94,6 +71,7 @@ function App() {
             routerProvider={routerProvider}
             authProvider={authProvider}
             accessControlProvider={accessControlProvider}
+            i18nProvider={extensionI18nProvider}
             resources={[...coreResources, ...extensionResources]}
             options={{
               syncWithLocation: true,
@@ -122,74 +100,37 @@ function App() {
                   </Authenticated>
                 }
               >
-                <Route
-                  index
-                  element={<NavigateToAccessibleResource />}
-                />
-                <Route path="/blog-posts">
+                <Route index element={<NavigateToAccessibleResource />} />
+                <Route path="/users">
                   <Route
                     index
                     element={
-                      <ResourceAccessGuard resource="blog_posts" action="list">
-                        <BlogPostList />
+                      <ResourceAccessGuard resource="users" action="list">
+                        <UserList />
                       </ResourceAccessGuard>
                     }
                   />
                   <Route
                     path="create"
                     element={
-                      <ResourceAccessGuard resource="blog_posts" action="create">
-                        <BlogPostCreate />
+                      <ResourceAccessGuard resource="users" action="create">
+                        <UserCreate />
                       </ResourceAccessGuard>
                     }
                   />
                   <Route
                     path="edit/:id"
                     element={
-                      <ResourceAccessGuard resource="blog_posts" action="edit">
-                        <BlogPostEdit />
+                      <ResourceAccessGuard resource="users" action="edit">
+                        <UserEdit />
                       </ResourceAccessGuard>
                     }
                   />
                   <Route
                     path="show/:id"
                     element={
-                      <ResourceAccessGuard resource="blog_posts" action="show">
-                        <BlogPostShow />
-                      </ResourceAccessGuard>
-                    }
-                  />
-                </Route>
-                <Route path="/categories">
-                  <Route
-                    index
-                    element={
-                      <ResourceAccessGuard resource="categories" action="list">
-                        <CategoryList />
-                      </ResourceAccessGuard>
-                    }
-                  />
-                  <Route
-                    path="create"
-                    element={
-                      <ResourceAccessGuard resource="categories" action="create">
-                        <CategoryCreate />
-                      </ResourceAccessGuard>
-                    }
-                  />
-                  <Route
-                    path="edit/:id"
-                    element={
-                      <ResourceAccessGuard resource="categories" action="edit">
-                        <CategoryEdit />
-                      </ResourceAccessGuard>
-                    }
-                  />
-                  <Route
-                    path="show/:id"
-                    element={
-                      <ResourceAccessGuard resource="categories" action="show">
-                        <CategoryShow />
+                      <ResourceAccessGuard resource="users" action="show">
+                        <UserShow />
                       </ResourceAccessGuard>
                     }
                   />

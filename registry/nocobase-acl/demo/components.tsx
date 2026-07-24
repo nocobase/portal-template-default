@@ -19,7 +19,12 @@ import {
 import { RoleSwitcher } from "../components";
 import { RoleSwitcherPromptGenerator } from "./role-switcher-prompt-generator";
 
-type PropRow = [name: string, type: string, defaultValue: string, description: string];
+type PropRow = [
+  name: string,
+  type: string,
+  defaultValue: string,
+  description: string
+];
 
 const roleSwitcherProps: PropRow[] = [
   [
@@ -49,11 +54,20 @@ const roleSwitcherProps: PropRow[] = [
 ];
 
 const roleBehaviors = [
-  ["Multiple assigned roles", "Renders a Select using roles from the current Refine identity."],
+  [
+    "Multiple assigned roles",
+    "Renders a Select using roles from the signed-in identity.",
+  ],
   ["allow-use-union", "Prepends Full permissions using the __union__ role."],
-  ["only-use-union", "Shows Full permissions as the current non-interactive role."],
+  [
+    "only-use-union",
+    "Shows Full permissions as the current non-interactive role.",
+  ],
   ["allowAnonymous", "Appends Anonymous to the available role options."],
-  ["One available role", "Returns null, or shows the current-role badge when showWhenUnavailable is true."],
+  [
+    "One available role",
+    "Returns null, or shows the current-role badge when showWhenUnavailable is true.",
+  ],
 ];
 
 export function AclComponentsPage() {
@@ -64,8 +78,8 @@ export function AclComponentsPage() {
           Role switcher
         </h1>
         <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-          A reusable role selector backed by the Starter&apos;s NocoBase ACL store
-          and current Refine identity.
+          A reusable role selector backed by the Starter&apos;s NocoBase ACL
+          store and signed-in identity.
         </p>
       </header>
 
@@ -146,14 +160,15 @@ export function AclComponentsPage() {
               {roleBehaviors.map(([condition, behavior]) => (
                 <TableRow key={condition}>
                   <TableCell className="font-medium">{condition}</TableCell>
-                  <TableCell className="text-muted-foreground">{behavior}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {behavior}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </Card>
       </section>
-
     </div>
   );
 }
@@ -173,9 +188,15 @@ function PropsTable({ rows }: { rows: PropRow[] }) {
         <TableBody>
           {rows.map(([name, type, defaultValue, description]) => (
             <TableRow key={name}>
-              <TableCell className="font-mono text-xs font-medium">{name}</TableCell>
-              <TableCell className="font-mono text-xs text-muted-foreground">{type}</TableCell>
-              <TableCell className="font-mono text-xs text-muted-foreground">{defaultValue}</TableCell>
+              <TableCell className="font-mono text-xs font-medium">
+                {name}
+              </TableCell>
+              <TableCell className="font-mono text-xs text-muted-foreground">
+                {type}
+              </TableCell>
+              <TableCell className="font-mono text-xs text-muted-foreground">
+                {defaultValue}
+              </TableCell>
               <TableCell className="min-w-72 whitespace-normal text-muted-foreground">
                 {description}
               </TableCell>

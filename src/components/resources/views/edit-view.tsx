@@ -1,16 +1,13 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import {
-  useBack,
-  useResourceParams,
-  useUserFriendlyName,
-} from "@refinedev/core";
+import { useBack, useResourceParams, useTranslate } from "@refinedev/core";
 import type { PropsWithChildren } from "react";
 import { Breadcrumb } from "@/components/app-shell/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { RefreshButton } from "@/components/resources/buttons/refresh";
 import { ArrowLeftIcon } from "lucide-react";
+import { useResourceLabel } from "@/components/resources/resource-label";
 
 type EditViewProps = PropsWithChildren<{
   className?: string;
@@ -41,8 +38,7 @@ export const EditViewHeader = ({
   headerClassName,
 }: EditViewHeaderProps) => {
   const back = useBack();
-
-  const getUserFriendlyName = useUserFriendlyName();
+  const translate = useTranslate();
 
   const { resource, identifier } = useResourceParams({
     resource: resourceFromProps,
@@ -51,11 +47,19 @@ export const EditViewHeader = ({
 
   const resourceName = resource?.name ?? identifier;
 
-  const resourceTitle = getUserFriendlyName(
-    resource?.meta?.label ?? identifier ?? resource?.name,
-    "singular"
+  const resourceTitle = useResourceLabel(resource, "singular", identifier);
+  const title =
+    titleFromProps ??
+    translate(
+      "views.edit.title",
+      { resource: resourceTitle },
+      `Edit ${resourceTitle}`
+    );
+  const description = translate(
+    "views.edit.description",
+    { resource: resourceTitle.toLocaleLowerCase() },
+    `Update this ${resourceTitle.toLocaleLowerCase()} while NocoBase keeps the data consistent.`
   );
-  const title = titleFromProps ?? `Edit ${resourceTitle}`;
 
   return (
     <div className={cn("flex flex-col", "gap-3", wrapperClassName)}>
@@ -74,6 +78,7 @@ export const EditViewHeader = ({
             size="icon"
             className="mt-0.5 rounded-lg"
             onClick={back}
+            aria-label={translate("buttons.cancel", "Cancel")}
           >
             <ArrowLeftIcon className="h-4 w-4" />
           </Button>
@@ -81,10 +86,7 @@ export const EditViewHeader = ({
             <h2 className="text-3xl font-semibold tracking-[-0.035em]">
               {title}
             </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Update this {resourceTitle.toLowerCase()} while NocoBase keeps
-              the data consistent.
-            </p>
+            <p className="mt-2 text-sm text-muted-foreground">{description}</p>
           </div>
         </div>
 

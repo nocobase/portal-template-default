@@ -1,12 +1,7 @@
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/app-shell/loading-state";
 import { CheckCircle2, Copy, LoaderCircle } from "lucide-react";
-import {
-  Component,
-  lazy,
-  Suspense,
-  useState,
-  type ReactNode,
-} from "react";
+import { Component, lazy, Suspense, useState, type ReactNode } from "react";
 import type { AIToolRendererProps } from "./tool-renderer-provider";
 import { asRecord } from "./tool-renderer-utils";
 
@@ -75,13 +70,7 @@ export function ChartPreview({
   options: Record<string, unknown>;
 }) {
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-[280px] items-center justify-center text-xs text-muted-foreground">
-          <LoaderCircle className="mr-2 size-4 animate-spin" /> Loading chart…
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingState className="h-[280px]" />}>
       <EChartsPreview options={options} />
     </Suspense>
   );

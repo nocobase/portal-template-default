@@ -1,19 +1,14 @@
 import type { Action, IResourceItem } from "@refinedev/core";
-import {
-  useParsed,
-  useTranslate,
-  useUserFriendlyName,
-} from "@refinedev/core";
+import { useParsed, useTranslate } from "@refinedev/core";
 import { useLayoutEffect } from "react";
 import { useLocation } from "react-router";
+import { useResourceLabel } from "@/components/resources/resource-label";
 
 export type ActionPrefixContext = {
   id?: string;
 };
 
-export type ActionPrefix =
-  | string
-  | ((context: ActionPrefixContext) => string);
+export type ActionPrefix = string | ((context: ActionPrefixContext) => string);
 
 export type DocumentTitleContext = {
   action?: Action;
@@ -85,19 +80,14 @@ export function DocumentTitleHandler({
   const location = useLocation();
   const { action, id, params, pathname, resource } = useParsed();
   const translate = useTranslate();
-  const getUserFriendlyName = useUserFriendlyName();
+  const identifier = resource?.identifier ?? resource?.name;
+  const resourceNameFallback = useResourceLabel(
+    resource,
+    action === "list" ? "plural" : "singular",
+    identifier
+  );
 
   useLayoutEffect(() => {
-    const identifier = resource?.identifier ?? resource?.name;
-    const resourceNameFallback =
-      resource?.meta?.label ??
-      (identifier
-        ? getUserFriendlyName(
-            identifier,
-            action === "list" ? "plural" : "singular"
-          )
-        : undefined);
-
     const resourceName = resource?.name
       ? safeTranslate(
           translate,
@@ -155,12 +145,13 @@ export function DocumentTitleHandler({
     appName,
     defaultTitle,
     formatTitle,
-    getUserFriendlyName,
     id,
+    identifier,
     location,
     params,
     pathname,
     resource,
+    resourceNameFallback,
     separator,
     translate,
   ]);

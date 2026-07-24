@@ -7,6 +7,8 @@ import {
   useBreadcrumb,
   useLink,
   useResourceParams,
+  useTranslate,
+  useUserFriendlyName,
 } from "@refinedev/core";
 import {
   BreadcrumbSeparator as ShadcnBreadcrumbSeparator,
@@ -15,11 +17,15 @@ import {
   BreadcrumbPage as ShadcnBreadcrumbPage,
   Breadcrumb as ShadcnBreadcrumb,
 } from "@/components/ui/breadcrumb";
+import { resolveTranslatableText } from "@/lib/i18n";
+import { getResourceLabel } from "@/components/resources/resource-label";
 
 export function Breadcrumb() {
   const Link = useLink();
   const { breadcrumbs } = useBreadcrumb();
   const { resources } = useResourceParams();
+  const translate = useTranslate();
+  const getUserFriendlyName = useUserFriendlyName();
   const rootRouteResource = matchResourceFromRoute("/", resources);
 
   const breadCrumbItems = useMemo(() => {
@@ -42,15 +48,45 @@ export function Breadcrumb() {
     });
 
     for (const { label, href } of breadcrumbs) {
+      const matchingResource = resources.find((resource) => {
+        const metaLabel = resource.meta?.label;
+        return (
+          label === metaLabel ||
+          label === resource.name ||
+          (href &&
+            [resource.list, resource.create, resource.edit, resource.show].some(
+              (route) => typeof route === "string" && route === href
+            ))
+        );
+      });
+      const displayLabel = matchingResource
+        ? getResourceLabel(
+            matchingResource,
+            "plural",
+            translate,
+            getUserFriendlyName
+          )
+        : resolveTranslatableText(label);
       list.push({
-        key: `breadcrumb-item-${label}`,
+        key: `breadcrumb-item-${displayLabel}`,
         href: href ?? "",
-        Component: href ? <Link to={href}>{label}</Link> : <span>{label}</span>,
+        Component: href ? (
+          <Link to={href}>{displayLabel}</Link>
+        ) : (
+          <span>{displayLabel}</span>
+        ),
       });
     }
 
     return list;
-  }, [breadcrumbs, Link, rootRouteResource]);
+  }, [
+    breadcrumbs,
+    getUserFriendlyName,
+    Link,
+    resources,
+    rootRouteResource,
+    translate,
+  ]);
 
   return (
     <ShadcnBreadcrumb>

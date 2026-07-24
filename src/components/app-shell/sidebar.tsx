@@ -4,6 +4,8 @@ import React from "react";
 import {
   useMenu,
   useLink,
+  useTranslate,
+  useUserFriendlyName,
   type TreeMenuItem,
 } from "@refinedev/core";
 import {
@@ -29,10 +31,8 @@ import { Button } from "@/components/ui/button";
 import { ChevronRight, ListIcon, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Brand } from "@/components/app-shell/brand";
-import {
-  filterMenuItemsByAcl,
-  useAclSnapshot,
-} from "@/lib/nocobase/acl";
+import { filterMenuItemsByAcl, useAclSnapshot } from "@/lib/nocobase/acl";
+import { getResourceLabel } from "@/components/resources/resource-label";
 
 export function Sidebar() {
   const { open } = useShadcnSidebar();
@@ -102,6 +102,7 @@ function SidebarItem({ item, selectedKey }: MenuItemProps) {
 function SidebarItemGroup({ item, selectedKey }: MenuItemProps) {
   const { children } = item;
   const { open } = useShadcnSidebar();
+  const displayName = useMenuItemLabel(item);
 
   return (
     <div className={cn("mt-2 border-t", "border-sidebar-border/70", "pt-4")}>
@@ -125,7 +126,7 @@ function SidebarItemGroup({ item, selectedKey }: MenuItemProps) {
           }
         )}
       >
-        {getDisplayName(item)}
+        {displayName}
       </span>
       {children && children.length > 0 && (
         <div className={cn("flex", "flex-col")}>
@@ -199,30 +200,41 @@ function SidebarItemDropdown({ item, selectedKey }: MenuItemProps) {
         render={<SidebarButton item={item} isSelected={isSelected} />}
       />
       <DropdownMenuContent side="right" align="start">
-        {children?.map((child: TreeMenuItem) => {
-          const { key: childKey } = child;
-          const isSelected = childKey === selectedKey;
-
-          return (
-            <DropdownMenuItem
-              key={childKey || child.name}
-              render={<Link
-                to={child.route || ""}
-                className={cn("flex w-full items-center gap-2", {
-                  "bg-accent text-accent-foreground": isSelected,
-                })}
-              />}
-            >
-              <ItemIcon
-                icon={child.meta?.icon ?? child.icon}
-                isSelected={isSelected}
-              />
-              <span>{getDisplayName(child)}</span>
-            </DropdownMenuItem>
-          );
-        })}
+        {children?.map((child: TreeMenuItem) => (
+          <SidebarDropdownItem
+            key={child.key || child.name}
+            item={child}
+            selectedKey={selectedKey}
+            Link={Link}
+          />
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function SidebarDropdownItem({
+  item,
+  selectedKey,
+  Link,
+}: MenuItemProps & { Link: ReturnType<typeof useLink> }) {
+  const isSelected = item.key === selectedKey;
+  const displayName = useMenuItemLabel(item);
+
+  return (
+    <DropdownMenuItem
+      render={
+        <Link
+          to={item.route || ""}
+          className={cn("flex w-full items-center gap-2", {
+            "bg-accent text-accent-foreground": isSelected,
+          })}
+        />
+      }
+    >
+      <ItemIcon icon={item.meta?.icon ?? item.icon} isSelected={isSelected} />
+      <span>{displayName}</span>
+    </DropdownMenuItem>
   );
 }
 
@@ -250,7 +262,10 @@ function SidebarHeader() {
     >
       <Brand
         showText={open}
-        logoClassName={cn("transition-transform duration-200", !open && "size-9")}
+        logoClassName={cn(
+          "transition-transform duration-200",
+          !open && "size-9"
+        )}
       />
     </ShadcnSidebarHeader>
   );
@@ -258,6 +273,7 @@ function SidebarHeader() {
 
 function SidebarFooter() {
   const { open } = useShadcnSidebar();
+  const translate = useTranslate();
 
   return (
     <ShadcnSidebarFooter className="border-t border-sidebar-border/70 p-0">
@@ -271,10 +287,13 @@ function SidebarFooter() {
         {open && (
           <div className="min-w-0 text-xs leading-4">
             <div className="font-semibold text-sidebar-foreground">
-              AI builds freely.
+              {translate("shell.footer.freedom", "AI builds freely.")}
             </div>
             <div className="text-muted-foreground">
-              NocoBase keeps it reliable.
+              {translate(
+                "shell.footer.reliability",
+                "NocoBase keeps it reliable."
+              )}
             </div>
           </div>
         )}
@@ -283,14 +302,22 @@ function SidebarFooter() {
   );
 }
 
-function getDisplayName(item: TreeMenuItem) {
-  return item.meta?.label ?? item.label ?? item.name;
+function useMenuItemLabel(item: TreeMenuItem) {
+  const translate = useTranslate();
+  const getUserFriendlyName = useUserFriendlyName();
+
+  return getResourceLabel(
+    item,
+    "plural",
+    translate,
+    getUserFriendlyName,
+    item.name
+  );
 }
 
 function isTreeItemSelected(item: TreeMenuItem, selectedKey?: string) {
   return (
-    item.key === selectedKey ||
-    Boolean(selectedKey?.startsWith(`${item.key}/`))
+    item.key === selectedKey || Boolean(selectedKey?.startsWith(`${item.key}/`))
   );
 }
 
@@ -330,24 +357,22 @@ function SidebarButton({
   ...props
 }: SidebarButtonProps) {
   const Link = useLink();
+  const displayName = useMenuItemLabel(item);
 
   const buttonContent = (
     <>
       <ItemIcon icon={item.meta?.icon ?? item.icon} isSelected={isSelected} />
       <span
-        className={cn(
-          "tracking-[-0.00875rem] text-foreground",
-          {
-            "flex-1": rightIcon,
-            "text-left": rightIcon,
-            "line-clamp-1": !rightIcon,
-            truncate: !rightIcon,
-            "font-normal": !isSelected,
-            "font-medium": isSelected,
-          },
-        )}
+        className={cn("tracking-[-0.00875rem] text-foreground", {
+          "flex-1": rightIcon,
+          "text-left": rightIcon,
+          "line-clamp-1": !rightIcon,
+          truncate: !rightIcon,
+          "font-normal": !isSelected,
+          "font-medium": isSelected,
+        })}
       >
-        {getDisplayName(item)}
+        {displayName}
       </span>
       {rightIcon}
     </>
@@ -357,7 +382,10 @@ function SidebarButton({
     <Button
       render={
         asLink && item.route ? (
-          <Link to={item.route} className={cn("flex w-full items-center gap-2")} />
+          <Link
+            to={item.route}
+            className={cn("flex w-full items-center gap-2")}
+          />
         ) : undefined
       }
       variant="ghost"

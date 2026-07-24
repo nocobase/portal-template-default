@@ -2,6 +2,7 @@ import {
   API_ORIGIN,
   API_URL,
   NOCOBASE_AUTHENTICATOR,
+  NOCOBASE_LOCALE_KEY,
   NOCOBASE_ROLE_KEY,
   NOCOBASE_TOKEN_KEY,
 } from "@/providers/constants";
@@ -30,7 +31,7 @@ export type NocoBaseRequestOptions = {
   unwrap?: "data" | "deep-data" | "none";
 };
 
-const getClientLocale = () =>
+const getBrowserLocale = () =>
   typeof navigator === "undefined" ? undefined : navigator.language;
 
 const getClientTimezone = () => {
@@ -109,6 +110,22 @@ export class NocoBaseClient {
     else localStorage.removeItem(NOCOBASE_ROLE_KEY);
   }
 
+  getStoredLocale() {
+    return typeof localStorage === "undefined"
+      ? undefined
+      : localStorage.getItem(NOCOBASE_LOCALE_KEY) ?? undefined;
+  }
+
+  getLocale() {
+    return this.getStoredLocale() ?? getBrowserLocale();
+  }
+
+  setLocale(locale?: string | null) {
+    if (typeof localStorage === "undefined") return;
+    if (locale) localStorage.setItem(NOCOBASE_LOCALE_KEY, locale);
+    else localStorage.removeItem(NOCOBASE_LOCALE_KEY);
+  }
+
   buildUrl(endpoint: string, query?: Record<string, QueryValue>) {
     const base = `${this.apiUrl.replace(/\/$/, "")}/${endpoint.replace(
       /^\//,
@@ -149,7 +166,7 @@ export class NocoBaseClient {
     | "accept"
     | "body"
   > = {}) {
-    const locale = getClientLocale();
+    const locale = this.getLocale();
     const formData =
       typeof FormData !== "undefined" && body instanceof FormData;
     return {

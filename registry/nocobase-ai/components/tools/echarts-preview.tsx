@@ -1,6 +1,7 @@
 import ReactEChartsCore from "echarts-for-react/lib/core";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { LoadingState } from "@/components/app-shell/loading-state";
 import echarts, {
   getEChartsRuntimeSignature,
   prepareEChartsRuntime,
@@ -33,11 +34,7 @@ export default function EChartsPreview({
 
   if (error) throw error;
   if (preparedSignature !== signature) {
-    return (
-      <div className="flex h-[280px] items-center justify-center text-xs text-muted-foreground">
-        Loading chart…
-      </div>
-    );
+    return <LoadingState className="h-[280px]" />;
   }
 
   return (

@@ -1,7 +1,14 @@
 import type { Role, RoleMode } from "@/lib/nocobase/acl";
+import { resolveTranslatableText } from "@/lib/i18n";
 
 export const UNION_ROLE = "__union__";
 export const ANONYMOUS_ROLE = "anonymous";
+
+export function resolveRoleTitle(role?: Role) {
+  return resolveTranslatableText(role?.title || role?.name || "Role", {
+    ns: "starter",
+  });
+}
 
 export function getRoleOptions({
   roles,

@@ -21,7 +21,7 @@ const nocobaseAclExtension: AppExtension = {
       meta: {
         label: "Access control",
         icon: <ShieldCheck />,
-        description: "NocoBase ACL integration for Refine applications.",
+        description: "NocoBase ACL integration for admin applications.",
         acl: { type: "authenticated" },
       },
     },

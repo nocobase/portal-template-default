@@ -14,7 +14,15 @@ NOCOBASE_API_URL=https://develop.v2.test.nocobase.com/nocobase/api/__app/cms
 
 In development, the app auto-detects the proxy target from `NOCOBASE_API_URL` when that value is an absolute URL. The configured API URL can stay on the original sub-app path such as `/nocobase/api/__app/cms`.
 
-Refine resource names must match NocoBase collection names. For example, the supplied Swagger document exposes `collectionCategories`, so use that name when registering a corresponding Refine resource.
+Application resource names must match NocoBase collection names. The included
+Users example targets the default `users` collection, so it works without a
+project-specific business collection.
+
+Application-owned React translations live in `src/locales`. The entry registers
+an `app` namespace for business pages and augments the default `starter`
+namespace for shared controls. Feature-specific Registry translations remain
+inside their own extension namespace and are not mixed into application locale
+files.
 
 ## Available Scripts
 
@@ -48,6 +56,8 @@ Shadcn Registry item fields, each item has a local `source` mapping used to
 generate its standard `files` array. The same mapping lets the starter's
 `postinstall` hook copy a locally authored extension only when its target is
 missing. Existing installed source is never compared, updated, or overwritten.
+Optional entries can set `source.install` to `false`; they remain available to
+Registry builds and local previews but are not added by `postinstall`.
 
 You can run the same missing-only installation explicitly with:
 
@@ -55,7 +65,16 @@ You can run the same missing-only installation explicitly with:
 pnpm registry:install
 ```
 
-This repository currently authors four incremental NocoBase AI entries:
+This repository authors optional NocoBase integration entries. Internationalization
+is delivered as one cohesive Registry entry:
+
+- `i18n` provides frontend-owned UI resources, selected server-generated
+  namespaces such as `lm-collections`, the application translation provider,
+  locale persistence, `X-Locale` synchronization, legacy `{{t(...)}}`
+  compatibility, the language switcher, and the lazy-loaded showcase with its
+  prompt generator.
+
+The AI integration is available through four incremental entries:
 
 - `ai-runtime` provides AI services, providers, transports, and
   controllers. Its NocoBase requests use the starter's shared
@@ -64,7 +83,7 @@ This repository currently authors four incremental NocoBase AI entries:
   runtime entry.
 - `ai-react-hook-form` adds the optional React Hook Form adapter for the fixed
   Form filler Tool.
-- `ai` adds the Refine extension integration and Demo pages and depends on the
+- `ai` adds the application extension integration and Demo pages and depends on the
   chat entry.
 
 To refresh the local preview from the canonical Registry source, run:

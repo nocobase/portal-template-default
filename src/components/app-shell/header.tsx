@@ -1,4 +1,8 @@
-import { useActiveAuthProvider, useLogout } from "@refinedev/core";
+import {
+  useActiveAuthProvider,
+  useLogout,
+  useTranslate,
+} from "@refinedev/core";
 import {
   DropdownMenu,
   DropdownMenuItem,
@@ -13,6 +17,7 @@ import { useSidebar, SidebarTrigger } from "@/components/ui/sidebar";
 import { LogOutIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Brand } from "@/components/app-shell/brand";
+import { extensionUserMenuItems } from "@/app/extensions";
 
 export const Header = () => {
   const { isMobile } = useSidebar();
@@ -21,6 +26,8 @@ export const Header = () => {
 };
 
 function DesktopHeader() {
+  const translate = useTranslate();
+
   return (
     <header
       className={cn(
@@ -44,7 +51,7 @@ function DesktopHeader() {
         <SidebarTrigger className="size-9 rounded-xl text-muted-foreground hover:text-foreground" />
         <div className="hidden h-5 w-px bg-border sm:block" />
         <span className="hidden text-sm font-medium text-muted-foreground sm:block">
-          AI application workspace
+          {translate("shell.workspace", "AI application workspace")}
         </span>
       </div>
       <div className="flex items-center gap-2">
@@ -94,6 +101,7 @@ function MobileHeader() {
 
 const UserDropdown = () => {
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
+  const translate = useTranslate();
 
   const authProvider = useActiveAuthProvider();
 
@@ -110,6 +118,9 @@ const UserDropdown = () => {
         <div className="px-2 py-2">
           <UserInfo />
         </div>
+        {extensionUserMenuItems.map(({ id, Component }) => (
+          <Component key={id} />
+        ))}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="mt-1 min-h-9 cursor-pointer gap-2 px-2 text-muted-foreground focus:text-foreground"
@@ -118,7 +129,11 @@ const UserDropdown = () => {
           }}
         >
           <LogOutIcon />
-          <span>{isLoggingOut ? "Signing out..." : "Sign out"}</span>
+          <span>
+            {isLoggingOut
+              ? translate("auth.signingOut", "Signing out...")
+              : translate("auth.signOut", "Sign out")}
+          </span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -2,9 +2,11 @@
 
 import type { PropsWithChildren } from "react";
 
-import { useResourceParams, useUserFriendlyName } from "@refinedev/core";
+import { useResourceParams, useTranslate } from "@refinedev/core";
 import { Breadcrumb } from "@/components/app-shell/breadcrumb";
 import { CreateButton } from "@/components/resources/buttons/create";
+import { useResourceLabel } from "@/components/resources/resource-label";
+import { resolveTranslatableText, type TranslationOptions } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type ListViewProps = PropsWithChildren<{
@@ -35,22 +37,30 @@ export const ListViewHeader = ({
   wrapperClassName,
   headerClassName,
 }: ListHeaderProps) => {
-  const getUserFriendlyName = useUserFriendlyName();
-
   const { resource, identifier } = useResourceParams({
     resource: resourceFromProps,
   });
+  const translate = useTranslate();
   const resourceName = identifier ?? resource?.name;
 
   const isCreateButtonVisible = canCreate ?? !!resource?.create;
 
-  const title =
-    titleFromProps ??
-    getUserFriendlyName(
-      resource?.meta?.label ?? identifier ?? resource?.name,
-      "plural"
-    );
-  const description = resource?.meta?.description as string | undefined;
+  const resourceTitle = useResourceLabel(resource, "plural", identifier);
+  const title = titleFromProps ?? resourceTitle;
+  const meta = resource?.meta as
+    | {
+        description?: string;
+        descriptionI18nKey?: string;
+        i18nOptions?: TranslationOptions;
+      }
+    | undefined;
+  const description = meta?.descriptionI18nKey
+    ? translate(
+        meta.descriptionI18nKey,
+        meta.i18nOptions,
+        meta.description ?? meta.descriptionI18nKey
+      )
+    : resolveTranslatableText(meta?.description);
 
   return (
     <div className={cn("flex flex-col", "gap-3", wrapperClassName)}>

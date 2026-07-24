@@ -3,6 +3,35 @@
   "homepage": "https://www.nocobase.com",
   "items": [
     {
+      "name": "i18n",
+      "type": "registry:block",
+      "title": "NocoBase i18n",
+      "description": "Optional hybrid internationalization with frontend-owned UI resources, selected NocoBase dynamic namespaces, X-Locale synchronization, a reusable language switcher, and an integrated showcase.",
+      "dependencies": [
+        "@refinedev/core@^5.0.8",
+        "i18next@^25.3.2",
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "registryDependencies": [
+        "badge",
+        "button",
+        "card",
+        "dropdown-menu",
+        "input",
+        "label",
+        "select",
+        "textarea"
+      ],
+      "docs": "Requires a compatible NocoBase Starter with the generic AppExtension i18nProvider and UserMenuItems host fields. Starter and Registry translations stay local; app:getLang is used only to merge registered dynamic namespaces such as lm-collections. The integrated Demo route documents the complete usage model.",
+      "source": {
+        "root": "registry/nocobase-i18n",
+        "target": "src/extensions/nocobase-i18n",
+        "install": false,
+        "include": ["."]
+      }
+    },
+    {
       "name": "ai-runtime",
       "type": "registry:lib",
       "title": "NocoBase AI Runtime",
@@ -73,7 +102,7 @@
       "name": "ai",
       "type": "registry:block",
       "title": "NocoBase AI Components and Demo",
-      "description": "Complete NocoBase AI component runtime with Refine resources, routes, and component showcase pages.",
+      "description": "Complete NocoBase AI component runtime with application resources, routes, and component showcase pages.",
       "dependencies": ["@refinedev/core@^5.0.8", "react-router@^7.0.2"],
       "registryDependencies": [
         "@nocobase/ai-chat",
@@ -88,7 +117,7 @@
         "table",
         "textarea"
       ],
-      "docs": "This item includes the AI extension integration and Demo pages. It is designed for a compatible starter with the AppExtension host enabled. After installation, src/extensions/nocobase-ai/extension.tsx is discovered automatically and contributes its Refine resources and routes without AI-specific App.tsx edits.",
+      "docs": "This item includes the AI extension integration and Demo pages. It is designed for a compatible starter with the AppExtension host enabled. After installation, src/extensions/nocobase-ai/extension.tsx is discovered automatically and contributes its application resources and routes without AI-specific App.tsx edits.",
       "source": {
         "root": "registry/nocobase-ai",
         "target": "src/extensions/nocobase-ai",
@@ -100,14 +129,8 @@
       "type": "registry:block",
       "title": "NocoBase ACL UI",
       "description": "Page, region, field, and role-switching components backed by the Starter's NocoBase accessControlProvider.",
-      "dependencies": [
-        "@refinedev/core@^5.0.8",
-        "lucide-react@^0.487.0"
-      ],
-      "registryDependencies": [
-        "badge",
-        "select"
-      ],
+      "dependencies": ["@refinedev/core@^5.0.8", "lucide-react@^0.487.0"],
+      "registryDependencies": ["badge", "select"],
       "docs": "Requires a compatible NocoBase Starter with the built-in accessControlProvider and ACL store.",
       "source": {
         "root": "registry/nocobase-acl",
@@ -120,10 +143,7 @@
       "type": "registry:block",
       "title": "NocoBase ACL Components and Demo",
       "description": "Complete ACL composition demo with live role switching, action matrix, multi-collection regions, and field permissions.",
-      "dependencies": [
-        "@refinedev/core@^5.0.8",
-        "react-router@^7.0.2"
-      ],
+      "dependencies": ["@refinedev/core@^5.0.8", "react-router@^7.0.2"],
       "registryDependencies": [
         "@nocobase/acl-ui",
         "button",

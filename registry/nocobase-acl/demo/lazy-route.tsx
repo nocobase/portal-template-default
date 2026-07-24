@@ -1,14 +1,9 @@
 import { Suspense, type ReactNode } from "react";
+import { LoadingState } from "@/components/app-shell/loading-state";
 
 export function LazyAclRoute({ children }: { children: ReactNode }) {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-80 items-center justify-center text-sm text-muted-foreground">
-          Loading access control demo…
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingState className="min-h-80" />}>
       {children}
     </Suspense>
   );

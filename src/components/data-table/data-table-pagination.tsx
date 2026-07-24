@@ -7,6 +7,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { useMemo } from "react";
+import { useTranslate } from "@refinedev/core";
 
 import {
   Select,
@@ -35,6 +36,7 @@ export function DataTablePagination({
   setPageSize,
   total,
 }: DataTablePaginationProps) {
+  const translate = useTranslate();
   const pageSizeOptions = useMemo(() => {
     const baseOptions = [10, 20, 30, 40, 50];
     const optionsSet = new Set(baseOptions);
@@ -66,11 +68,19 @@ export function DataTablePagination({
           "whitespace-nowrap"
         )}
       >
-        {typeof total === "number" ? `${total} row(s)` : null}
+        {typeof total === "number"
+          ? translate(
+              "table.pagination.total",
+              { count: total },
+              `${total} row(s)`
+            )
+          : null}
       </div>
       <div className={cn("flex", "items-center", "flex-wrap", "gap-2")}>
         <div className={cn("flex", "items-center", "gap-2")}>
-          <span className={cn("text-sm", "font-medium")}>Rows per page</span>
+          <span className={cn("text-sm", "font-medium")}>
+            {translate("table.pagination.pageSize", "Rows per page")}
+          </span>
           <Select
             value={`${pageSize}`}
             onValueChange={(v) => setPageSize(Number(v))}
@@ -97,7 +107,11 @@ export function DataTablePagination({
               "font-medium"
             )}
           >
-            Page {currentPage} of {pageCount}
+            {translate(
+              "table.pagination.page",
+              { current: currentPage, total: pageCount },
+              `Page ${currentPage} of ${pageCount}`
+            )}
           </div>
           <div className={cn("flex", "items-center", "gap-2")}>
             <Button
@@ -105,7 +119,10 @@ export function DataTablePagination({
               className={cn("hidden", "h-8", "w-8", "p-0", "lg:flex")}
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
-              aria-label="Go to first page"
+              aria-label={translate(
+                "table.pagination.first",
+                "Go to first page"
+              )}
             >
               <ChevronsLeft />
             </Button>
@@ -114,7 +131,10 @@ export function DataTablePagination({
               className={cn("h-8", "w-8", "p-0")}
               onClick={() => setCurrentPage(currentPage - 1)}
               disabled={currentPage === 1}
-              aria-label="Go to previous page"
+              aria-label={translate(
+                "table.pagination.previous",
+                "Go to previous page"
+              )}
             >
               <ChevronLeft />
             </Button>
@@ -123,7 +143,7 @@ export function DataTablePagination({
               className={cn("h-8", "w-8", "p-0")}
               onClick={() => setCurrentPage(currentPage + 1)}
               disabled={currentPage === pageCount}
-              aria-label="Go to next page"
+              aria-label={translate("table.pagination.next", "Go to next page")}
             >
               <ChevronRight />
             </Button>
@@ -132,7 +152,7 @@ export function DataTablePagination({
               className={cn("hidden", "h-8", "w-8", "p-0", "lg:flex")}
               onClick={() => setCurrentPage(pageCount)}
               disabled={currentPage === pageCount}
-              aria-label="Go to last page"
+              aria-label={translate("table.pagination.last", "Go to last page")}
             >
               <ChevronsRight />
             </Button>

@@ -1,7 +1,8 @@
-import { Loader2, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import type { PropsWithChildren } from "react";
 
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/app-shell/loading-state";
 import { loadAcl, useAclSnapshot } from "@/lib/nocobase/acl";
 
 export function AclGate({ children }: PropsWithChildren) {
@@ -21,9 +22,7 @@ export function AclGate({ children }: PropsWithChildren) {
           <Button
             className="mt-5"
             variant="outline"
-            onClick={() =>
-              void loadAcl({ force: true }).catch(() => undefined)
-            }
+            onClick={() => void loadAcl({ force: true }).catch(() => undefined)}
           >
             <RotateCcw />
             Retry
@@ -33,10 +32,5 @@ export function AclGate({ children }: PropsWithChildren) {
     );
   }
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <Loader2 className="size-7 animate-spin text-muted-foreground" />
-      <span className="sr-only">Loading permissions…</span>
-    </div>
-  );
+  return <LoadingState className="min-h-screen bg-background" />;
 }

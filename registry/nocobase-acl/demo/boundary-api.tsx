@@ -8,30 +8,95 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-type PropRow = [name: string, type: string, defaultValue: string, description: string];
+type PropRow = [
+  name: string,
+  type: string,
+  defaultValue: string,
+  description: string
+];
 
 const pageProps: PropRow[] = [
-  ["anyOf", "AclPermission[]", "undefined", "Allows the page when any listed permission is available."],
-  ["allOf", "AclPermission[]", "undefined", "Requires every listed permission before rendering the page."],
-  ["fallback", "ReactNode", "AccessDenied", "Replaces the complete page when its permission test fails."],
+  [
+    "anyOf",
+    "AclPermission[]",
+    "undefined",
+    "Allows the page when any listed permission is available.",
+  ],
+  [
+    "allOf",
+    "AclPermission[]",
+    "undefined",
+    "Requires every listed permission before rendering the page.",
+  ],
+  [
+    "fallback",
+    "ReactNode",
+    "AccessDenied",
+    "Replaces the complete page when its permission test fails.",
+  ],
   ["children", "ReactNode", "required", "The protected page content."],
 ];
 
 const regionProps: PropRow[] = [
-  ["resource", "string", "required", "NocoBase collection or ACL resource name."],
-  ["action", "string", "required", "Refine action such as list, show, create, edit, or delete."],
-  ["id", "BaseKey", "undefined", "Optional record ID for record-scoped permission checks."],
-  ["dataSourceKey", "string", "undefined", "Selects a non-main NocoBase data source."],
-  ["fallback", '"hidden" | "forbidden" | ReactNode', '"hidden"', "Hides the region or replaces it with a local denied state."],
+  [
+    "resource",
+    "string",
+    "required",
+    "NocoBase collection or ACL resource name.",
+  ],
+  [
+    "action",
+    "string",
+    "required",
+    "Resource action such as list, show, create, edit, or delete.",
+  ],
+  [
+    "id",
+    "BaseKey",
+    "undefined",
+    "Optional record ID for record-scoped permission checks.",
+  ],
+  [
+    "dataSourceKey",
+    "string",
+    "undefined",
+    "Selects a non-main NocoBase data source.",
+  ],
+  [
+    "fallback",
+    '"hidden" | "forbidden" | ReactNode',
+    '"hidden"',
+    "Hides the region or replaces it with a local denied state.",
+  ],
   ["children", "ReactNode", "required", "The protected page region."],
 ];
 
 const fieldProps: PropRow[] = [
-  ["resource", "string", "required", "NocoBase collection containing the field."],
-  ["action", "string", "required", "The action whose field whitelist should be checked."],
+  [
+    "resource",
+    "string",
+    "required",
+    "NocoBase collection containing the field.",
+  ],
+  [
+    "action",
+    "string",
+    "required",
+    "The action whose field whitelist should be checked.",
+  ],
   ["field", "string", "required", "Exact NocoBase field name."],
-  ["dataSourceKey", "string", "undefined", "Selects a non-main NocoBase data source."],
-  ["fallback", "ReactNode", "null", "Optional read-only replacement for a denied field."],
+  [
+    "dataSourceKey",
+    "string",
+    "undefined",
+    "Selects a non-main NocoBase data source.",
+  ],
+  [
+    "fallback",
+    "ReactNode",
+    "null",
+    "Optional read-only replacement for a denied field.",
+  ],
   ["children", "ReactNode", "required", "The protected field or field group."],
 ];
 
@@ -99,9 +164,15 @@ function ComponentApi({
           <TableBody>
             {rows.map(([name, type, defaultValue, propDescription]) => (
               <TableRow key={name}>
-                <TableCell className="font-mono text-xs font-medium">{name}</TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">{type}</TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">{defaultValue}</TableCell>
+                <TableCell className="font-mono text-xs font-medium">
+                  {name}
+                </TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {type}
+                </TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {defaultValue}
+                </TableCell>
                 <TableCell className="min-w-72 whitespace-normal text-muted-foreground">
                   {propDescription}
                 </TableCell>

@@ -1,5 +1,6 @@
 import { NocoBaseAIExtensionProvider } from "./global-ai-chat";
 import type { AppExtension } from "@/app/extension";
+import { LoadingState } from "@/components/app-shell/loading-state";
 import {
   Bot,
   MessageSquare,
@@ -37,13 +38,7 @@ const ToolCardsPage = lazy(() =>
 
 function LazyDemoRoute({ children }: { children: ReactNode }) {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[320px] items-center justify-center text-sm text-muted-foreground">
-          Loading AI components…
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingState className="min-h-[320px]" />}>
       {children}
     </Suspense>
   );
