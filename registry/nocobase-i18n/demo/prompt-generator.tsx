@@ -1,8 +1,8 @@
 import { useTranslate } from "@refinedev/core";
-import { Check, ChevronDown, Copy, Sparkles } from "lucide-react";
+import { ChevronDown, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { PromptOutput } from "@/components/demo/prompt-output";
 import {
   Card,
   CardContent,
@@ -18,8 +18,6 @@ export function I18nPromptGenerator() {
   const t = useTranslate();
   const [scene, setScene] = useState("A customer support workspace");
   const [languages, setLanguages] = useState("English and Simplified Chinese");
-  const [copied, setCopied] = useState(false);
-  const [copyError, setCopyError] = useState(false);
 
   const prompt = useMemo(
     () => `Build a complete multilingual scene in the NocoBase Admin Starter.
@@ -100,56 +98,34 @@ Implementation contract
             </div>
           </CardContent>
         </Card>
-        <Card className="min-w-0 gap-0 overflow-hidden py-0">
-          <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
-            <div>
-              <div className="text-sm font-medium">
-                {t(
-                  "demo.prompt.output",
-                  { ns: "nocobase-i18n" },
-                  "Generated prompt"
-                )}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {t(
-                  "demo.prompt.outputDescription",
-                  { ns: "nocobase-i18n" },
-                  "Updates as you change the scene and language requirements."
-                )}
-              </div>
-            </div>
-            <Button
-              size="sm"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(prompt);
-                  setCopyError(false);
-                  setCopied(true);
-                  window.setTimeout(() => setCopied(false), 1500);
-                } catch {
-                  setCopyError(true);
-                }
-              }}
-            >
-              {copied ? <Check /> : <Copy />}
-              {copied
-                ? t("demo.prompt.copied", { ns: "nocobase-i18n" }, "Copied")
-                : t("demo.prompt.copy", { ns: "nocobase-i18n" }, "Copy prompt")}
-            </Button>
-          </div>
-          {copyError ? (
-            <p className="border-b px-4 py-2 text-xs text-destructive">
-              {t(
-                "demo.prompt.copyError",
-                { ns: "nocobase-i18n" },
-                "Clipboard access failed. Select the prompt and copy it manually."
-              )}
-            </p>
-          ) : null}
-          <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap bg-muted/25 p-5 font-mono text-xs leading-5 text-muted-foreground">
-            {prompt}
-          </pre>
-        </Card>
+        <PromptOutput
+          title={t(
+            "demo.prompt.output",
+            { ns: "nocobase-i18n" },
+            "Generated prompt"
+          )}
+          description={t(
+            "demo.prompt.outputDescription",
+            { ns: "nocobase-i18n" },
+            "Updates as you change the scene and language requirements."
+          )}
+          prompt={prompt}
+          copyLabel={t(
+            "demo.prompt.copy",
+            { ns: "nocobase-i18n" },
+            "Copy prompt"
+          )}
+          copiedLabel={t(
+            "demo.prompt.copied",
+            { ns: "nocobase-i18n" },
+            "Copied"
+          )}
+          copyErrorLabel={t(
+            "demo.prompt.copyError",
+            { ns: "nocobase-i18n" },
+            "Clipboard access failed. Select the prompt and copy it manually."
+          )}
+        />
       </div>
     </details>
   );

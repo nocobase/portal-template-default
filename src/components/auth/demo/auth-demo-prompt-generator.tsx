@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
-import { Check, Copy } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { PromptOutput } from "@/components/demo/prompt-output";
 import {
   Card,
   CardContent,
@@ -17,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 
 export type AuthIntegrationPattern = "dynamic" | "method" | "page";
 
@@ -39,10 +37,9 @@ export function AuthDemoPromptGenerator({
   const [localPattern, setLocalPattern] = useState<AuthIntegrationPattern>(
     value ?? patterns?.[0] ?? "method"
   );
-  const [copied, setCopied] = useState(false);
   const pattern = value ?? localPattern;
-  const availablePatterns = patterns ??
-    (Object.keys(patternLabels) as AuthIntegrationPattern[]);
+  const availablePatterns =
+    patterns ?? (Object.keys(patternLabels) as AuthIntegrationPattern[]);
   const setPattern = (next: AuthIntegrationPattern) => {
     setLocalPattern(next);
     onValueChange?.(next);
@@ -65,14 +62,12 @@ export function AuthDemoPromptGenerator({
           Generate an implementation prompt for an application-owned login UI.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="grid items-start gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
         <div className="space-y-2">
           <Label>Integration pattern</Label>
           <Select
             value={pattern}
-            onValueChange={(next) =>
-              setPattern(next as AuthIntegrationPattern)
-            }
+            onValueChange={(next) => setPattern(next as AuthIntegrationPattern)}
           >
             <SelectTrigger className="w-full">
               <SelectValue>{patternLabels[pattern]}</SelectValue>
@@ -86,24 +81,12 @@ export function AuthDemoPromptGenerator({
             </SelectContent>
           </Select>
         </div>
-        <Textarea
-          value={prompt}
-          readOnly
-          className="min-h-36 font-mono text-xs"
+        <PromptOutput
+          title="Generated implementation prompt"
+          description="Updates when the customization boundary changes."
+          prompt={prompt}
+          promptClassName="min-h-36"
         />
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            void navigator.clipboard.writeText(prompt).then(() => {
-              setCopied(true);
-              window.setTimeout(() => setCopied(false), 1_500);
-            });
-          }}
-        >
-          {copied ? <Check /> : <Copy />}
-          {copied ? "Copied" : "Copy prompt"}
-        </Button>
       </CardContent>
     </Card>
   );

@@ -678,7 +678,7 @@ Implementation requirements:
           task, model, Web search, Skills, and Tools configuration.
         </p>
       </div>
-      <div className="grid items-start gap-5 xl:grid-cols-[520px_minmax(0,1fr)]">
+      <div className="grid items-start gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
         <Card className="gap-0 py-0">
           <CardHeader className="py-4">
             <CardTitle className="text-base">

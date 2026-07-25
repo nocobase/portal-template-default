@@ -1,8 +1,13 @@
-import { Check, Copy } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PromptOutput } from "@/components/demo/prompt-output";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -12,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   getRouteSurfacePrompt,
   routeSurfaceScenarios,
@@ -23,7 +27,6 @@ export function RouteSurfacePromptGenerator() {
   const [scenarioId, setScenarioId] =
     useState<RouteSurfaceScenarioId>("drawer");
   const [target, setTarget] = useState("a customer detail workflow");
-  const [copied, setCopied] = useState(false);
   const scenario =
     routeSurfaceScenarios.find((item) => item.id === scenarioId) ??
     routeSurfaceScenarios[0];
@@ -32,22 +35,17 @@ export function RouteSurfacePromptGenerator() {
     [scenario, target]
   );
 
-  const copyPrompt = async () => {
-    await navigator.clipboard.writeText(prompt);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1500);
-  };
-
   return (
     <Card>
       <CardHeader>
         <CardTitle>Prompt generator</CardTitle>
         <CardDescription>
-          Generate a complete routing scenario, not just an isolated overlay component.
+          Generate a complete routing scenario, not just an isolated overlay
+          component.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2">
+      <CardContent className="grid items-start gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="route-surface-scenario">Scenario</Label>
             <Select
@@ -77,13 +75,12 @@ export function RouteSurfacePromptGenerator() {
             />
           </div>
         </div>
-        <Textarea value={prompt} readOnly className="min-h-80 font-mono text-xs" />
-        <div className="flex justify-end">
-          <Button type="button" onClick={() => void copyPrompt()}>
-            {copied ? <Check /> : <Copy />}
-            {copied ? "Copied" : "Copy prompt"}
-          </Button>
-        </div>
+        <PromptOutput
+          title="Generated routing prompt"
+          description="Updates as you change the scenario and business target."
+          prompt={prompt}
+          promptClassName="min-h-80"
+        />
       </CardContent>
     </Card>
   );

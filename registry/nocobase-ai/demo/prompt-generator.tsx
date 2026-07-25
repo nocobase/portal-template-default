@@ -6,7 +6,7 @@ import {
   useAIPageElementPicker,
   type AIChatComposerAction,
 } from "../components";
-import { Button } from "@/components/ui/button";
+import { PromptOutput } from "@/components/demo/prompt-output";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { AIChatProvider, useAIChatBase } from "../providers";
-import { Check, Copy, Globe2, MousePointer2 } from "lucide-react";
+import { Globe2, MousePointer2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ChatContainer } from "./container-showcase";
 
@@ -95,7 +95,6 @@ function PromptGeneratorContent() {
   const [messagePresentation, setMessagePresentation] =
     useState<MessagePresentation>("transcript");
   const [capabilities, setCapabilities] = useState(DEFAULT_CAPABILITIES);
-  const [copied, setCopied] = useState(false);
 
   const previewActions = useMemo<AIChatComposerAction[]>(() => {
     const actions: AIChatComposerAction[] = [];
@@ -275,7 +274,7 @@ Implementation requirements:
   })();
 
   return (
-    <div className="grid items-start gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
+    <div className="grid items-start gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
       <Card className="gap-0 py-0">
         <CardHeader className="border-b py-4">
           <CardTitle className="text-base">Describe the integration</CardTitle>
@@ -405,32 +404,12 @@ Implementation requirements:
           </div>
         </Card>
 
-        <Card className="gap-0 overflow-hidden py-0">
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <div>
-              <div className="text-sm font-medium">
-                Generated implementation prompt
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Updates from the selected page, placement, and capabilities.
-              </div>
-            </div>
-            <Button
-              size="sm"
-              onClick={async () => {
-                await navigator.clipboard.writeText(prompt);
-                setCopied(true);
-                window.setTimeout(() => setCopied(false), 1500);
-              }}
-            >
-              {copied ? <Check /> : <Copy />}
-              {copied ? "Copied" : "Copy prompt"}
-            </Button>
-          </div>
-          <pre className="max-h-[760px] min-h-[520px] overflow-auto whitespace-pre-wrap bg-muted/25 p-5 font-mono text-xs leading-5 text-muted-foreground">
-            {prompt}
-          </pre>
-        </Card>
+        <PromptOutput
+          title="Generated implementation prompt"
+          description="Updates from the selected page, placement, and capabilities."
+          prompt={prompt}
+          promptClassName="max-h-[760px] min-h-[520px]"
+        />
       </div>
     </div>
   );

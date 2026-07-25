@@ -2,8 +2,8 @@ import {
   ToolCallCard,
   type ToolCallPart,
 } from "../components/chat/tool-call-card";
+import { PromptOutput } from "@/components/demo/prompt-output";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 
 const tools = {
@@ -217,8 +216,8 @@ export function ToolCardsPage() {
             Tool Cards
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Specialized tools render their complete business interaction.
-            Tools without a registered renderer fall back to the shared status,
+            Specialized tools render their complete business interaction. Tools
+            without a registered renderer fall back to the shared status,
             approval, error, and input disclosure card.
           </p>
         </div>
@@ -371,7 +370,6 @@ function ToolCardCodePrompt() {
     "Show the affected support records, summarize the proposed changes, and let the user approve, request a revision, or reject the operation."
   );
   const [handlesApproval, setHandlesApproval] = useState(true);
-  const [copied, setCopied] = useState(false);
   const referenceDefinition = referenceRenderers[reference];
   const prompt = `Implement a specialized NocoBase AI Tool Card for the tool "${
     toolName || "customTool"
@@ -410,7 +408,7 @@ Verification:
 - Verify the card in light and dark themes, narrow chat panels, expanded dialogs, pending approval, completed, and error states.`;
 
   return (
-    <div className="grid items-start gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
+    <div className="grid items-start gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
       <Card className="gap-0 py-0">
         <CardHeader className="border-b py-4">
           <CardTitle className="text-base">Describe the Tool Card</CardTitle>
@@ -479,30 +477,12 @@ Verification:
           </label>
         </CardContent>
       </Card>
-      <Card className="gap-0 py-0">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <div>
-            <div className="text-sm font-medium">Coding prompt</div>
-            <div className="text-xs text-muted-foreground">
-              Ready to paste into an implementation task.
-            </div>
-          </div>
-          <Button
-            size="sm"
-            onClick={async () => {
-              await navigator.clipboard.writeText(prompt);
-              setCopied(true);
-              window.setTimeout(() => setCopied(false), 1500);
-            }}
-          >
-            {copied ? <Check /> : <Copy />}
-            {copied ? "Copied" : "Copy prompt"}
-          </Button>
-        </div>
-        <pre className="max-h-[720px] min-h-[560px] overflow-auto whitespace-pre-wrap bg-muted/25 p-5 font-mono text-xs leading-5 text-muted-foreground">
-          {prompt}
-        </pre>
-      </Card>
+      <PromptOutput
+        title="Coding prompt"
+        description="Ready to paste into an implementation task."
+        prompt={prompt}
+        promptClassName="max-h-[720px] min-h-[560px]"
+      />
     </div>
   );
 }

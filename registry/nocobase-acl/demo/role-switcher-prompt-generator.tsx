@@ -1,7 +1,6 @@
-import { Check, Copy } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { PromptOutput } from "@/components/demo/prompt-output";
 import {
   Card,
   CardContent,
@@ -54,8 +53,6 @@ export function RoleSwitcherPromptGenerator() {
   const [surface, setSurface] = useState(
     "Use the Starter's existing account controls and visual language. Do not create a separate demo page."
   );
-  const [copied, setCopied] = useState(false);
-  const [copyError, setCopyError] = useState(false);
 
   const prompt = useMemo(
     () => `Integrate the RoleSwitcher into the existing NocoBase Admin Starter.
@@ -155,44 +152,11 @@ Integration requirements
         </CardContent>
       </Card>
 
-      <Card className="gap-0 overflow-hidden py-0">
-        <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
-          <div>
-            <div className="text-sm font-medium">
-              Generated integration prompt
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Updates as you change placement and presentation settings.
-            </div>
-          </div>
-          <Button
-            size="sm"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(prompt);
-                setCopyError(false);
-                setCopied(true);
-                window.setTimeout(() => setCopied(false), 1500);
-              } catch {
-                setCopyError(true);
-              }
-            }}
-          >
-            {copied ? <Check /> : <Copy />}
-            {copied ? "Copied" : "Copy prompt"}
-          </Button>
-        </div>
-        {copyError ? (
-          <p className="border-b px-4 py-2 text-xs text-destructive">
-            Clipboard access failed. Select the prompt and copy it manually.
-          </p>
-        ) : null}
-        <CardContent className="p-0">
-          <pre className="max-h-[560px] overflow-auto whitespace-pre-wrap bg-muted/25 p-5 font-mono text-xs leading-5 text-muted-foreground">
-            {prompt}
-          </pre>
-        </CardContent>
-      </Card>
+      <PromptOutput
+        title="Generated integration prompt"
+        description="Updates as you change placement and presentation settings."
+        prompt={prompt}
+      />
     </div>
   );
 }

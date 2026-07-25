@@ -1,7 +1,7 @@
-import { Check, ChevronDown, Copy, Sparkles } from "lucide-react";
+import { ChevronDown, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { PromptOutput } from "@/components/demo/prompt-output";
 import {
   Card,
   CardContent,
@@ -28,8 +28,6 @@ export function AclScenarioPromptGenerator({
 }) {
   const [scene, setScene] = useState(config.defaultScene);
   const [target, setTarget] = useState(config.defaultTarget);
-  const [copied, setCopied] = useState(false);
-  const [copyError, setCopyError] = useState(false);
 
   const prompt = useMemo(
     () => `Build a complete NocoBase ACL scene in the NocoBase Admin Starter.
@@ -93,41 +91,10 @@ Implementation contract
             </div>
           </CardContent>
         </Card>
-        <Card className="min-w-0 gap-0 overflow-hidden py-0">
-          <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
-            <div>
-              <div className="text-sm font-medium">Generated prompt</div>
-              <div className="text-xs text-muted-foreground">
-                Updates as you change the business scene and permission target.
-              </div>
-            </div>
-            <Button
-              size="sm"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(prompt);
-                  setCopyError(false);
-                  setCopied(true);
-                  window.setTimeout(() => setCopied(false), 1500);
-                } catch {
-                  setCopyError(true);
-                }
-              }}
-            >
-              {copied ? <Check /> : <Copy />}
-              {copied ? "Copied" : "Copy prompt"}
-            </Button>
-          </div>
-          {copyError ? (
-            <p className="border-b px-4 py-2 text-xs text-destructive">
-              Clipboard access failed. Select the prompt text and copy it
-              manually.
-            </p>
-          ) : null}
-          <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap bg-muted/25 p-5 font-mono text-xs leading-5 text-muted-foreground">
-            {prompt}
-          </pre>
-        </Card>
+        <PromptOutput
+          description="Updates as you change the business scene and permission target."
+          prompt={prompt}
+        />
       </div>
     </details>
   );
