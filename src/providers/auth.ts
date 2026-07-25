@@ -25,6 +25,10 @@ type NocoBaseSignInResponse = {
   user?: NocoBaseUser;
 };
 
+type NocoBaseSignOutResponse = {
+  redirect?: string;
+};
+
 type CurrentUserCache = {
   token: string;
   user: NocoBaseUser;
@@ -77,25 +81,26 @@ const getCurrentUser = async (): Promise<NocoBaseUser> => {
 };
 
 export const authProvider: AuthProvider = {
-  login: async ({ username, email, password, providerName }) => {
-    if (providerName) {
-      return {
-        success: false,
-        error: {
-          name: "UnsupportedAuthenticator",
-          message:
-            "Configure this provider as a NocoBase authenticator before using social sign-in.",
-        },
-      };
-    }
+  login: async (params) => {
+    const {
+      authenticator = nocobaseClient.getAuthenticator(),
+      username,
+      email,
+      redirectTo = "/",
+      ...values
+    } = params ?? {};
+    const account = values.account ?? username ?? email;
+    const body = {
+      ...values,
+      ...(account ? { account } : {}),
+    };
 
-    const account = username ?? email;
-    if (!account || !password) {
+    if (Object.keys(body).length === 0) {
       return {
         success: false,
         error: {
           name: "LoginError",
-          message: "Please enter your account and password.",
+          message: "Please enter your sign-in details.",
         },
       };
     }
@@ -106,8 +111,8 @@ export const authProvider: AuthProvider = {
         "signIn",
         {
           method: "POST",
-          includeAuthenticator: true,
-          body: { account, password },
+          authenticator,
+          body,
         }
       );
       if (!result.token) {
@@ -120,11 +125,12 @@ export const authProvider: AuthProvider = {
         };
       }
 
+      nocobaseClient.setAuthenticator(authenticator);
       nocobaseClient.setToken(result.token);
       nocobaseClient.setRole(null);
       clearCurrentUserCache();
       clearAcl();
-      return { success: true, redirectTo: "/" };
+      return { success: true, redirectTo };
     } catch (error) {
       return {
         success: false,
@@ -140,21 +146,99 @@ export const authProvider: AuthProvider = {
     }
   },
 
+  register: async (params) => {
+    const {
+      authenticator = nocobaseClient.getAuthenticator(),
+      redirectTo = "/login",
+      ...values
+    } = params ?? {};
+
+    try {
+      await nocobaseClient.action("auth", "signUp", {
+        method: "POST",
+        authenticator,
+        body: values,
+      });
+      return {
+        success: true,
+        redirectTo,
+        successNotification: {
+          message: "Account created",
+          description: "You can now sign in with your new account.",
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          name: "RegistrationError",
+          message: getErrorMessage(error, "Unable to create the account."),
+        },
+      };
+    }
+  },
+
+  forgotPassword: async (params) => {
+    const {
+      authenticator = nocobaseClient.getAuthenticator(),
+      ...values
+    } = params ?? {};
+    const baseURL =
+      typeof window === "undefined"
+        ? undefined
+        : window.location.href.split("/forgot-password")[0];
+
+    try {
+      await nocobaseClient.action("auth", "lostPassword", {
+        method: "POST",
+        authenticator,
+        body: { ...values, baseURL },
+      });
+      return {
+        success: true,
+        successNotification: {
+          message: "Reset link sent",
+          description: "Check your inbox for password reset instructions.",
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          name: "PasswordResetError",
+          message: getErrorMessage(error, "Unable to send the reset link."),
+        },
+      };
+    }
+  },
+
   logout: async () => {
     const token = nocobaseClient.getToken();
+    let redirect: string | undefined;
     try {
       if (token) {
-        await nocobaseClient.action("auth", "signOut", {
-          method: "POST",
-          token,
-          includeAuthenticator: true,
-        });
+        const result = await nocobaseClient.action<NocoBaseSignOutResponse>(
+          "auth",
+          "signOut",
+          {
+            method: "POST",
+            token,
+            includeAuthenticator: true,
+          }
+        );
+        redirect = result?.redirect;
       }
     } finally {
       nocobaseClient.setToken(null);
+      nocobaseClient.setAuthenticator(null);
       nocobaseClient.setRole(null);
       clearCurrentUserCache();
       clearAcl();
+    }
+
+    if (redirect && typeof window !== "undefined") {
+      window.location.assign(nocobaseClient.resolveUrl(redirect));
+      return { success: true };
     }
 
     return { success: true, redirectTo: "/login" };
@@ -166,6 +250,7 @@ export const authProvider: AuthProvider = {
       return { authenticated: true };
     } catch {
       nocobaseClient.setToken(null);
+      nocobaseClient.setAuthenticator(null);
       nocobaseClient.setRole(null);
       clearCurrentUserCache();
       clearAcl();
@@ -207,6 +292,7 @@ export const authProvider: AuthProvider = {
 
     if (status === 401) {
       nocobaseClient.setToken(null);
+      nocobaseClient.setAuthenticator(null);
       nocobaseClient.setRole(null);
       clearCurrentUserCache();
       clearAcl();

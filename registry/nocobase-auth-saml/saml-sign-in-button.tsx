@@ -1,0 +1,42 @@
+import { LogIn } from "lucide-react";
+
+import type { AuthenticatorComponentProps } from "@/components/auth/types";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { resolveTranslatableText } from "@/lib/i18n";
+
+import { useSamlSignIn } from "./use-saml-sign-in";
+
+export default function SamlSignInButton({
+  authenticator,
+}: AuthenticatorComponentProps) {
+  const { signIn, isPending, error } = useSamlSignIn(authenticator);
+  return (
+    <div className="space-y-3">
+      {error && (
+        <Alert variant="destructive">
+          <AlertTitle>SAML sign-in failed</AlertTitle>
+          <AlertDescription>{error.message}</AlertDescription>
+        </Alert>
+      )}
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        disabled={isPending}
+        onClick={signIn}
+      >
+        <LogIn />
+        {isPending
+          ? "Redirecting…"
+          : resolveTranslatableText(
+              authenticator.title || authenticator.authTypeTitle || "SAML"
+            )}
+      </Button>
+    </div>
+  );
+}

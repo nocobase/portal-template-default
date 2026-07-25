@@ -24,6 +24,79 @@ namespace for shared controls. Feature-specific Registry translations remain
 inside their own extension namespace and are not mixed into application locale
 files.
 
+### Authentication UI
+
+The default login page calls `authenticators:publicList` and renders every
+enabled NocoBase authenticator that has a frontend adapter installed. Basic
+username/password authentication is built into the Starter. Optional methods
+are installed independently:
+
+```bash
+pnpm exec shadcn add @nocobase/auth-sms
+pnpm exec shadcn add @nocobase/auth-ldap
+pnpm exec shadcn add @nocobase/auth-oidc
+pnpm exec shadcn add @nocobase/auth-saml
+pnpm exec shadcn add @nocobase/auth-cas
+pnpm exec shadcn add @nocobase/auth-wecom
+pnpm exec shadcn add @nocobase/auth-dingtalk
+```
+
+The application login page remains the customization boundary. Keep the
+default dynamic page with:
+
+```tsx
+import { DefaultSignInPage } from "@/components/auth/default-sign-in-page"
+
+export const Login = () => <DefaultSignInPage />
+```
+
+To replace only one authenticator UI, use `renderAuthenticator` and return the
+default element for everything else:
+
+```tsx
+import { DefaultSignInPage } from "@/components/auth/default-sign-in-page"
+import { useOidcSignIn } from "@/extensions/nocobase-auth-oidc"
+import { Button } from "@/components/ui/button"
+
+function CompanyOidcButton({ authenticator }) {
+  const oidc = useOidcSignIn(authenticator)
+  return <Button onClick={oidc.signIn}>Company SSO</Button>
+}
+
+export const Login = () => (
+  <DefaultSignInPage
+    renderAuthenticator={({ authenticator, defaultElement }) =>
+      authenticator.name === "company-oidc" ? (
+        <CompanyOidcButton authenticator={authenticator} />
+      ) : (
+        defaultElement
+      )
+    }
+  />
+)
+```
+
+Replace `src/pages/login/index.tsx` completely when the application needs a
+fully custom login page. Token callback capture, current authenticator storage,
+request headers, and logout behavior remain provided by the Starter runtime and
+do not depend on `DefaultSignInPage`.
+
+```tsx
+import { AuthLayout } from "@/components/auth/auth-layout"
+import { BasicSignInForm } from "@/components/auth"
+
+export const Login = () => (
+  <AuthLayout title="Sign in" description="Continue to your workspace.">
+    <BasicSignInForm
+      authenticator={{
+        name: "basic",
+        authType: "Email/Password",
+      }}
+    />
+  </AuthLayout>
+)
+```
+
 ## Available Scripts
 
 ### Running the development server.

@@ -59,6 +59,118 @@
       }
     },
     {
+      "name": "auth-oidc",
+      "type": "registry:block",
+      "title": "NocoBase OIDC Authentication",
+      "description": "Dynamic OIDC sign-in adapter and headless sign-in hook for the NocoBase Starter.",
+      "dependencies": [
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "docs": "Requires the Starter authentication runtime and an enabled OIDC authenticator in NocoBase. The default UI is discovered automatically and can be replaced per authentication type or authenticator instance from the application login page.",
+      "source": {
+        "root": "registry/nocobase-auth-oidc",
+        "target": "src/extensions/nocobase-auth-oidc",
+        "install": false,
+        "include": ["."]
+      }
+    },
+    {
+      "name": "auth-saml",
+      "type": "registry:block",
+      "title": "NocoBase SAML Authentication",
+      "description": "Dynamic SAML sign-in adapter, automatic redirect provider, and headless sign-in hook.",
+      "dependencies": [
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "docs": "Requires the Starter authentication runtime and an enabled SAML authenticator in NocoBase.",
+      "source": {
+        "root": "registry/nocobase-auth-saml",
+        "target": "src/extensions/nocobase-auth-saml",
+        "install": false,
+        "include": ["."]
+      }
+    },
+    {
+      "name": "auth-cas",
+      "type": "registry:block",
+      "title": "NocoBase CAS Authentication",
+      "description": "Dynamic CAS sign-in adapter and headless sign-in hook.",
+      "dependencies": [
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "docs": "Requires the Starter authentication runtime and an enabled CAS authenticator in NocoBase.",
+      "source": {
+        "root": "registry/nocobase-auth-cas",
+        "target": "src/extensions/nocobase-auth-cas",
+        "install": false,
+        "include": ["."]
+      }
+    },
+    {
+      "name": "auth-ldap",
+      "type": "registry:block",
+      "title": "NocoBase LDAP Authentication",
+      "description": "Dynamic LDAP account/password form and headless sign-in hook.",
+      "docs": "Requires the Starter authentication runtime and an enabled LDAP authenticator in NocoBase.",
+      "source": {
+        "root": "registry/nocobase-auth-ldap",
+        "target": "src/extensions/nocobase-auth-ldap",
+        "install": false,
+        "include": ["."]
+      }
+    },
+    {
+      "name": "auth-sms",
+      "type": "registry:block",
+      "title": "NocoBase SMS Authentication",
+      "description": "Dynamic SMS verification-code form, delivery countdown, and headless sign-in hook.",
+      "docs": "Requires the Starter authentication runtime, an enabled SMS authenticator, and a configured public SMS verifier in NocoBase.",
+      "source": {
+        "root": "registry/nocobase-auth-sms",
+        "target": "src/extensions/nocobase-auth-sms",
+        "install": false,
+        "include": ["."]
+      }
+    },
+    {
+      "name": "auth-wecom",
+      "type": "registry:block",
+      "title": "NocoBase WeCom Authentication",
+      "description": "Dynamic WeCom sign-in adapter, WeCom-browser automatic login, and headless sign-in hook.",
+      "dependencies": [
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "docs": "Requires the Starter authentication runtime and an enabled WeCom authenticator in NocoBase.",
+      "source": {
+        "root": "registry/nocobase-auth-wecom",
+        "target": "src/extensions/nocobase-auth-wecom",
+        "install": false,
+        "include": ["."]
+      }
+    },
+    {
+      "name": "auth-dingtalk",
+      "type": "registry:block",
+      "title": "NocoBase DingTalk Authentication",
+      "description": "Dynamic DingTalk sign-in adapter, OAuth and micro-app automatic login, and headless sign-in hook.",
+      "dependencies": [
+        "dingtalk-jsapi@3.1.1",
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "docs": "Requires the Starter authentication runtime and an enabled DingTalk authenticator in NocoBase. DingTalk JSAPI is loaded lazily for internal micro-app login.",
+      "source": {
+        "root": "registry/nocobase-auth-dingtalk",
+        "target": "src/extensions/nocobase-auth-dingtalk",
+        "install": false,
+        "include": ["."]
+      }
+    },
+    {
       "name": "ai-runtime",
       "type": "registry:lib",
       "title": "NocoBase AI Runtime",

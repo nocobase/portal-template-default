@@ -27,6 +27,7 @@ import { TooltipProvider } from "./components/ui/tooltip";
 import { BrandLogo } from "./components/app-shell/brand";
 import {
   AppExtensionProviders,
+  AppAuthRuntimeProviders,
   extensionResources,
   extensionRouteElements,
 } from "./app/extensions";
@@ -71,9 +72,10 @@ const basename = import.meta.env.BASE_URL.replace(/\/+$/, "");
 function App() {
   return (
     <BrowserRouter basename={basename || undefined}>
-      <ThemeProvider>
-        <TooltipProvider>
-          <SystemSettingsProvider>
+      <AppAuthRuntimeProviders>
+        <ThemeProvider>
+          <TooltipProvider>
+            <SystemSettingsProvider>
             <Refine
               dataProvider={dataProvider}
               notificationProvider={useNotificationProvider()}
@@ -180,6 +182,7 @@ function App() {
                 }
               >
                 <Route path="/login" element={<Login />} />
+                <Route path="/signin" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
               </Route>
@@ -189,9 +192,10 @@ function App() {
             <UnsavedChangesNotifier />
             <DocumentTitleHandler appName="NocoBase" />
             </Refine>
-          </SystemSettingsProvider>
-        </TooltipProvider>
-      </ThemeProvider>
+            </SystemSettingsProvider>
+          </TooltipProvider>
+        </ThemeProvider>
+      </AppAuthRuntimeProviders>
     </BrowserRouter>
   );
 }

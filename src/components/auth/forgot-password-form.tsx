@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useForgotPassword, useLink } from "@refinedev/core";
+import { useSearchParams } from "react-router";
 
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { Button } from "@/components/ui/button";
@@ -12,11 +13,15 @@ import { Label } from "@/components/ui/label";
 export const ForgotPasswordForm = () => {
   const [email, setEmail] = useState("");
   const Link = useLink();
-  const { mutate: forgotPassword } = useForgotPassword();
+  const [searchParams] = useSearchParams();
+  const { mutate: forgotPassword, isPending } = useForgotPassword();
 
   const handleForgotPassword = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    forgotPassword({ email });
+    forgotPassword({
+      email,
+      authenticator: searchParams.get("name") ?? undefined,
+    });
   };
 
   return (
@@ -44,11 +49,14 @@ export const ForgotPasswordForm = () => {
             autoComplete="email"
             autoFocus
             required
-            className="h-11 rounded-lg"
           />
         </div>
-        <Button type="submit" size="lg" className="h-11 w-full rounded-lg">
-          Send reset link
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isPending}
+        >
+          {isPending ? "Sending…" : "Send reset link"}
         </Button>
       </form>
     </AuthLayout>

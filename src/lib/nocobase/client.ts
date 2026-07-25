@@ -2,6 +2,7 @@ import {
   API_ORIGIN,
   API_URL,
   NOCOBASE_AUTHENTICATOR,
+  NOCOBASE_AUTHENTICATOR_KEY,
   NOCOBASE_LOCALE_KEY,
   NOCOBASE_ROLE_KEY,
   NOCOBASE_TOKEN_KEY,
@@ -22,6 +23,7 @@ export type NocoBaseRequestOptions = {
   body?: unknown;
   signal?: AbortSignal;
   token?: string;
+  authenticator?: string | null;
   role?: string;
   includeRole?: boolean;
   includeAuthenticator?: boolean;
@@ -93,6 +95,25 @@ export class NocoBaseClient {
     );
   }
 
+  getStoredAuthenticator() {
+    return typeof localStorage === "undefined"
+      ? undefined
+      : localStorage.getItem(NOCOBASE_AUTHENTICATOR_KEY) ?? undefined;
+  }
+
+  getAuthenticator() {
+    return this.getStoredAuthenticator() ?? NOCOBASE_AUTHENTICATOR;
+  }
+
+  setAuthenticator(authenticator?: string | null) {
+    if (typeof localStorage === "undefined") return;
+    if (authenticator) {
+      localStorage.setItem(NOCOBASE_AUTHENTICATOR_KEY, authenticator);
+    } else {
+      localStorage.removeItem(NOCOBASE_AUTHENTICATOR_KEY);
+    }
+  }
+
   setToken(token?: string | null) {
     if (typeof localStorage === "undefined") return;
     if (token) localStorage.setItem(NOCOBASE_TOKEN_KEY, token);
@@ -153,6 +174,7 @@ export class NocoBaseClient {
 
   getHeaders({
     token = this.getToken(),
+    authenticator,
     role = this.getRole(),
     includeRole = true,
     includeAuthenticator = false,
@@ -163,6 +185,7 @@ export class NocoBaseClient {
   }: Pick<
     NocoBaseRequestOptions,
     | "token"
+    | "authenticator"
     | "role"
     | "includeRole"
     | "includeAuthenticator"
@@ -171,6 +194,13 @@ export class NocoBaseClient {
     | "accept"
     | "body"
   > = {}) {
+    const resolvedAuthenticator =
+      authenticator === null
+        ? undefined
+        : authenticator ??
+          (includeAuthenticator
+            ? this.getAuthenticator()
+            : this.getStoredAuthenticator());
     const locale = this.getLocale();
     const formData =
       typeof FormData !== "undefined" && body instanceof FormData;
@@ -182,8 +212,8 @@ export class NocoBaseClient {
       ...(accept === "stream"
         ? { "Cache-Control": "no-cache", Pragma: "no-cache" }
         : {}),
-      ...(includeAuthenticator
-        ? { "X-Authenticator": NOCOBASE_AUTHENTICATOR }
+      ...(resolvedAuthenticator
+        ? { "X-Authenticator": resolvedAuthenticator }
         : {}),
       ...(includeRole && role ? { "X-Role": role } : {}),
       ...(withAclMeta ? { "X-With-ACL-Meta": "true" } : {}),
