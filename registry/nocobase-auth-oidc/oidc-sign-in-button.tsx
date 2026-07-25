@@ -13,7 +13,8 @@ import { useOidcSignIn } from "./use-oidc-sign-in";
 
 export default function OidcSignInButton({
   authenticator,
-}: AuthenticatorComponentProps) {
+  onSignIn,
+}: AuthenticatorComponentProps & { onSignIn?: () => void }) {
   const { signIn, isPending, error } = useOidcSignIn(authenticator);
 
   return (
@@ -28,11 +29,11 @@ export default function OidcSignInButton({
         type="button"
         variant="outline"
         className="w-full"
-        disabled={isPending}
-        onClick={signIn}
+        disabled={!onSignIn && isPending}
+        onClick={onSignIn ?? signIn}
       >
         <LogIn />
-        {isPending
+        {!onSignIn && isPending
           ? "Redirecting…"
           : resolveTranslatableText(
               authenticator.title || authenticator.authTypeTitle || "OIDC"

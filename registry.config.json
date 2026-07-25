@@ -62,7 +62,7 @@
       "name": "auth-oidc",
       "type": "registry:block",
       "title": "NocoBase OIDC Authentication",
-      "description": "Dynamic OIDC sign-in adapter and headless sign-in hook for the NocoBase Starter.",
+      "description": "Dynamic OIDC sign-in adapter, headless sign-in hook, and integrated component demo.",
       "dependencies": [
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
@@ -79,7 +79,7 @@
       "name": "auth-saml",
       "type": "registry:block",
       "title": "NocoBase SAML Authentication",
-      "description": "Dynamic SAML sign-in adapter, automatic redirect provider, and headless sign-in hook.",
+      "description": "Dynamic SAML sign-in adapter, automatic redirect provider, headless hook, and integrated demo.",
       "dependencies": [
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
@@ -96,7 +96,7 @@
       "name": "auth-cas",
       "type": "registry:block",
       "title": "NocoBase CAS Authentication",
-      "description": "Dynamic CAS sign-in adapter and headless sign-in hook.",
+      "description": "Dynamic CAS sign-in adapter, headless sign-in hook, and integrated component demo.",
       "dependencies": [
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
@@ -113,7 +113,7 @@
       "name": "auth-ldap",
       "type": "registry:block",
       "title": "NocoBase LDAP Authentication",
-      "description": "Dynamic LDAP account/password form and headless sign-in hook.",
+      "description": "Dynamic LDAP account/password form, headless sign-in hook, and integrated component demo.",
       "docs": "Requires the Starter authentication runtime and an enabled LDAP authenticator in NocoBase.",
       "source": {
         "root": "registry/nocobase-auth-ldap",
@@ -126,7 +126,7 @@
       "name": "auth-sms",
       "type": "registry:block",
       "title": "NocoBase SMS Authentication",
-      "description": "Dynamic SMS verification-code form, delivery countdown, and headless sign-in hook.",
+      "description": "Dynamic SMS verification-code form, delivery countdown, headless hook, and integrated demo.",
       "docs": "Requires the Starter authentication runtime, an enabled SMS authenticator, and a configured public SMS verifier in NocoBase.",
       "source": {
         "root": "registry/nocobase-auth-sms",
@@ -139,7 +139,7 @@
       "name": "auth-wecom",
       "type": "registry:block",
       "title": "NocoBase WeCom Authentication",
-      "description": "Dynamic WeCom sign-in adapter, WeCom-browser automatic login, and headless sign-in hook.",
+      "description": "Dynamic WeCom sign-in adapter, browser automatic login, headless hook, and integrated demo.",
       "dependencies": [
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
@@ -156,7 +156,7 @@
       "name": "auth-dingtalk",
       "type": "registry:block",
       "title": "NocoBase DingTalk Authentication",
-      "description": "Dynamic DingTalk sign-in adapter, OAuth and micro-app automatic login, and headless sign-in hook.",
+      "description": "Dynamic DingTalk sign-in adapter, automatic login, headless hook, and integrated demo.",
       "dependencies": [
         "dingtalk-jsapi@3.1.1",
         "lucide-react@^0.487.0",

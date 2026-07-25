@@ -13,7 +13,8 @@ import { useDingtalkSignIn } from "./use-dingtalk-sign-in";
 
 export default function DingtalkSignInButton({
   authenticator,
-}: AuthenticatorComponentProps) {
+  onSignIn,
+}: AuthenticatorComponentProps & { onSignIn?: () => void }) {
   const { signIn, isPending, error } = useDingtalkSignIn(authenticator);
   return (
     <div className="space-y-3">
@@ -27,11 +28,11 @@ export default function DingtalkSignInButton({
         type="button"
         variant="outline"
         className="w-full"
-        disabled={isPending}
-        onClick={signIn}
+        disabled={!onSignIn && isPending}
+        onClick={onSignIn ?? signIn}
       >
         <MessageSquare />
-        {isPending
+        {!onSignIn && isPending
           ? "Redirecting…"
           : resolveTranslatableText(
               authenticator.title ||

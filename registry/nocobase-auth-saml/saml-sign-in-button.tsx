@@ -13,7 +13,8 @@ import { useSamlSignIn } from "./use-saml-sign-in";
 
 export default function SamlSignInButton({
   authenticator,
-}: AuthenticatorComponentProps) {
+  onSignIn,
+}: AuthenticatorComponentProps & { onSignIn?: () => void }) {
   const { signIn, isPending, error } = useSamlSignIn(authenticator);
   return (
     <div className="space-y-3">
@@ -27,11 +28,11 @@ export default function SamlSignInButton({
         type="button"
         variant="outline"
         className="w-full"
-        disabled={isPending}
-        onClick={signIn}
+        disabled={!onSignIn && isPending}
+        onClick={onSignIn ?? signIn}
       >
         <LogIn />
-        {isPending
+        {!onSignIn && isPending
           ? "Redirecting…"
           : resolveTranslatableText(
               authenticator.title || authenticator.authTypeTitle || "SAML"

@@ -41,6 +41,10 @@ pnpm exec shadcn add @nocobase/auth-wecom
 pnpm exec shadcn add @nocobase/auth-dingtalk
 ```
 
+The Starter includes an Authentication Demo for the three customization
+boundaries below. Each optional authentication Registry adds its own component
+Demo under the same Authentication menu when installed.
+
 The application login page remains the customization boundary. Keep the
 default dynamic page with:
 

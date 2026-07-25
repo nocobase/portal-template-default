@@ -14,7 +14,12 @@ import { useSmsSignIn } from "./use-sms-sign-in";
 
 export default function SmsSignInForm({
   authenticator,
-}: AuthenticatorComponentProps) {
+  onSendCode,
+  onSignIn,
+}: AuthenticatorComponentProps & {
+  onSendCode?: (phone: string) => void;
+  onSignIn?: (values: { phone: string; code: string }) => void;
+}) {
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const sms = useSmsSignIn(authenticator);
@@ -25,6 +30,10 @@ export default function SmsSignInForm({
       className="space-y-5"
       onSubmit={(event) => {
         event.preventDefault();
+        if (onSignIn) {
+          onSignIn({ phone, code });
+          return;
+        }
         void sms.signIn(phone, code);
       }}
     >
@@ -61,12 +70,21 @@ export default function SmsSignInForm({
           <Button
             type="button"
             variant="outline"
-            disabled={sms.isSendingCode || sms.retryAfter > 0 || !phone}
-            onClick={() => void sms.sendCode(phone).catch(() => undefined)}
+            disabled={
+              (!onSendCode && (sms.isSendingCode || sms.retryAfter > 0)) ||
+              !phone
+            }
+            onClick={() => {
+              if (onSendCode) {
+                onSendCode(phone);
+                return;
+              }
+              void sms.sendCode(phone).catch(() => undefined);
+            }}
           >
-            {sms.isSendingCode
+            {!onSendCode && sms.isSendingCode
               ? "Sending…"
-              : sms.retryAfter > 0
+              : !onSendCode && sms.retryAfter > 0
                 ? `Retry in ${sms.retryAfter}s`
                 : "Send code"}
           </Button>
@@ -75,9 +93,9 @@ export default function SmsSignInForm({
       <Button
         type="submit"
         className="w-full"
-        disabled={sms.isSigningIn}
+        disabled={!onSignIn && sms.isSigningIn}
       >
-        {sms.isSigningIn ? "Signing in…" : "Sign in"}
+        {!onSignIn && sms.isSigningIn ? "Signing in…" : "Sign in"}
       </Button>
       {autoSignup && (
         <p className="text-xs leading-5 text-muted-foreground">

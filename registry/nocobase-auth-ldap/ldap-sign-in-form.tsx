@@ -10,7 +10,10 @@ import { useLdapSignIn } from "./use-ldap-sign-in";
 
 export default function LdapSignInForm({
   authenticator,
-}: AuthenticatorComponentProps) {
+  onSignIn,
+}: AuthenticatorComponentProps & {
+  onSignIn?: (values: { account: string; password: string }) => void;
+}) {
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const { signIn, isPending } = useLdapSignIn(authenticator.name);
@@ -21,6 +24,10 @@ export default function LdapSignInForm({
       className="space-y-5"
       onSubmit={(event) => {
         event.preventDefault();
+        if (onSignIn) {
+          onSignIn({ account, password });
+          return;
+        }
         void signIn({ account, password });
       }}
     >
@@ -47,9 +54,9 @@ export default function LdapSignInForm({
       <Button
         type="submit"
         className="w-full"
-        disabled={isPending}
+        disabled={!onSignIn && isPending}
       >
-        {isPending ? "Signing in…" : "Sign in"}
+        {!onSignIn && isPending ? "Signing in…" : "Sign in"}
       </Button>
       {autoSignup && (
         <p className="text-xs leading-5 text-muted-foreground">

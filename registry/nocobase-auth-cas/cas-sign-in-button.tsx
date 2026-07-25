@@ -13,7 +13,8 @@ import { useCasSignIn } from "./use-cas-sign-in";
 
 export default function CasSignInButton({
   authenticator,
-}: AuthenticatorComponentProps) {
+  onSignIn,
+}: AuthenticatorComponentProps & { onSignIn?: () => void }) {
   const { signIn, error } = useCasSignIn(authenticator);
 
   return (
@@ -28,7 +29,7 @@ export default function CasSignInButton({
         type="button"
         variant="outline"
         className="w-full"
-        onClick={signIn}
+        onClick={onSignIn ?? signIn}
       >
         <LogIn />
         {resolveTranslatableText(

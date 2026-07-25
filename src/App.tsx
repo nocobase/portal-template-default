@@ -37,9 +37,10 @@ import { accessControlProvider } from "./providers/access-control";
 import { AclBootstrap } from "./components/access-control/acl-bootstrap";
 import { ResourceAccessGuard } from "./components/access-control/resource-access-guard";
 import { NavigateToAccessibleResource } from "./components/access-control/navigate-to-accessible-resource";
-import { UsersRound } from "lucide-react";
+import { KeyRound, PanelsTopLeft, UsersRound } from "lucide-react";
 import { i18nProvider } from "./providers/i18n";
 import { SystemSettingsProvider } from "./providers/system-settings";
+import { AuthDemoPage } from "./components/auth/demo";
 
 const coreResources: ResourceProps[] = [
   {
@@ -63,6 +64,25 @@ const coreResources: ResourceProps[] = [
       acl: {
         type: "collection",
       },
+    },
+  },
+  {
+    name: "auth-components",
+    meta: {
+      label: "Authentication",
+      icon: <KeyRound />,
+      description: "NocoBase authentication UI and integration patterns.",
+      acl: { type: "authenticated" },
+    },
+  },
+  {
+    name: "auth-patterns",
+    list: "/auth",
+    meta: {
+      parent: "auth-components",
+      label: "Login composition",
+      icon: <PanelsTopLeft />,
+      acl: { type: "authenticated" },
     },
   },
 ];
@@ -112,6 +132,7 @@ function App() {
                 }
               >
                 <Route index element={<NavigateToAccessibleResource />} />
+                <Route path="/auth" element={<AuthDemoPage />} />
                 <Route
                   path="/users"
                   element={<UserResourceLayout />}

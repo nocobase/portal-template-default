@@ -24,7 +24,8 @@ function plainText(value: unknown) {
 
 export default function WecomSignInButton({
   authenticator,
-}: AuthenticatorComponentProps) {
+  onSignIn,
+}: AuthenticatorComponentProps & { onSignIn?: () => void }) {
   const { signIn, isPending, error } = useWecomSignIn(authenticator);
   const tooltip = plainText(authenticator.options?.btnTooltip);
   const button = (
@@ -32,11 +33,11 @@ export default function WecomSignInButton({
       type="button"
       variant="outline"
       className="w-full"
-      disabled={isPending}
-      onClick={signIn}
+      disabled={!onSignIn && isPending}
+      onClick={onSignIn ?? signIn}
     >
       <Building2 />
-      {isPending
+      {!onSignIn && isPending
         ? "Redirecting…"
         : resolveTranslatableText(
             authenticator.title ||
