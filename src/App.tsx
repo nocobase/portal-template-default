@@ -5,14 +5,6 @@ import routerProvider, {
   CatchAllNavigate,
   UnsavedChangesNotifier,
 } from "@refinedev/react-router";
-import {
-  UserCreate,
-  UserEdit,
-  UserResourceLayout,
-  RoleDetailRoute,
-  userRoutes,
-  UserShow,
-} from "./pages/users";
 import { dataProvider } from "./providers/data";
 import { Login } from "./pages/login";
 import { Register } from "./pages/register";
@@ -35,38 +27,14 @@ import "./App.css";
 import { authProvider } from "./providers/auth";
 import { accessControlProvider } from "./providers/access-control";
 import { AclBootstrap } from "./components/access-control/acl-bootstrap";
-import { ResourceAccessGuard } from "./components/access-control/resource-access-guard";
 import { NavigateToAccessibleResource } from "./components/access-control/navigate-to-accessible-resource";
-import { KeyRound, PanelsTopLeft, UsersRound } from "lucide-react";
+import { KeyRound, PanelsTopLeft } from "lucide-react";
 import { i18nProvider } from "./providers/i18n";
 import { SystemSettingsProvider } from "./providers/system-settings";
 import { AuthDemoPage } from "./components/auth/demo";
 import { getPortalBase } from "./providers/runtime-config";
 
 const coreResources: ResourceProps[] = [
-  {
-    name: "users",
-    list: userRoutes.list,
-    create: userRoutes.create,
-    edit: userRoutes.edit,
-    show: userRoutes.show,
-    meta: {
-      label: "Users",
-      singularLabel: "User",
-      i18nKey: "resources.users",
-      i18nSingularKey: "resources.user",
-      i18nOptions: { ns: "app" },
-      descriptionI18nKey: "resources.users.description",
-      icon: <UsersRound />,
-      description:
-        "Manage the people who can sign in and work in this NocoBase application.",
-      canCreate: true,
-      canDelete: true,
-      acl: {
-        type: "collection",
-      },
-    },
-  },
   {
     name: "auth-components",
     meta: {
@@ -134,60 +102,6 @@ function App() {
               >
                 <Route index element={<NavigateToAccessibleResource />} />
                 <Route path="/auth" element={<AuthDemoPage />} />
-                <Route
-                  path="/users"
-                  element={<UserResourceLayout />}
-                >
-                  <Route
-                    path="create"
-                    element={
-                      <ResourceAccessGuard resource="users" action="create">
-                        <UserCreate />
-                      </ResourceAccessGuard>
-                    }
-                  />
-                  <Route
-                    path="edit/:id"
-                    element={
-                      <ResourceAccessGuard resource="users" action="edit">
-                        <UserEdit />
-                      </ResourceAccessGuard>
-                    }
-                  />
-                  <Route
-                    path="roles/:roleName"
-                    element={
-                      <ResourceAccessGuard resource="roles" action="show">
-                        <RoleDetailRoute returnTo="list" />
-                      </ResourceAccessGuard>
-                    }
-                  />
-                  <Route
-                    path="show/:id"
-                    element={
-                      <ResourceAccessGuard resource="users" action="show">
-                        <UserShow />
-                      </ResourceAccessGuard>
-                    }
-                  >
-                    <Route
-                      path="edit"
-                      element={
-                        <ResourceAccessGuard resource="users" action="edit">
-                          <UserEdit returnTo="show" />
-                        </ResourceAccessGuard>
-                      }
-                    />
-                    <Route
-                      path="roles/:roleName"
-                      element={
-                        <ResourceAccessGuard resource="roles" action="show">
-                          <RoleDetailRoute returnTo="show" />
-                        </ResourceAccessGuard>
-                      }
-                    />
-                  </Route>
-                </Route>
                 {extensionRouteElements}
                 <Route path="*" element={<ErrorComponent />} />
               </Route>
