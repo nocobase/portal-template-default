@@ -84,15 +84,12 @@ function UserEditForm({ id }: { id?: string }) {
     getValues: () => getAIUserFormValues(form.getValues()),
     setValues: (values) => applyAIUserFormValues(form, values),
   });
-  const submitUser = onFinish as unknown as (
-    values: UserFormValues
-  ) => void | Promise<void>;
 
   return (
     <Form {...form}>
       <form
         ref={aiFormRef}
-        onSubmit={form.handleSubmit((values) => submitUser(values))}
+        onSubmit={form.handleSubmit((values) => onFinish(values))}
         className="flex min-h-0 flex-1 flex-col"
       >
         <div className="resource-form min-h-0 flex-1 overflow-y-auto px-5 py-5">
