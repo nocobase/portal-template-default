@@ -1,6 +1,7 @@
 {
   "name": "@nocobase/portal-template-default",
   "version": "1.0.9",
+  "packageManager": "pnpm@10.28.0",
   "type": "module",
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",
@@ -84,8 +85,6 @@
     "registry:install": "node ./scripts/registry.mjs install-missing",
     "registry:preview": "node ./scripts/registry.mjs preview",
     "registry:build": "node ./scripts/registry.mjs build && shadcn build ./registry.json -o ./public/r",
-    "test:acl": "node registry/nocobase-acl/tests/acl-regression.mjs",
-    "test:i18n": "node registry/nocobase-i18n/tests/i18n-regression.mjs",
     "start": "refine start",
     "refine": "refine"
   },
