@@ -1,0 +1,373 @@
+import {
+  AlertCircle,
+  Check,
+  CircleX,
+  FileIcon,
+  Loader2,
+  Plus,
+  Trash2,
+  RotateCcw,
+  X,
+  type LucideIcon,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { nocobaseClient } from "@/lib/nocobase/client";
+
+import { useFileUpload } from "./use-file-upload";
+import { getAcceptAttribute } from "./validation";
+import type {
+  FileFieldDescriptor,
+  FileUploadFieldValue,
+  FileUploadItem,
+  FileUploadMessages,
+  NocoBaseFileRecord,
+} from "./types";
+
+export type FileUploadFieldProps = {
+  descriptor: FileFieldDescriptor;
+  value: FileUploadFieldValue;
+  onChange: (value: FileUploadFieldValue) => void;
+  disabled?: boolean;
+  readOnly?: boolean;
+  maxFiles?: number;
+  className?: string;
+  messages?: Partial<FileUploadMessages>;
+  onUploadStart?: (file: File) => void;
+  onUploadComplete?: (record: NocoBaseFileRecord, file: File) => void;
+  onUploadError?: (error: Error, file: File) => void;
+};
+
+const defaultMessages: FileUploadMessages = {
+  chooseFiles: "Choose files",
+  chooseFile: "Choose file",
+  dragActive: "Drop files here",
+  dragInactive: "Drag files here, or choose from your device.",
+  checkingStorage: "Checking upload settings",
+  uploading: "Uploading",
+  uploaded: "Uploaded",
+  failed: "Failed",
+  cancelled: "Cancelled",
+  retry: "Retry",
+  remove: "Remove",
+  cancel: "Cancel",
+  storageLoading: "Loading upload settings...",
+  storageUnsupported: "This field is not connected to a file collection.",
+  maxFilesReached: "The file limit has been reached.",
+  uploadDisabled: "File upload is disabled.",
+  noFiles: "No files",
+  fileSizeExceeded: (maxSize) => `File size exceeds ${formatFileSize(maxSize)}.`,
+  storageMimeTypeRejected: "File type is not allowed by storage.",
+  fieldMimeTypeRejected: "File type is not allowed for this field.",
+  directUploadFailed: (status) => `Direct upload failed (${status}).`,
+};
+
+function formatFileSize(size?: number) {
+  if (size === undefined) return "-";
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function getStatusLabel(item: FileUploadItem, messages: FileUploadMessages) {
+  if (item.status === "checking") return messages.checkingStorage;
+  if (item.status === "pending" || item.status === "uploading") {
+    return messages.uploading;
+  }
+  if (item.status === "done") return messages.uploaded;
+  if (item.status === "cancelled") return messages.cancelled;
+  return messages.failed;
+}
+
+function UploadStatusIcon({
+  item,
+  messages,
+}: {
+  item: FileUploadItem;
+  messages: FileUploadMessages;
+}) {
+  const label = getStatusLabel(item, messages);
+  const iconClassName = "size-3.5";
+  const isPending =
+    item.status === "pending" ||
+    item.status === "checking" ||
+    item.status === "uploading";
+
+  return (
+    <span
+      aria-label={label}
+      title={label}
+      className={cn(
+        "inline-flex size-6 items-center justify-center rounded-full border shadow-sm",
+        item.status === "done" &&
+          "border-green-600/20 bg-green-600 text-white",
+        item.status === "error" &&
+          "border-destructive/20 bg-destructive text-destructive-foreground",
+        item.status === "cancelled" &&
+          "border-muted-foreground/20 bg-muted text-muted-foreground",
+        isPending && "border-primary/20 bg-primary text-primary-foreground"
+      )}
+    >
+      {item.status === "done" ? (
+        <Check className={iconClassName} />
+      ) : item.status === "error" ? (
+        <AlertCircle className={iconClassName} />
+      ) : item.status === "cancelled" ? (
+        <CircleX className={iconClassName} />
+      ) : (
+        <Loader2 className={cn(iconClassName, "animate-spin")} />
+      )}
+    </span>
+  );
+}
+
+function IconButton({
+  icon: Icon,
+  label,
+  onClick,
+  disabled,
+}: {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="size-6 bg-black/50 text-white hover:bg-black/70 hover:text-white"
+    >
+      <Icon />
+    </Button>
+  );
+}
+
+function isImageRecord(item: FileUploadItem) {
+  return (
+    item.record?.mimetype?.startsWith("image/") ||
+    item.rawFile?.type?.startsWith("image/")
+  );
+}
+
+function getPreviewUrl(item: FileUploadItem) {
+  const value = item.record?.preview || item.record?.url;
+  return value ? nocobaseClient.resolveUrl(value) : undefined;
+}
+
+export function FileUploadField({
+  descriptor,
+  value,
+  onChange,
+  disabled,
+  readOnly,
+  maxFiles,
+  className,
+  messages: messageOverrides,
+  onUploadStart,
+  onUploadComplete,
+  onUploadError,
+}: FileUploadFieldProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const messages = useMemo(
+    () => ({ ...defaultMessages, ...messageOverrides }),
+    [messageOverrides]
+  );
+  const {
+    items,
+    addFiles,
+    removeItem,
+    cancelItem,
+    retryItem,
+    storageError,
+    canUpload,
+    multiple,
+    reachedLimit,
+  } = useFileUpload({
+    descriptor,
+    value,
+    onChange,
+    disabled,
+    readOnly,
+    maxFiles,
+    messages,
+    onUploadStart,
+    onUploadComplete,
+    onUploadError,
+  });
+  const uploadDisabled = !canUpload || reachedLimit;
+  const selectable = !readOnly && !uploadDisabled;
+
+  const handleSelectedFiles = (fileList: FileList | null) => {
+    if (!fileList?.length || uploadDisabled) return;
+    void addFiles(fileList);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+    if (uploadDisabled) return;
+    void addFiles(event.dataTransfer.files);
+  };
+
+  return (
+    <div className={cn("space-y-3", className)}>
+      {storageError ? (
+        <Alert variant="destructive">
+          <AlertDescription>{storageError.message}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      <div
+        className={cn(
+          "flex flex-wrap gap-x-2 gap-y-8",
+          readOnly && !items.length ? "hidden" : null
+        )}
+      >
+        {items.map((item) => (
+          <div key={item.key} className="w-[104px]">
+            <div
+              className={cn(
+                "group relative flex h-[104px] w-[104px] items-center justify-center overflow-hidden rounded-lg border bg-card p-1",
+                item.status === "error" && "border-destructive"
+              )}
+            >
+              {isImageRecord(item) && getPreviewUrl(item) ? (
+                <img
+                  src={getPreviewUrl(item)}
+                  alt={item.record?.title || item.displayName}
+                  className="h-full w-full rounded-md object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full flex-col items-center justify-center rounded-md bg-muted/40 px-2 text-center">
+                  {item.status === "uploading" || item.status === "checking" ? (
+                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                  ) : (
+                    <FileIcon className="size-7 text-muted-foreground" />
+                  )}
+                </div>
+              )}
+
+              {item.showStatus ? (
+                <div className="absolute bottom-2 right-2">
+                  <UploadStatusIcon item={item} messages={messages} />
+                </div>
+              ) : null}
+
+              {!readOnly ? (
+                <div className="absolute right-2 top-2 flex items-center gap-1 opacity-100">
+                  {item.status === "error" && item.rawFile ? (
+                    <IconButton
+                      icon={RotateCcw}
+                      label={messages.retry}
+                      disabled={disabled}
+                      onClick={() => void retryItem(item.key)}
+                    />
+                  ) : null}
+                  {item.status === "uploading" ? (
+                    <IconButton
+                      icon={X}
+                      label={messages.cancel}
+                      disabled={disabled}
+                      onClick={() => cancelItem(item.key)}
+                    />
+                  ) : (
+                    <IconButton
+                      icon={Trash2}
+                      label={messages.remove}
+                      disabled={disabled}
+                      onClick={() => removeItem(item.key)}
+                    />
+                  )}
+                </div>
+              ) : null}
+            </div>
+            <div
+              className={cn(
+                "mt-1 line-clamp-2 text-center text-xs text-muted-foreground",
+                item.status === "error" && "text-destructive"
+              )}
+              title={item.error?.message || item.displayName}
+            >
+              {item.status === "error"
+                ? item.error?.message || messages.failed
+                : item.displayName}
+            </div>
+          </div>
+        ))}
+
+        {selectable ? (
+          <div
+            onDragEnter={(event) => {
+              event.preventDefault();
+              if (!uploadDisabled) setIsDragging(true);
+            }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              if (!uploadDisabled) setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            className={cn(
+              "relative flex h-[104px] w-[104px] flex-col items-center justify-center overflow-hidden rounded-lg border border-dashed bg-card p-2 text-center transition-colors",
+              uploadDisabled
+                ? "cursor-not-allowed bg-muted/30 text-muted-foreground"
+                : "cursor-pointer hover:bg-muted/40",
+              isDragging && "border-primary bg-primary/5"
+            )}
+          >
+            <input
+              type="file"
+              multiple={multiple}
+              accept={getAcceptAttribute(descriptor.accept)}
+              disabled={uploadDisabled}
+              aria-label={multiple ? messages.chooseFiles : messages.chooseFile}
+              className="absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+              onChange={(event) => {
+                handleSelectedFiles(event.currentTarget.files);
+                event.currentTarget.value = "";
+              }}
+            />
+            <div className="pointer-events-none flex flex-col items-center justify-center">
+              <Plus className="mb-1 size-5 text-muted-foreground" />
+              <span className="px-1 text-xs font-medium">
+                {multiple ? messages.chooseFiles : messages.chooseFile}
+              </span>
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        {reachedLimit
+          ? messages.maxFilesReached
+          : disabled
+          ? messages.uploadDisabled
+          : isDragging
+          ? messages.dragActive
+          : descriptor.accept
+          ? getAcceptAttribute(descriptor.accept)
+          : messages.dragInactive}
+      </p>
+
+      {readOnly && !items.length ? (
+        <p className="text-sm text-muted-foreground">{messages.noFiles}</p>
+      ) : null}
+
+      <div className="sr-only" aria-live="polite">
+        {items
+          .map((item) => `${item.displayName}: ${getStatusLabel(item, messages)}`)
+          .join(". ")}
+      </div>
+    </div>
+  );
+}

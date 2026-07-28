@@ -264,6 +264,23 @@
       }
     },
     {
+      "name": "file-upload",
+      "type": "registry:block",
+      "title": "NocoBase File Upload",
+      "description": "Controlled shadcn/ui file upload field for NocoBase file collections.",
+      "dependencies": [
+        "@tanstack/react-query@^5.81.5",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["alert", "badge", "button", "skeleton"],
+      "docs": "Requires the Starter NocoBase client and a field targeting a file-template collection.",
+      "source": {
+        "root": "registry/nocobase-file-upload",
+        "target": "src/extensions/nocobase-file-upload",
+        "include": ["."]
+      }
+    },
+    {
       "name": "acl-ui",
       "type": "registry:block",
       "title": "NocoBase ACL UI",

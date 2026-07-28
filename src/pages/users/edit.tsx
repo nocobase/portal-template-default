@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useAIForm, type AIFormField } from "@/extensions/nocobase-ai";
 import {
+  getFileFieldAppends,
+  serializeFileFieldValues,
+} from "@/extensions/nocobase-file-upload";
+import {
   RouteDrawer,
   RouteDrawerFooter,
   useRefineUnsavedChangesGuard,
@@ -17,9 +21,9 @@ import {
   getAIUserFormFields,
   getAIUserFormValues,
 } from "./form-context";
-import { UserFormFields } from "./form-fields";
+import { userAvatarDescriptor, UserFormFields } from "./form-fields";
 import { getUserShowPath, userRoutes } from "./routes";
-import type { UserFormValues, UserRecord } from "./types";
+import type { UserFormValues, UserRecord, UserSubmitValues } from "./types";
 
 export const UserEdit = ({
   returnTo = "list",
@@ -68,6 +72,9 @@ function UserEditForm({ id }: { id?: string }) {
       resource: "users",
       id,
       redirect: false,
+      meta: {
+        appends: getFileFieldAppends([userAvatarDescriptor]),
+      },
       onMutationSuccess: () => {
         void close({ skipBeforeClose: true });
       },
@@ -84,12 +91,21 @@ function UserEditForm({ id }: { id?: string }) {
     getValues: () => getAIUserFormValues(form.getValues()),
     setValues: (values) => applyAIUserFormValues(form, values),
   });
+  const submitUser = onFinish as unknown as (
+    values: UserSubmitValues
+  ) => void | Promise<void>;
 
   return (
     <Form {...form}>
       <form
         ref={aiFormRef}
-        onSubmit={form.handleSubmit((values) => onFinish(values))}
+        onSubmit={form.handleSubmit((values) => {
+          const payload = serializeFileFieldValues(values, [
+            userAvatarDescriptor,
+          ]) as UserSubmitValues;
+
+          return submitUser(payload);
+        })}
         className="flex min-h-0 flex-1 flex-col"
       >
         <div className="resource-form min-h-0 flex-1 overflow-y-auto px-5 py-5">
