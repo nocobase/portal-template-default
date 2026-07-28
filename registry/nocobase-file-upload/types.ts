@@ -113,3 +113,22 @@ export type FileUploadMessages = {
   fieldMimeTypeRejected: string;
   directUploadFailed: (status: number) => string;
 };
+
+export type FilePreviewMessages = {
+  preview: string;
+  download: string;
+  previous: string;
+  next: string;
+  close: string;
+  noFiles: string;
+  unsupportedTitle: string;
+  unsupportedDescription: string;
+  imageAlt: (filename: string) => string;
+  pdfTitle: string;
+  textTitle: string;
+  audioTitle: string;
+  videoTitle: string;
+  officeTitle: string;
+  officeLoading: string;
+  officeError: string;
+};

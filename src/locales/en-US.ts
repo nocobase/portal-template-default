@@ -97,7 +97,6 @@ export const app = {
   "users.fields.email": "Email",
   "users.fields.phone": "Phone",
   "users.fields.password": "Password",
-  "users.fields.avatar": "Avatar",
   "users.fields.roles": "Roles",
   "users.fields.createdAt": "Created at",
   "users.fields.updatedAt": "Updated at",
@@ -127,30 +126,6 @@ export const app = {
   "users.form.password.placeholder": "Set an initial password",
   "users.form.password.aiNotice":
     "Passwords are never included in AI page context or Form filler.",
-  "users.form.avatar.description":
-    "Upload an image to use as this user's avatar.",
-  "users.form.avatar.chooseFile": "Choose avatar",
-  "users.form.avatar.dragActive": "Drop the avatar here",
-  "users.form.avatar.dragInactive":
-    "Drag an image here, or choose from your device.",
-  "users.form.avatar.checkingStorage": "Checking upload settings",
-  "users.form.avatar.uploading": "Uploading",
-  "users.form.avatar.uploaded": "Uploaded",
-  "users.form.avatar.failed": "Failed",
-  "users.form.avatar.cancelled": "Cancelled",
-  "users.form.avatar.retry": "Retry",
-  "users.form.avatar.remove": "Remove",
-  "users.form.avatar.cancelUpload": "Cancel",
-  "users.form.avatar.storageUnsupported":
-    "Avatar upload is unavailable because the target file collection is not configured.",
-  "users.form.avatar.maxFilesReached": "Only one avatar can be uploaded.",
-  "users.form.avatar.uploadDisabled": "Avatar upload is disabled.",
-  "users.form.avatar.noFiles": "No avatar",
-  "users.form.avatar.fileSizeExceeded": "File size exceeds {{maxSize}} bytes.",
-  "users.form.avatar.storageMimeTypeRejected":
-    "This image type is not allowed by storage.",
-  "users.form.avatar.fieldMimeTypeRejected": "Please upload an image file.",
-  "users.form.avatar.directUploadFailed": "Direct upload failed ({{status}}).",
   "users.validation.username": "Username is required",
   "users.validation.email": "Email is required",
   "users.validation.emailFormat": "Enter a valid email address",

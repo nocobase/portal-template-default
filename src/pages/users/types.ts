@@ -1,7 +1,3 @@
-import type {
-  FileUploadFieldValue,
-  SerializedFileFieldValue,
-} from "@/extensions/nocobase-file-upload";
 import type { Role } from "@/lib/nocobase/acl";
 
 export type UserRecord = {
@@ -10,7 +6,6 @@ export type UserRecord = {
   username?: string;
   email?: string;
   phone?: string;
-  avatar?: FileUploadFieldValue;
   roles?: Role[];
   createdAt?: string;
   updatedAt?: string;
@@ -22,11 +17,6 @@ export type UserFormValues = {
   email: string;
   phone: string;
   password?: string;
-  avatar: FileUploadFieldValue;
-};
-
-export type UserSubmitValues = Omit<UserFormValues, "avatar"> & {
-  avatar: SerializedFileFieldValue;
 };
 
 export type RoleRecord = Role & {

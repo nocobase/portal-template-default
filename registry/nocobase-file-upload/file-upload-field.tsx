@@ -2,7 +2,6 @@ import {
   AlertCircle,
   Check,
   CircleX,
-  FileIcon,
   Loader2,
   Plus,
   Trash2,
@@ -14,9 +13,18 @@ import { useMemo, useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { nocobaseClient } from "@/lib/nocobase/client";
 
+import { FilePreviewDialog } from "./file-preview-dialog";
+import { defaultFilePreviewMessages } from "./file-preview-messages";
+import { getFileName } from "./file-url";
+import { FileThumbnail } from "./file-thumbnail";
 import { useFileUpload } from "./use-file-upload";
 import { getAcceptAttribute } from "./validation";
 import type {
@@ -24,6 +32,7 @@ import type {
   FileUploadFieldValue,
   FileUploadItem,
   FileUploadMessages,
+  FilePreviewMessages,
   NocoBaseFileRecord,
 } from "./types";
 
@@ -36,6 +45,7 @@ export type FileUploadFieldProps = {
   maxFiles?: number;
   className?: string;
   messages?: Partial<FileUploadMessages>;
+  previewMessages?: Partial<FilePreviewMessages>;
   onUploadStart?: (file: File) => void;
   onUploadComplete?: (record: NocoBaseFileRecord, file: File) => void;
   onUploadError?: (error: Error, file: File) => void;
@@ -143,24 +153,15 @@ function IconButton({
       aria-label={label}
       title={label}
       disabled={disabled}
-      onClick={onClick}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
       className="size-6 bg-black/50 text-white hover:bg-black/70 hover:text-white"
     >
       <Icon />
     </Button>
   );
-}
-
-function isImageRecord(item: FileUploadItem) {
-  return (
-    item.record?.mimetype?.startsWith("image/") ||
-    item.rawFile?.type?.startsWith("image/")
-  );
-}
-
-function getPreviewUrl(item: FileUploadItem) {
-  const value = item.record?.preview || item.record?.url;
-  return value ? nocobaseClient.resolveUrl(value) : undefined;
 }
 
 export function FileUploadField({
@@ -172,14 +173,25 @@ export function FileUploadField({
   maxFiles,
   className,
   messages: messageOverrides,
+  previewMessages: previewMessageOverrides,
   onUploadStart,
   onUploadComplete,
   onUploadError,
 }: FileUploadFieldProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const messages = useMemo(
     () => ({ ...defaultMessages, ...messageOverrides }),
     [messageOverrides]
+  );
+  const previewMessages = useMemo(
+    () => ({
+      ...defaultFilePreviewMessages,
+      noFiles: messages.noFiles,
+      ...previewMessageOverrides,
+    }),
+    [messages.noFiles, previewMessageOverrides]
   );
   const {
     items,
@@ -205,6 +217,13 @@ export function FileUploadField({
   });
   const uploadDisabled = !canUpload || reachedLimit;
   const selectable = !readOnly && !uploadDisabled;
+  const previewableFiles = useMemo(
+    () =>
+      items
+        .filter((item) => item.status === "done" && item.record)
+        .map((item) => item.record!),
+    [items]
+  );
 
   const handleSelectedFiles = (fileList: FileList | null) => {
     if (!fileList?.length || uploadDisabled) return;
@@ -227,34 +246,57 @@ export function FileUploadField({
         </Alert>
       ) : null}
 
-      <div
+      <TooltipProvider>
+        <div
         className={cn(
           "flex flex-wrap gap-x-2 gap-y-8",
           readOnly && !items.length ? "hidden" : null
         )}
       >
-        {items.map((item) => (
-          <div key={item.key} className="w-[104px]">
+        {items.map((item) => {
+          const itemPreviewIndex = item.record
+            ? previewableFiles.findIndex(
+                (file) => String(file.id) === String(item.record?.id)
+              )
+            : -1;
+          const canPreview = item.status === "done" && itemPreviewIndex >= 0;
+
+          return (
+            <div key={item.key} className="w-[104px]">
             <div
+              role={canPreview ? "button" : undefined}
+              tabIndex={canPreview ? 0 : undefined}
+              aria-label={
+                canPreview ? `${previewMessages.preview}: ${getFileName(item.record!)}` : undefined
+              }
+              onClick={() => {
+                if (!canPreview) return;
+                setPreviewIndex(itemPreviewIndex);
+                setPreviewOpen(true);
+              }}
+              onKeyDown={(event) => {
+                if (!canPreview) return;
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                setPreviewIndex(itemPreviewIndex);
+                setPreviewOpen(true);
+              }}
               className={cn(
                 "group relative flex h-[104px] w-[104px] items-center justify-center overflow-hidden rounded-lg border bg-card p-1",
-                item.status === "error" && "border-destructive"
+                item.status === "error" && "border-destructive",
+                canPreview && "cursor-zoom-in transition-colors hover:border-primary"
               )}
             >
-              {isImageRecord(item) && getPreviewUrl(item) ? (
-                <img
-                  src={getPreviewUrl(item)}
-                  alt={item.record?.title || item.displayName}
-                  className="h-full w-full rounded-md object-cover"
-                />
-              ) : (
+              {item.status === "uploading" || item.status === "checking" ? (
                 <div className="flex h-full w-full flex-col items-center justify-center rounded-md bg-muted/40 px-2 text-center">
-                  {item.status === "uploading" || item.status === "checking" ? (
-                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                  ) : (
-                    <FileIcon className="size-7 text-muted-foreground" />
-                  )}
+                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
                 </div>
+              ) : (
+                <FileThumbnail
+                  file={item.record}
+                  rawFile={item.rawFile}
+                  alt={item.record?.title || item.displayName}
+                />
               )}
 
               {item.showStatus ? (
@@ -264,7 +306,7 @@ export function FileUploadField({
               ) : null}
 
               {!readOnly ? (
-                <div className="absolute right-2 top-2 flex items-center gap-1 opacity-100">
+                <div className="pointer-events-none absolute right-2 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
                   {item.status === "error" && item.rawFile ? (
                     <IconButton
                       icon={RotateCcw}
@@ -291,19 +333,31 @@ export function FileUploadField({
                 </div>
               ) : null}
             </div>
-            <div
-              className={cn(
-                "mt-1 line-clamp-2 text-center text-xs text-muted-foreground",
-                item.status === "error" && "text-destructive"
-              )}
-              title={item.error?.message || item.displayName}
-            >
-              {item.status === "error"
-                ? item.error?.message || messages.failed
-                : item.displayName}
-            </div>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <div
+                    className={cn(
+                      "mt-1 w-[104px] truncate text-center text-xs text-muted-foreground",
+                      item.status === "error" && "text-destructive"
+                    )}
+                    title={item.error?.message || item.displayName}
+                  />
+                }
+              >
+                {item.status === "error"
+                  ? item.error?.message || messages.failed
+                  : item.displayName}
+              </TooltipTrigger>
+              <TooltipContent>
+                {item.status === "error"
+                  ? item.error?.message || messages.failed
+                  : item.displayName}
+              </TooltipContent>
+            </Tooltip>
           </div>
-        ))}
+          );
+        })}
 
         {selectable ? (
           <div
@@ -345,7 +399,8 @@ export function FileUploadField({
             </div>
           </div>
         ) : null}
-      </div>
+        </div>
+      </TooltipProvider>
 
       <p className="text-xs text-muted-foreground">
         {reachedLimit
@@ -368,6 +423,15 @@ export function FileUploadField({
           .map((item) => `${item.displayName}: ${getStatusLabel(item, messages)}`)
           .join(". ")}
       </div>
+
+      <FilePreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        files={previewableFiles}
+        initialIndex={previewIndex}
+        descriptor={descriptor}
+        messages={previewMessages}
+      />
     </div>
   );
 }

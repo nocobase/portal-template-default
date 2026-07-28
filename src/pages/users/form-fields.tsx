@@ -10,92 +10,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  FileUploadField,
-  type FileFieldDescriptor,
-  type FileUploadMessages,
-} from "@/extensions/nocobase-file-upload";
 import type { UserFormValues } from "./types";
 
 type Translate = ReturnType<typeof useTranslate>;
-const USER_AVATAR_FIELD_NAME = "avatar" as const;
-
-export const userAvatarDescriptor = {
-  sourceCollection: "users",
-  fieldName: USER_AVATAR_FIELD_NAME,
-  fileCollection: "files",
-  dataSourceKey: "main",
-  relation: "belongsTo",
-  accept: "image/*",
-} satisfies FileFieldDescriptor;
-
-const getAvatarUploadMessages = (translate: Translate): Partial<FileUploadMessages> => ({
-  chooseFile: translate(
-    "users.form.avatar.chooseFile",
-    { ns: "app" },
-    "Choose avatar"
-  ),
-  dragActive: translate(
-    "users.form.avatar.dragActive",
-    { ns: "app" },
-    "Drop the avatar here"
-  ),
-  dragInactive: translate(
-    "users.form.avatar.dragInactive",
-    { ns: "app" },
-    "Drag an image here, or choose from your device."
-  ),
-  checkingStorage: translate(
-    "users.form.avatar.checkingStorage",
-    { ns: "app" },
-    "Checking upload settings"
-  ),
-  uploading: translate("users.form.avatar.uploading", { ns: "app" }, "Uploading"),
-  uploaded: translate("users.form.avatar.uploaded", { ns: "app" }, "Uploaded"),
-  failed: translate("users.form.avatar.failed", { ns: "app" }, "Failed"),
-  cancelled: translate("users.form.avatar.cancelled", { ns: "app" }, "Cancelled"),
-  retry: translate("users.form.avatar.retry", { ns: "app" }, "Retry"),
-  remove: translate("users.form.avatar.remove", { ns: "app" }, "Remove"),
-  cancel: translate("users.form.avatar.cancelUpload", { ns: "app" }, "Cancel"),
-  storageUnsupported: translate(
-    "users.form.avatar.storageUnsupported",
-    { ns: "app" },
-    "Avatar upload is unavailable because the target file collection is not configured."
-  ),
-  maxFilesReached: translate(
-    "users.form.avatar.maxFilesReached",
-    { ns: "app" },
-    "Only one avatar can be uploaded."
-  ),
-  uploadDisabled: translate(
-    "users.form.avatar.uploadDisabled",
-    { ns: "app" },
-    "Avatar upload is disabled."
-  ),
-  noFiles: translate("users.form.avatar.noFiles", { ns: "app" }, "No avatar"),
-  fileSizeExceeded: (maxSize) =>
-    translate(
-      "users.form.avatar.fileSizeExceeded",
-      { ns: "app", maxSize },
-      `File size exceeds ${maxSize} bytes.`
-    ),
-  storageMimeTypeRejected: translate(
-    "users.form.avatar.storageMimeTypeRejected",
-    { ns: "app" },
-    "This image type is not allowed by storage."
-  ),
-  fieldMimeTypeRejected: translate(
-    "users.form.avatar.fieldMimeTypeRejected",
-    { ns: "app" },
-    "Please upload an image file."
-  ),
-  directUploadFailed: (status) =>
-    translate(
-      "users.form.avatar.directUploadFailed",
-      { ns: "app", status },
-      `Direct upload failed (${status}).`
-    ),
-});
 
 export function UserFormFields({
   form,
@@ -108,37 +25,6 @@ export function UserFormFields({
 }) {
   return (
     <>
-      <FormField
-        control={form.control}
-        name={userAvatarDescriptor.fieldName}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>
-              {translate("users.fields.avatar", { ns: "app" }, "Avatar")}
-            </FormLabel>
-            <FormControl
-              render={
-                <FileUploadField
-                  descriptor={userAvatarDescriptor}
-                  value={field.value ?? null}
-                  onChange={field.onChange}
-                  maxFiles={1}
-                  messages={getAvatarUploadMessages(translate)}
-                />
-              }
-            />
-            <FormDescription>
-              {translate(
-                "users.form.avatar.description",
-                { ns: "app" },
-                "Upload an image to use as this user's avatar."
-              )}
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
       <FormField
         control={form.control}
         name="nickname"

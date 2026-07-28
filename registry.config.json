@@ -272,7 +272,14 @@
         "@tanstack/react-query@^5.81.5",
         "lucide-react@^0.487.0"
       ],
-      "registryDependencies": ["alert", "badge", "button", "skeleton"],
+      "registryDependencies": [
+        "alert",
+        "badge",
+        "button",
+        "dialog",
+        "skeleton",
+        "tooltip"
+      ],
       "docs": "Requires the Starter NocoBase client and a field targeting a file-template collection.",
       "source": {
         "root": "registry/nocobase-file-upload",
