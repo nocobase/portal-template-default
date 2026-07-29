@@ -9,7 +9,7 @@ import { LoadingState } from "@/components/app-shell/loading-state";
 import { createDevelopmentRoute } from "./development";
 
 const extensionModules = import.meta.glob<{ default: AppExtension }>(
-  "../extensions/*/extension.tsx",
+  "@/extensions/*/extension.tsx",
   { eager: true }
 );
 

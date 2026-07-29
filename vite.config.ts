@@ -99,6 +99,10 @@ export default defineConfig(({ mode }) => {
     : undefined;
 
   const portalBase = normalizeBase(env.NOCOBASE_PORTAL_BASE);
+  const registrySourceRoot = path.resolve(__dirname, "./registry");
+  const extensionsRoot = fs.existsSync(registrySourceRoot)
+    ? registrySourceRoot
+    : path.resolve(__dirname, "./src/extensions");
 
   return {
     base: portalBase,
@@ -106,6 +110,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), tailwindcss(), copyRawIndexHtmlPlugin(portalBase)],
     resolve: {
       alias: {
+        "@/extensions": extensionsRoot,
         "@": path.resolve(__dirname, "./src"),
       },
     },

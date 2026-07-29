@@ -1,4 +1,4 @@
-import { AuthMethodDemo } from "../../components/auth/demo";
+import { AuthMethodDemo } from "@/components/auth/demo";
 import CasSignInButton from "./cas-sign-in-button";
 
 const authenticator = {

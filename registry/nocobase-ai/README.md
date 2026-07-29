@@ -77,10 +77,10 @@ Use one `AIChatWindow` inside `ChatSurface` when a global conversation can switc
 
 `ChatDialog` and `ChatSidePanel` remain available as convenience wrappers for fixed, non-switching placements.
 
-## Local Registry development
+## Registry development
 
-- `pnpm registry:build` regenerates `registry.json` and the static shadcn Registry output.
-- `pnpm registry:install` installs the Registry source only when the target directory is missing.
-- `pnpm registry:preview` intentionally replaces the local installed preview with the authoritative source.
+- In the Registry source repository, edit `registry/nocobase-ai` directly. The normal `pnpm dev` and `pnpm build` commands load canonical Registry source without a preview copy.
+- Keep relative imports inside this Registry root. Use the host application's `@/` alias for application services and shared components.
+- During publication, the release pipeline materializes default Registry items into the npm template's `src/extensions` directory.
 
-Normal install and `postinstall` never overwrite an existing `src/extensions/nocobase-ai` directory, so downstream applications can edit and commit installed source.
+Once installed in an application, `src/extensions/nocobase-ai` is application-owned source and can be edited and committed normally.

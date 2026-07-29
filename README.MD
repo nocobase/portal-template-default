@@ -124,30 +124,31 @@ pnpm build
 
 ### Extensions and the NocoBase Shadcn Registry
 
-The starter separates framework-owned extension support from installed Registry
-source:
+The repository has separate Registry-authoring and published-template modes:
 
 - `src/app/extension.ts` defines the generic extension contract.
-- `src/app/extensions.tsx` discovers `src/extensions/*/extension.tsx` and adds
-  its providers, Refine resources, and routes to the app.
-- `registry/<name>` contains the canonical authoring source for a Registry
-  package while it is developed in this repository.
-- `src/extensions/<name>` contains installed, application-owned source.
-  Downstream applications can commit this directory like any other source code.
+- In this source repository, `src/app/extensions.tsx` discovers
+  `registry/*/extension.tsx` directly. Registry authors edit canonical files and
+  use the normal `pnpm dev` and `pnpm build` commands without copying them first.
+- The published npm template does not contain `registry/`. Its default Registry
+  items are materialized into `src/extensions` by the release pipeline, so an
+  application created from the package uses the same extension host without a
+  Registry-authoring layer.
+- Source installed later into `src/extensions/<name>` is application-owned and
+  can be committed and customized like any other application source.
 
 `registry.config.json` is the only authoring manifest. In addition to standard
 Shadcn Registry item fields, each item has a local `source` mapping used to
-generate its standard `files` array. The same mapping lets the starter's
-`postinstall` hook copy a locally authored extension only when its target is
-missing. Existing installed source is never compared, updated, or overwritten.
-Optional entries can set `source.install` to `false`; they remain available to
-Registry builds and local previews but are not added by `postinstall`.
+generate its standard `files` array and its release-time installation target.
+Items with `source.install: false` remain available from the Registry but are
+not included in the published template by default. There is no `postinstall`
+copy or preview synchronization step.
 
-You can run the same missing-only installation explicitly with:
-
-```bash
-pnpm registry:install
-```
+During publication, CI runs `node scripts/registry.mjs materialize` in its
+clean, disposable checkout before `npm pack` and `npm publish`. The
+script writes the default items directly to `src/extensions` and refuses to
+overwrite an existing target. Registry authoring files and the internal release
+scripts are excluded from the npm package.
 
 The Registry includes reusable NocoBase integrations and examples:
 
@@ -174,24 +175,9 @@ The AI integration is available through four incremental entries:
 - `ai` adds the application extension integration and Demo pages and depends on the
   chat entry.
 
-To refresh the local preview from the canonical Registry source, run:
-
-```bash
-pnpm registry:preview
-```
-
-This is the only command that intentionally replaces local previews under
-`src/extensions`. Normal `pnpm dev`, `pnpm install`, and `pnpm registry:install`
-do not overwrite an installed extension.
-
-Build the standard Shadcn Registry JSON files into `public/r` with:
-
-```bash
-pnpm registry:build
-```
-
-With the development server running, a compatible starter can also add the
-complete item through Shadcn:
+Optional items can be installed from the Registry service exposed by the
+corresponding NocoBase server. For example, a compatible starter can add the
+complete AI item through Shadcn:
 
 ```bash
 pnpm dlx shadcn@latest add @nocobase/ai
@@ -208,10 +194,10 @@ Shadcn does not keep a Registry item lock or merge local changes. Re-running
 replacing different files. Use `--diff` to inspect an update and `--overwrite`
 to accept the Registry version explicitly.
 
-The Registry alias is configured in `components.json` and resolves to
-`http://localhost:5173/r/{name}.json` during local development. The same generic
-extension host and Registry source mapping can be reused for future Registry
-packages without adding package-specific logic to `App.tsx` or the installer.
+The Registry service URL is configured through the `@nocobase` alias in
+`components.json`. The same generic extension host and Registry source mapping
+can be reused for future Registry packages without adding package-specific
+logic to `App.tsx` or an application installer.
 
 ### Running the production server.
 

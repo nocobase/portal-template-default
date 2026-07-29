@@ -1,5 +1,15 @@
-node_modules
-src/extensions
+node_modules/
+dist/
+dist-ssr/
+logs/
+*.log
+
 .env
 .env.*
 !.env.example
+
+registry/
+registry.config.json
+registry.json
+public/r/
+scripts/registry.mjs

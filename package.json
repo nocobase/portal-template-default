@@ -78,13 +78,9 @@
     "url": "git+https://github.com/nocobase/portal-template-default.git"
   },
   "scripts": {
-    "postinstall": "node ./scripts/registry.mjs install-missing",
     "dev": "vite",
     "build": "tsc && refine build",
     "build:html": "node ./scripts/build-html.mjs",
-    "registry:install": "node ./scripts/registry.mjs install-missing",
-    "registry:preview": "node ./scripts/registry.mjs preview",
-    "registry:build": "node ./scripts/registry.mjs build && shadcn build ./registry.json -o ./public/r",
     "test:auth": "node tests/auth-session-regression.mjs",
     "test:acl": "node registry/nocobase-acl/tests/acl-regression.mjs",
     "test:i18n": "node registry/nocobase-i18n/tests/i18n-regression.mjs",
