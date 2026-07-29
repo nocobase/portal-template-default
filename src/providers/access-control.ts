@@ -1,15 +1,42 @@
 import type { AccessControlProvider } from "@refinedev/core";
 
 import {
-  canAccessWithSnapshot,
-  getAclSnapshot,
+  aclStore,
+  evaluateAccess,
+  getAclState,
   loadAcl,
+  type AclAccessRequest,
+  type RoleConstraint,
 } from "@/lib/nocobase/acl";
 
+const toAclAccessRequest = ({
+  resource,
+  action,
+  params,
+}: Parameters<AccessControlProvider["can"]>[0]): AclAccessRequest => ({
+  resource,
+  action,
+  id: params?.id,
+  field: typeof params?.field === "string" ? params.field : undefined,
+  dataSourceKey:
+    typeof params?.dataSourceKey === "string"
+      ? params.dataSourceKey
+      : undefined,
+  roles: params?.roles as RoleConstraint | undefined,
+  meta: params?.meta as Record<string, unknown> | undefined,
+  resourceItem: params?.resource,
+});
+
 export const accessControlProvider: AccessControlProvider = {
-  can: async ({ resource, action, params }) => {
-    const snapshot = await loadAcl();
-    const can = canAccessWithSnapshot(snapshot, { resource, action, params });
+  can: async (request) => {
+    const state = await loadAcl();
+    const can =
+      state.status === "ready" &&
+      evaluateAccess(
+        state.permissions,
+        toAclAccessRequest(request),
+        aclStore.recordPermissions.getPermission
+      );
 
     return {
       can,
@@ -29,6 +56,14 @@ export const accessControlProvider: AccessControlProvider = {
   },
 };
 
-export const canAccessCurrentAcl = (
-  params: Parameters<typeof canAccessWithSnapshot>[1]
-) => canAccessWithSnapshot(getAclSnapshot(), params);
+export const canAccessCurrentAcl = (request: AclAccessRequest) => {
+  const state = getAclState();
+  return (
+    state.status === "ready" &&
+    evaluateAccess(
+      state.permissions,
+      request,
+      aclStore.recordPermissions.getPermission
+    )
+  );
+};

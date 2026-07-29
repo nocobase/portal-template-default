@@ -33,6 +33,7 @@ import { i18nProvider } from "./providers/i18n";
 import { SystemSettingsProvider } from "./providers/system-settings";
 import { AuthDemoPage } from "./components/auth/demo";
 import { getPortalBase } from "./providers/runtime-config";
+import { AclStoreProvider, aclStore } from "./lib/nocobase/acl";
 
 const coreResources: ResourceProps[] = [
   {
@@ -56,6 +57,13 @@ const coreResources: ResourceProps[] = [
   },
 ];
 
+const getResourcePriority = (resource: ResourceProps) =>
+  typeof resource.meta?.priority === "number" ? resource.meta.priority : 100;
+
+const appResources = [...coreResources, ...extensionResources].sort(
+  (left, right) => getResourcePriority(left) - getResourcePriority(right)
+);
+
 const basename = getPortalBase().replace(/\/+$/, "");
 
 function App() {
@@ -65,69 +73,74 @@ function App() {
         <ThemeProvider>
           <TooltipProvider>
             <SystemSettingsProvider>
-            <Refine
-              dataProvider={dataProvider}
-              notificationProvider={useNotificationProvider()}
-              routerProvider={routerProvider}
-              authProvider={authProvider}
-              accessControlProvider={accessControlProvider}
-              i18nProvider={i18nProvider}
-              resources={[...coreResources, ...extensionResources]}
-              options={{
-                syncWithLocation: true,
-                warnWhenUnsavedChanges: true,
-                disableTelemetry: true,
-                title: {
-                  text: "NocoBase",
-                  icon: <BrandLogo className="size-14 rounded-2xl" />,
-                },
-              }}
-            >
-            <Routes>
-              <Route
-                element={
-                  <Authenticated
-                    key="authenticated-inner"
-                    fallback={<CatchAllNavigate to="/login" />}
-                  >
-                    <AclBootstrap>
-                      <AppExtensionProviders>
-                        <Layout>
-                          <Outlet />
-                        </Layout>
-                      </AppExtensionProviders>
-                    </AclBootstrap>
-                  </Authenticated>
-                }
-              >
-                <Route index element={<NavigateToAccessibleResource />} />
-                <Route path="/auth" element={<AuthDemoPage />} />
-                {extensionRouteElements}
-                <Route path="*" element={<ErrorComponent />} />
-              </Route>
-              <Route
-                element={
-                  <Authenticated
-                    key="authenticated-outer"
-                    fallback={<Outlet />}
-                  >
-                    <AclBootstrap>
-                      <NavigateToAccessibleResource />
-                    </AclBootstrap>
-                  </Authenticated>
-                }
-              >
-                <Route path="/login" element={<Login />} />
-                <Route path="/signin" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-              </Route>
-            </Routes>
+              <AclStoreProvider store={aclStore}>
+                <Refine
+                  dataProvider={dataProvider}
+                  notificationProvider={useNotificationProvider()}
+                  routerProvider={routerProvider}
+                  authProvider={authProvider}
+                  accessControlProvider={accessControlProvider}
+                  i18nProvider={i18nProvider}
+                  resources={appResources}
+                  options={{
+                    syncWithLocation: true,
+                    warnWhenUnsavedChanges: true,
+                    disableTelemetry: true,
+                    title: {
+                      text: "NocoBase",
+                      icon: <BrandLogo className="size-14 rounded-2xl" />,
+                    },
+                  }}
+                >
+                  <Routes>
+                    <Route
+                      element={
+                        <Authenticated
+                          key="authenticated-inner"
+                          fallback={<CatchAllNavigate to="/login" />}
+                        >
+                          <AclBootstrap>
+                            <AppExtensionProviders>
+                              <Layout>
+                                <Outlet />
+                              </Layout>
+                            </AppExtensionProviders>
+                          </AclBootstrap>
+                        </Authenticated>
+                      }
+                    >
+                      <Route index element={<NavigateToAccessibleResource />} />
+                      <Route path="/auth" element={<AuthDemoPage />} />
+                      {extensionRouteElements}
+                      <Route path="*" element={<ErrorComponent />} />
+                    </Route>
+                    <Route
+                      element={
+                        <Authenticated
+                          key="authenticated-outer"
+                          fallback={<Outlet />}
+                        >
+                          <AclBootstrap>
+                            <NavigateToAccessibleResource />
+                          </AclBootstrap>
+                        </Authenticated>
+                      }
+                    >
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/signin" element={<Login />} />
+                      <Route path="/register" element={<Register />} />
+                      <Route
+                        path="/forgot-password"
+                        element={<ForgotPassword />}
+                      />
+                    </Route>
+                  </Routes>
 
-            <Toaster />
-            <UnsavedChangesNotifier />
-            <DocumentTitleHandler appName="NocoBase" />
-            </Refine>
+                  <Toaster />
+                  <UnsavedChangesNotifier />
+                  <DocumentTitleHandler appName="NocoBase" />
+                </Refine>
+              </AclStoreProvider>
             </SystemSettingsProvider>
           </TooltipProvider>
         </ThemeProvider>

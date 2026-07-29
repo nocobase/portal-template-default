@@ -1,20 +1,20 @@
 import type { TreeMenuItem } from "@refinedev/core";
 
-import { canAccessWithSnapshot } from "./action";
-import type { AclSnapshot } from "./types";
+import { evaluateAccess } from "./evaluator";
+import type { AclPermissionSet } from "./types";
 
 export const filterMenuItemsByAcl = (
   items: TreeMenuItem[],
-  acl: AclSnapshot
+  permissions: AclPermissionSet
 ): TreeMenuItem[] =>
   items.flatMap((item) => {
-    const children = filterMenuItemsByAcl(item.children ?? [], acl);
+    const children = filterMenuItemsByAcl(item.children ?? [], permissions);
     const isContainer = Boolean(item.meta?.group || item.children?.length);
     const canAccessItem = item.route
-      ? canAccessWithSnapshot(acl, {
+      ? evaluateAccess(permissions, {
           resource: item.name,
           action: "list",
-          params: { resource: item },
+          resourceItem: item,
         })
       : true;
 

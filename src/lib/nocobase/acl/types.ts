@@ -1,13 +1,16 @@
 import type { BaseKey, IResourceItem } from "@refinedev/core";
 
-export type RoleMode =
-  | "default"
-  | "allow-use-union"
-  | "only-use-union";
+export type RoleMode = "default" | "allow-use-union" | "only-use-union";
 
 export type Role = {
   name: string;
   title?: string;
+};
+
+export type RoleConstraint = {
+  anyOf?: string[];
+  allOf?: string[];
+  noneOf?: string[];
 };
 
 export type AclActionParams = Record<string, unknown> & {
@@ -16,10 +19,8 @@ export type AclActionParams = Record<string, unknown> & {
   appends?: string[];
 };
 
-export type AclRoleData = {
+export type AclResourcePermissions = {
   snippets?: string[];
-  role?: string;
-  roleMode?: RoleMode;
   resources?: string[];
   actions?: Record<string, AclActionParams>;
   actionAlias?: Record<string, string>;
@@ -34,26 +35,44 @@ export type AclRoleData = {
   uiButtonSchemasBlacklist?: string[];
 };
 
-export type AclMeta = {
-  dataSources?: Record<string, Partial<AclRoleData>>;
+export type AclPermissionSet = AclResourcePermissions & {
+  currentRole?: string;
+  roles: string[];
+  roleMode?: RoleMode;
+  dataSources?: Record<string, Partial<AclResourcePermissions>>;
 };
 
 export type AclResponse = {
-  data?: AclRoleData;
-  meta?: AclMeta;
+  data?: AclResourcePermissions & {
+    role?: string;
+    roles?: string[];
+    roleMode?: RoleMode;
+  };
+  meta?: {
+    dataSources?: Record<string, Partial<AclResourcePermissions>>;
+  };
 };
 
-export type AclSnapshot = {
-  status: "idle" | "loading" | "ready" | "error";
-  identity?: string;
-  data: AclRoleData;
-  meta: AclMeta;
-  error?: Error;
-  version: number;
-};
+export type AclState =
+  | {
+      status: "idle" | "loading";
+      permissions?: undefined;
+      error?: undefined;
+    }
+  | {
+      status: "ready";
+      permissions: AclPermissionSet;
+      error?: undefined;
+    }
+  | {
+      status: "error";
+      permissions?: undefined;
+      error: Error;
+    };
 
-export type ResourceAcl =
-  | false
+type ResourceAclRule = {
+  roles?: RoleConstraint;
+} & (
   | {
       type: "authenticated";
     }
@@ -70,19 +89,20 @@ export type ResourceAcl =
   | {
       type: "route";
       routeId: string | number;
-    };
+    }
+);
 
-export type AclCanParams = {
+export type ResourceAcl = false | ResourceAclRule;
+
+export type AclAccessRequest = {
+  roles?: RoleConstraint;
   resource?: string;
-  action: string;
-  params?: {
-    id?: BaseKey;
-    field?: string;
-    dataSourceKey?: string;
-    meta?: Record<string, unknown>;
-    resource?: IResourceItem;
-    [key: string]: unknown;
-  };
+  action?: string;
+  id?: BaseKey;
+  field?: string;
+  dataSourceKey?: string;
+  meta?: Record<string, unknown>;
+  resourceItem?: IResourceItem;
 };
 
 export type AclIdentity = {

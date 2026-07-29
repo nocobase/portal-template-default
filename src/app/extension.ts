@@ -4,6 +4,7 @@ import type { AuthenticatorAdapter } from "@/components/auth/types";
 
 export type AppExtension = {
   id: string;
+  priority?: number;
   resources?: ResourceProps[];
   routes?: ReactElement;
   Provider?: ComponentType<PropsWithChildren>;

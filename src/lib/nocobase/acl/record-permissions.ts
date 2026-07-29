@@ -5,14 +5,24 @@ type RecordPermissionEntry = {
   knownIds: Map<string, Set<string>>;
 };
 
-const permissions = new Map<string, RecordPermissionEntry>();
+let permissions = new Map<string, RecordPermissionEntry>();
+const listeners = new Set<() => void>();
 
 const getKey = (dataSourceKey: string, resource: string) =>
   `${dataSourceKey}:${resource}`;
 
 export const clearRecordPermissions = () => {
-  permissions.clear();
+  if (!permissions.size) return;
+  permissions = new Map();
+  listeners.forEach((listener) => listener());
 };
+
+export const subscribeRecordPermissions = (listener: () => void) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
+
+export const getRecordPermissions = () => permissions;
 
 export const updateRecordPermissions = ({
   dataSourceKey = "main",
@@ -28,10 +38,26 @@ export const updateRecordPermissions = ({
   if (!allowedActions) return false;
 
   const key = getKey(dataSourceKey, resource);
-  const entry = permissions.get(key) ?? {
-    allowedIds: new Map<string, Set<string>>(),
-    knownIds: new Map<string, Set<string>>(),
-  };
+  const existingEntry = permissions.get(key);
+  const entry = existingEntry
+    ? {
+        allowedIds: new Map(
+          Array.from(existingEntry.allowedIds, ([action, ids]) => [
+            action,
+            new Set(ids),
+          ])
+        ),
+        knownIds: new Map(
+          Array.from(existingEntry.knownIds, ([action, ids]) => [
+            action,
+            new Set(ids),
+          ])
+        ),
+      }
+    : {
+        allowedIds: new Map<string, Set<string>>(),
+        knownIds: new Map<string, Set<string>>(),
+      };
   const normalizedIds = new Set(recordIds.map(String));
   const normalizedAllowedActions = new Map(
     Object.entries(allowedActions).map(([action, ids]) => [
@@ -81,7 +107,11 @@ export const updateRecordPermissions = ({
     entry.knownIds.set(action, knownIds);
   }
 
-  permissions.set(key, entry);
+  if (changed) {
+    permissions = new Map(permissions);
+    permissions.set(key, entry);
+    listeners.forEach((listener) => listener());
+  }
   return changed;
 };
 

@@ -24,7 +24,6 @@ import type {
 
 import { nocobaseClient } from "@/lib/nocobase/client";
 import {
-  notifyRecordPermissionsChanged,
   resolveAclDataSourceKey,
   type ResourceAcl,
   updateRecordPermissions,
@@ -122,9 +121,7 @@ const request = async <T>(
     },
     body: options.body,
     token: options.meta?.token,
-    headers: dataSourceKey
-      ? { "X-Data-Source": dataSourceKey }
-      : undefined,
+    headers: dataSourceKey ? { "X-Data-Source": dataSourceKey } : undefined,
     unwrap: options.unwrapData === false ? "none" : "data",
   });
 };
@@ -200,9 +197,7 @@ export const dataProvider: DataProvider = {
       ? { rows: response.data, count: response.meta?.count }
       : response.data ?? response;
     const records = list.rows ?? [];
-    if (cacheAllowedActions({ resource, records, response, meta })) {
-      notifyRecordPermissionsChanged();
-    }
+    cacheAllowedActions({ resource, records, response, meta });
 
     return {
       data: records,
@@ -226,16 +221,12 @@ export const dataProvider: DataProvider = {
       }
     );
     const data = getResponseData(response);
-    if (
-      cacheAllowedActions({
-        resource,
-        records: [data],
-        response: response as NocoBaseListResponse<TData>,
-        meta,
-      })
-    ) {
-      notifyRecordPermissionsChanged();
-    }
+    cacheAllowedActions({
+      resource,
+      records: [data],
+      response: response as NocoBaseListResponse<TData>,
+      meta,
+    });
     return {
       data,
     };
@@ -256,17 +247,14 @@ export const dataProvider: DataProvider = {
       )
     );
     const data = responses.map(getResponseData);
-    let permissionsChanged = false;
     responses.forEach((response, index) => {
-      permissionsChanged =
-        cacheAllowedActions({
-          resource,
-          records: [data[index]],
-          response: response as NocoBaseListResponse<TData>,
-          meta,
-        }) || permissionsChanged;
+      cacheAllowedActions({
+        resource,
+        records: [data[index]],
+        response: response as NocoBaseListResponse<TData>,
+        meta,
+      });
     });
-    if (permissionsChanged) notifyRecordPermissionsChanged();
     return { data };
   },
 
