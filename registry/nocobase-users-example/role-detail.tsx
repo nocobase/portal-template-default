@@ -5,7 +5,7 @@ import { LoadingState } from "@/components/app-shell/loading-state";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useAIPageElementHandle } from "@/extensions/nocobase-ai";
+import { useAIPageElementHandle } from "./optional-ai";
 import { RouteDrawer } from "@/extensions/nocobase-route-surfaces";
 import type { Role } from "@/lib/nocobase/acl";
 import { resolveTranslatableText } from "@/lib/i18n";
@@ -13,11 +13,7 @@ import { resolveRoleLabel } from "./role-utils";
 import { getUserShowPath, userRoutes } from "./routes";
 import type { RoleRecord } from "./types";
 
-export function RoleDetailRoute({
-  returnTo,
-}: {
-  returnTo: "list" | "show";
-}) {
+export function RoleDetailRoute({ returnTo }: { returnTo: "list" | "show" }) {
   const { id, roleName } = useParams<{
     id?: string;
     roleName: string;
@@ -26,16 +22,9 @@ export function RoleDetailRoute({
   if (!roleName) return null;
 
   const closeTarget =
-    returnTo === "show" && id
-      ? getUserShowPath(id)
-      : userRoutes.list;
+    returnTo === "show" && id ? getUserShowPath(id) : userRoutes.list;
 
-  return (
-    <RoleDetailDrawer
-      role={{ name: roleName }}
-      closeTo={closeTarget}
-    />
-  );
+  return <RoleDetailDrawer role={{ name: roleName }} closeTo={closeTarget} />;
 }
 
 export function RoleDetailDrawer({

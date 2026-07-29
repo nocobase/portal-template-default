@@ -1,42 +1,35 @@
-import { useSyncExternalStore } from "react";
-
 import { nocobaseClient } from "@/lib/nocobase/client";
 import { NocoBaseHttpError } from "@/lib/nocobase/error";
-import { clearRecordPermissions } from "./record-permissions";
-import type {
-  AclResponse,
-  AclSnapshot,
-} from "./types";
+import type { AclStore } from "./context";
+import {
+  clearRecordPermissions,
+  getRecordActionPermission,
+  getRecordPermissions,
+  subscribeRecordPermissions,
+} from "./record-permissions";
+import type { AclPermissionSet, AclResponse, AclState } from "./types";
 
 const listeners = new Set<() => void>();
-let request:
+let activeRequest:
   | {
       id: number;
-      identity: string;
-      promise: Promise<AclSnapshot>;
+      sessionKey: string;
+      promise: Promise<AclState>;
     }
   | undefined;
 let requestId = 0;
-let snapshot: AclSnapshot = {
-  status: "idle",
-  data: {},
-  meta: {},
-  version: 0,
-};
+let loadedSessionKey: string | undefined;
+let state: AclState = { status: "idle" };
 
 const emit = () => listeners.forEach((listener) => listener());
 
-const setSnapshot = (next: Partial<AclSnapshot>) => {
-  snapshot = {
-    ...snapshot,
-    ...next,
-    version: snapshot.version + 1,
-  };
+const setState = (next: AclState) => {
+  state = next;
   emit();
-  return snapshot;
+  return state;
 };
 
-const getIdentity = () => {
+const getSessionKey = () => {
   const token = nocobaseClient.getToken();
   return token ? `${token}:${nocobaseClient.getRole() ?? ""}` : undefined;
 };
@@ -68,51 +61,51 @@ const isStaleRoleError = (error: unknown) => {
   );
 };
 
-export const getAclSnapshot = () => snapshot;
+const normalizePermissions = (
+  response: AclResponse,
+  fallbackRole?: string
+): AclPermissionSet => {
+  const { role, roles, ...permissions } = response.data ?? {};
+  const currentRole = role ?? fallbackRole;
+  return {
+    ...permissions,
+    currentRole,
+    roles: roles ?? (currentRole ? [currentRole] : []),
+    dataSources: response.meta?.dataSources,
+  };
+};
+
+export const getAclState = () => state;
 
 export const subscribeAcl = (listener: () => void) => {
   listeners.add(listener);
   return () => listeners.delete(listener);
 };
 
-export const useAclSnapshot = () =>
-  useSyncExternalStore(
-    subscribeAcl,
-    getAclSnapshot,
-    getAclSnapshot
-  );
-
-export const clearAcl = ({ keepRole = false } = {}) => {
+export const clearAcl = () => {
   requestId += 1;
-  request = undefined;
+  activeRequest = undefined;
+  loadedSessionKey = undefined;
   clearRecordPermissions();
-  if (!keepRole) nocobaseClient.setRole(null);
-  setSnapshot({
-    status: "idle",
-    identity: undefined,
-    data: {},
-    meta: {},
-    error: undefined,
-  });
+  nocobaseClient.setRole(null);
+  setState({ status: "idle" });
 };
 
-export const notifyRecordPermissionsChanged = () => {
-  setSnapshot({});
-};
-
-export const loadAcl = async ({ force = false } = {}) => {
-  const identity = getIdentity();
-  if (!identity) {
+const load = async ({ force = false } = {}) => {
+  const sessionKey = getSessionKey();
+  if (!sessionKey) {
     clearAcl();
-    return snapshot;
+    return state;
   }
 
-  if (!force && snapshot.status === "ready" && snapshot.identity === identity) {
-    return snapshot;
+  if (!force && state.status === "ready" && loadedSessionKey === sessionKey) {
+    return state;
   }
-  if (!force && request?.identity === identity) return request.promise;
+  if (!force && activeRequest?.sessionKey === sessionKey) {
+    return activeRequest.promise;
+  }
 
-  setSnapshot({ status: "loading", identity, error: undefined });
+  setState({ status: "loading" });
   const currentRequestId = ++requestId;
   const requestedRole = nocobaseClient.getRole();
   const promise = (async () => {
@@ -127,37 +120,34 @@ export const loadAcl = async ({ force = false } = {}) => {
         response = await requestAcl();
       }
 
-      if (currentRequestId !== requestId) return snapshot;
+      if (currentRequestId !== requestId) return state;
 
-      const data = response.data ?? {};
-      nocobaseClient.setRole(data.role ?? effectiveRole ?? null);
+      const permissions = normalizePermissions(response, effectiveRole);
+      nocobaseClient.setRole(permissions.currentRole ?? null);
       clearRecordPermissions();
-      return setSnapshot({
-        status: "ready",
-        identity: getIdentity(),
-        data,
-        meta: response.meta ?? {},
-        error: undefined,
-      });
+      loadedSessionKey = getSessionKey();
+      return setState({ status: "ready", permissions });
     } catch (error) {
       const normalizedError =
-        error instanceof Error ? error : new Error("Unable to load permissions");
-      if (currentRequestId !== requestId) return snapshot;
-      setSnapshot({ status: "error", error: normalizedError });
-      throw normalizedError;
+        error instanceof Error
+          ? error
+          : new Error("Unable to load permissions");
+      if (currentRequestId !== requestId) return state;
+      loadedSessionKey = undefined;
+      return setState({ status: "error", error: normalizedError });
     } finally {
-      if (request?.id === currentRequestId) request = undefined;
+      if (activeRequest?.id === currentRequestId) activeRequest = undefined;
     }
   })();
-  request = { id: currentRequestId, identity, promise };
-
+  activeRequest = { id: currentRequestId, sessionKey, promise };
   return promise;
 };
 
-export const switchRole = async (
-  roleName: string,
-  { reloadAcl = true } = {}
-) => {
+export const loadAcl = () => load();
+
+export const retryAcl = () => load({ force: true });
+
+export const switchRole = async (roleName: string) => {
   const previousRole = nocobaseClient.getRole();
   nocobaseClient.setRole(roleName);
 
@@ -167,16 +157,21 @@ export const switchRole = async (
       body: { roleName },
       withAclMeta: false,
     });
-    if (!reloadAcl) {
-      clearRecordPermissions();
-      return snapshot;
-    }
-    return await loadAcl({ force: true });
   } catch (error) {
     nocobaseClient.setRole(previousRole);
-    if (reloadAcl) {
-      await loadAcl({ force: true }).catch(() => undefined);
-    }
     throw error;
   }
+};
+
+export const aclStore: AclStore = {
+  getState: getAclState,
+  subscribe: subscribeAcl,
+  load: loadAcl,
+  retry: retryAcl,
+  clear: clearAcl,
+  recordPermissions: {
+    getState: getRecordPermissions,
+    subscribe: subscribeRecordPermissions,
+    getPermission: getRecordActionPermission,
+  },
 };

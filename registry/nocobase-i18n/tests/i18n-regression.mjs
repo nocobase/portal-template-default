@@ -20,10 +20,10 @@ try {
     await server.ssrLoadModule("/src/lib/i18n.ts");
 
   await i18n.changeLanguage("en-US");
-  assert.equal(translate("resources.users", { ns: "app" }, "Users"), "Users");
+  assert.equal(translate("buttons.create", { ns: "starter" }, "Create"), "Create");
 
   await i18n.changeLanguage("zh-CN");
-  assert.equal(translate("resources.users", { ns: "app" }, "Users"), "用户");
+  assert.equal(translate("buttons.create", { ns: "starter" }, "Create"), "新建");
   assert.equal(resolveTranslatableText('{{t("Admin")}}'), "管理员");
   assert.equal(
     resolveTranslatableText("Full permissions", { ns: "starter" }),

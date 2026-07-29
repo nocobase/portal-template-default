@@ -17,8 +17,5 @@ export const getUserShowPath = (id: string | number) =>
 export const getRolePath = (roleName: string) =>
   `/users/roles/${encodeURIComponent(roleName)}`;
 
-export const getUserRolePath = (
-  id: string | number,
-  roleName: string
-) =>
+export const getUserRolePath = (id: string | number, roleName: string) =>
   `/users/show/${encodeURIComponent(id)}/roles/${encodeURIComponent(roleName)}`;

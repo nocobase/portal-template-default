@@ -9,7 +9,11 @@ const extensionModules = import.meta.glob<{ default: AppExtension }>(
 
 export const appExtensions = Object.values(extensionModules)
   .map((module) => module.default)
-  .sort((left, right) => left.id.localeCompare(right.id));
+  .sort(
+    (left, right) =>
+      (left.priority ?? 100) - (right.priority ?? 100) ||
+      left.id.localeCompare(right.id)
+  );
 
 export const extensionResources = appExtensions.flatMap(
   (extension) => extension.resources ?? []

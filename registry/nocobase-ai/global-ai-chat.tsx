@@ -50,8 +50,7 @@ function NocoBaseAIGlobalEntry({ children }: PropsWithChildren) {
   const [expanded, setExpanded] = useState(false);
   const ready =
     ai.configurationStatus === "ready" &&
-    ai.employees.length > 0 &&
-    ai.hasEnabledModels;
+    ai.employees.length > 0;
 
   return (
     <div

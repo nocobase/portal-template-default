@@ -1,4 +1,4 @@
-import { AuthMethodDemo } from "@/components/auth/demo";
+import { AuthMethodDemo } from "@/components/auth/demo/auth-method-demo";
 import SmsSignInForm from "./sms-sign-in-form";
 
 const authenticator = {

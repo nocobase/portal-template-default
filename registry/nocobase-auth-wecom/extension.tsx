@@ -2,8 +2,8 @@ import { lazy } from "react";
 import { Building2 } from "lucide-react";
 import { Route } from "react-router";
 
-import type { AppExtension } from "@/app/extension";
-import { AuthDemoRoute } from "@/components/auth/demo";
+import type { AppExtension } from "../../app/extension";
+import { AuthDemoRoute } from "../../components/auth/demo";
 
 const WecomSignInButton = lazy(() => import("./wecom-sign-in-button"));
 const WecomAutoLoginProvider = lazy(() => import("./auto-login-provider"));

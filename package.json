@@ -1,6 +1,7 @@
 {
   "name": "@nocobase/portal-template-default",
   "version": "1.0.9",
+  "packageManager": "pnpm@10.28.0",
   "type": "module",
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",

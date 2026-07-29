@@ -2,8 +2,8 @@ import { lazy } from "react";
 import { BadgeCheck } from "lucide-react";
 import { Route } from "react-router";
 
-import type { AppExtension } from "@/app/extension";
-import { AuthDemoRoute } from "@/components/auth/demo";
+import type { AppExtension } from "../../app/extension";
+import { AuthDemoRoute } from "../../components/auth/demo";
 
 const SamlSignInButton = lazy(() => import("./saml-sign-in-button"));
 const SamlAutoRedirectProvider = lazy(

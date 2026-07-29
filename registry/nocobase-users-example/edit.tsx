@@ -5,7 +5,7 @@ import { useParams } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { useAIForm, type AIFormField } from "@/extensions/nocobase-ai";
+import { useAIForm, type AIFormField } from "./optional-ai";
 import {
   RouteDrawer,
   RouteDrawerFooter,
@@ -35,11 +35,7 @@ export const UserEdit = ({
   return (
     <>
       <RouteDrawer
-        title={translate(
-          "users.drawer.edit.title",
-          { ns: "app" },
-          "Edit user"
-        )}
+        title={translate("users.drawer.edit.title", { ns: "app" }, "Edit user")}
         description={translate(
           "users.drawer.edit.description",
           { ns: "app" },
@@ -69,7 +65,7 @@ function UserEditForm({ id }: { id?: string }) {
       id,
       redirect: false,
       onMutationSuccess: () => {
-        void close({ skipBeforeClose: true });
+        close({ skipBeforeClose: true });
       },
     },
   });
@@ -92,11 +88,11 @@ function UserEditForm({ id }: { id?: string }) {
         onSubmit={form.handleSubmit((values) => onFinish(values))}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <div className="resource-form min-h-0 flex-1 overflow-y-auto px-5 py-5">
+        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5 [&_[data-slot=input]]:h-10 [&_[data-slot=select-trigger]]:h-10 [&_[data-slot=textarea]]:min-h-56">
           <UserFormFields form={form} translate={translate} />
         </div>
         <RouteDrawerFooter className="flex-row justify-end">
-          <Button type="button" variant="outline" onClick={() => void close()}>
+          <Button type="button" variant="outline" onClick={() => close()}>
             {translate("users.form.cancel", { ns: "app" }, "Cancel")}
           </Button>
           <Button

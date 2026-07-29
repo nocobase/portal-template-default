@@ -2,8 +2,8 @@ import { lazy } from "react";
 import { Smartphone } from "lucide-react";
 import { Route } from "react-router";
 
-import type { AppExtension } from "@/app/extension";
-import { AuthDemoRoute } from "@/components/auth/demo";
+import type { AppExtension } from "@/app/extensions";
+import { AuthDemoRoute } from "@/components/auth/demo/auth-demo-route";
 
 const SmsSignInForm = lazy(() => import("./sms-sign-in-form"));
 const SmsAuthDemoPage = lazy(() =>

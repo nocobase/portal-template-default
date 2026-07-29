@@ -1,9 +1,17 @@
-import type { PropsWithChildren } from "react";
+import { useEffect, type PropsWithChildren } from "react";
 
+import { useAclState, useAclStore } from "@/lib/nocobase/acl";
 import { AclGate } from "./acl-gate";
-import { useAclRuntime } from "./use-acl-runtime";
 
 export function AclBootstrap({ children }: PropsWithChildren) {
-  useAclRuntime();
+  const store = useAclStore();
+  const state = useAclState();
+
+  useEffect(() => {
+    if (state.status === "idle") {
+      store.load();
+    }
+  }, [state.status, store]);
+
   return <AclGate>{children}</AclGate>;
 }

@@ -142,9 +142,14 @@ You can run the same missing-only installation explicitly with:
 pnpm registry:install
 ```
 
-This repository authors optional NocoBase integration entries. Internationalization
-is delivered as one cohesive Registry entry:
+The Registry includes reusable NocoBase integrations and examples:
 
+- `route-surfaces` provides URL-backed page, drawer, and dialog containers.
+- `users-example` provides an ACL-aware Users resource built on
+  `route-surfaces`.
+- `acl-ui` provides reusable access boundaries and role controls, while `acl`
+  adds its integrated Demo.
+- `auth-*` entries add optional dynamic authentication methods.
 - `i18n` extends the Starter's built-in translation provider and shared System
   Settings bootstrap with selected server-generated namespaces such as
   `lm-collections`, user locale persistence, the language switcher, and the
@@ -168,9 +173,9 @@ To refresh the local preview from the canonical Registry source, run:
 pnpm registry:preview
 ```
 
-This is the only command that intentionally replaces the local preview at
-`src/extensions/nocobase-ai`. Normal `pnpm dev`, `pnpm install`, and
-`pnpm registry:install` do not overwrite an installed extension.
+This is the only command that intentionally replaces local previews under
+`src/extensions`. Normal `pnpm dev`, `pnpm install`, and `pnpm registry:install`
+do not overwrite an installed extension.
 
 Build the standard Shadcn Registry JSON files into `public/r` with:
 

@@ -1,4 +1,4 @@
-import { AuthMethodDemo } from "@/components/auth/demo";
+import { AuthMethodDemo } from "../../components/auth/demo";
 import WecomSignInButton from "./wecom-sign-in-button";
 
 const authenticator = {

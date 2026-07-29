@@ -31,15 +31,18 @@ import { Button } from "@/components/ui/button";
 import { ChevronRight, ListIcon, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Brand } from "@/components/app-shell/brand";
-import { filterMenuItemsByAcl, useAclSnapshot } from "@/lib/nocobase/acl";
+import { filterMenuItemsByAcl, useAclState } from "@/lib/nocobase/acl";
 import { getResourceLabel } from "@/components/resources/resource-label";
 
 export function Sidebar() {
   const { open } = useShadcnSidebar();
   const { menuItems, selectedKey } = useMenu();
-  const acl = useAclSnapshot();
+  const acl = useAclState();
   const allowedMenuItems = React.useMemo(
-    () => filterMenuItemsByAcl(menuItems, acl),
+    () =>
+      acl.status === "ready"
+        ? filterMenuItemsByAcl(menuItems, acl.permissions)
+        : [],
     [acl, menuItems]
   );
 

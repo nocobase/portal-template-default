@@ -1,7 +1,6 @@
 import type { useTranslate } from "@refinedev/core";
-import type { UseFormReturn } from "react-hook-form";
+import type { Path, PathValue, UseFormReturn } from "react-hook-form";
 
-import { applyReactHookFormValues } from "@/extensions/nocobase-ai/adapters/react-hook-form";
 import type { UserFormValues } from "./types";
 
 type Translate = ReturnType<typeof useTranslate>;
@@ -18,14 +17,17 @@ export function applyAIUserFormValues(
   form: Pick<UseFormReturn<UserFormValues>, "setValue">,
   values: Record<string, unknown>
 ) {
-  applyReactHookFormValues(
-    form,
-    Object.fromEntries(
-      Object.entries(values).filter(([name]) =>
-        AI_EDITABLE_FIELDS.includes(name as (typeof AI_EDITABLE_FIELDS)[number])
-      )
-    )
+  const editableValues = Object.entries(values).filter(([name]) =>
+    AI_EDITABLE_FIELDS.includes(name as (typeof AI_EDITABLE_FIELDS)[number])
   );
+  for (const [name, value] of editableValues) {
+    const path = name as Path<UserFormValues>;
+    form.setValue(path, value as PathValue<UserFormValues, typeof path>, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    });
+  }
 }
 
 export function getAIUserFormFields(translate: Translate) {

@@ -1,4 +1,4 @@
-import { AuthMethodDemo } from "@/components/auth/demo";
+import { AuthMethodDemo } from "../../components/auth/demo";
 import OidcSignInButton from "./oidc-sign-in-button";
 
 const authenticator = {

@@ -1,4 +1,4 @@
-import { AuthMethodDemo } from "@/components/auth/demo";
+import { AuthMethodDemo } from "../../components/auth/demo";
 import DingtalkSignInButton from "./dingtalk-sign-in-button";
 
 const authenticator = {

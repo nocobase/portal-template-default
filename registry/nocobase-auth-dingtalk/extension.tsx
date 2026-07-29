@@ -2,8 +2,8 @@ import { lazy } from "react";
 import { MessageSquare } from "lucide-react";
 import { Route } from "react-router";
 
-import type { AppExtension } from "@/app/extension";
-import { AuthDemoRoute } from "@/components/auth/demo";
+import type { AppExtension } from "../../app/extension";
+import { AuthDemoRoute } from "../../components/auth/demo";
 
 const DingtalkSignInButton = lazy(
   () => import("./dingtalk-sign-in-button")

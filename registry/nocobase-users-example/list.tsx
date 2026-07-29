@@ -15,7 +15,7 @@ import { DeleteButton } from "@/components/resources/buttons/delete";
 import { EditButton } from "@/components/resources/buttons/edit";
 import { ShowButton } from "@/components/resources/buttons/show";
 import { ListView } from "@/components/resources/views/list-view";
-import { useAIPageElementHandle } from "@/extensions/nocobase-ai";
+import { useAIPageElementHandle } from "./optional-ai";
 import type { Role } from "@/lib/nocobase/acl";
 import { RoleBadges } from "./role-badges";
 import { resolveRoleLabel } from "./role-utils";

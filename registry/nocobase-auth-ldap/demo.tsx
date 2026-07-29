@@ -1,4 +1,4 @@
-import { AuthMethodDemo } from "@/components/auth/demo";
+import { AuthMethodDemo } from "../../components/auth/demo";
 import LdapSignInForm from "./ldap-sign-in-form";
 
 const authenticator = {
