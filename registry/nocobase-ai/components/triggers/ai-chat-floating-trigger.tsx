@@ -1,5 +1,5 @@
 import nocobaseAIChatIcon from "../../assets/nocobase-ai-chat.svg";
-import { cn } from "@/lib/utils";
+import { assetUrl, cn } from "@/lib/utils";
 import {
   useAI,
   useAIChatControllerState,
@@ -57,7 +57,7 @@ export function AIChatFloatingTrigger({
       <span className="relative flex size-[42px] items-center justify-center">
         <span className="flex size-full overflow-hidden rounded-lg">
           <img
-            src={nocobaseAIChatIcon}
+            src={assetUrl(nocobaseAIChatIcon)}
             alt=""
             className="size-full object-contain"
           />
