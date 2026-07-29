@@ -20,5 +20,8 @@
     "hooks": "@/hooks"
   },
   "menuColor": "default",
-  "menuAccent": "subtle"
+  "menuAccent": "subtle",
+  "registries": {
+    "@nocobase": "http://localhost:5173/r/{name}.json"
+  }
 }

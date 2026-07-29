@@ -11,3 +11,9 @@ Before writing new code, inspect `src/extensions` for similar pages, hooks, comp
 Treat `src/components/ui` as the project's shadcn/ui foundation. When application-specific behavior or styling is needed, prefer wrapping, pre-composing, or re-exporting the base component from a feature-level component instead of editing the base component directly. This keeps the base components replaceable and makes future updates easier to review.
 
 Components copied from shadcn/ui are owned and maintained by this project; upstream changes are not applied automatically. If a base component must be changed or updated, compare it with the upstream version first, then selectively merge bug fixes and improvements while preserving intentional local behavior. Do not blindly overwrite customized components.
+
+## Develop Portal Registry items
+
+Canonical NocoBase Registry source lives under `registry/`. Edit that source first, then use `pnpm registry:preview` to refresh the corresponding preview under `src/extensions`. Registry items target this Portal Template's React, shadcn Base UI, and pnpm toolchain. They must never import Ant Design or NocoBase's Ant Design-based client components.
+
+Keep Registry items portable and focused on reusable API adapters, hooks, components, and small demos. Update `registry.config.json` whenever an item's files, dependencies, or installation target changes. Validate Registry changes with `pnpm registry:build` and the relevant regression scripts.
