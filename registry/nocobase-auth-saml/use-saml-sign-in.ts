@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router";
 
 import type { Authenticator } from "@/components/auth/types";
 import { nocobaseClient } from "@/lib/nocobase/client";
+import { resolvePortalUrl } from "@/providers/runtime-config";
 
 export function useSamlSignIn(authenticator: Authenticator) {
   const [searchParams] = useSearchParams();
@@ -20,8 +21,9 @@ export function useSamlSignIn(authenticator: Authenticator) {
     setError(undefined);
     setIsPending(true);
     try {
-      const redirect =
-        searchParams.get("to") || searchParams.get("redirect") || "/";
+      const redirect = resolvePortalUrl(
+        searchParams.get("to") || searchParams.get("redirect") || "/"
+      );
       const authUrl = await nocobaseClient.action<string>(
         "saml",
         "getAuthUrl",

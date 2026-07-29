@@ -3,6 +3,7 @@ import { useLocation } from "react-router";
 
 import { LoadingState } from "@/components/app-shell/loading-state";
 import { nocobaseClient } from "@/lib/nocobase/client";
+import { resolvePortalUrl } from "@/providers/runtime-config";
 
 type AutoRedirectResponse = {
   success?: boolean;
@@ -32,7 +33,7 @@ export function AuthAutoRedirectProvider({
 }: AuthAutoRedirectProviderProps) {
   const { pathname, search } = useLocation();
   const attemptedRef = useRef(false);
-  const redirect = `${pathname}${search}`;
+  const redirect = resolvePortalUrl(`${pathname}${search}`);
   const shouldCheck =
     enabled &&
     !nocobaseClient.getToken() &&

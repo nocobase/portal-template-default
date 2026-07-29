@@ -14,6 +14,13 @@ NOCOBASE_API_URL=https://develop.v2.test.nocobase.com/nocobase/api/__app/cms
 
 In development, the app auto-detects the proxy target from `NOCOBASE_API_URL` when that value is an absolute URL. The configured API URL can stay on the original sub-app path such as `/nocobase/api/__app/cms`.
 
+The Portal uses the same authentication storage contract as the main NocoBase
+frontend. `API_CLIENT_STORAGE_PREFIX`, `API_CLIENT_STORAGE_TYPE`, and
+`API_CLIENT_SHARE_TOKEN` are supported when the server customizes those
+settings. Main-app keys use the base prefix (for example `NOCOBASE_TOKEN`),
+while sub-app keys are scoped by app name (for example
+`NOCOBASE_CMS_TOKEN`). The app name is inferred from the Portal base/API URL.
+
 Application resource names must match NocoBase collection names. The included
 Users example targets the default `users` collection, so it works without a
 project-specific business collection.

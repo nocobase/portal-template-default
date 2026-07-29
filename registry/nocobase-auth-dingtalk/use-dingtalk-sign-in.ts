@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router";
 
 import type { Authenticator } from "@/components/auth/types";
 import { nocobaseClient } from "@/lib/nocobase/client";
+import { resolvePortalUrl } from "@/providers/runtime-config";
 
 type DingtalkAuthUrlResponse = {
   url?: string;
@@ -31,8 +32,9 @@ export function useDingtalkSignIn(authenticator: Authenticator) {
     setError(undefined);
     setIsPending(true);
     try {
-      const redirect =
-        searchParams.get("to") || searchParams.get("redirect") || "/";
+      const redirect = resolvePortalUrl(
+        searchParams.get("to") || searchParams.get("redirect") || "/"
+      );
       const result = await nocobaseClient.action<DingtalkAuthUrlResponse>(
         "dingtalk",
         "getAuthUrl",

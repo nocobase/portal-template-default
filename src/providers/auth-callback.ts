@@ -12,6 +12,7 @@ export function captureAuthenticationCallback() {
 
   nocobaseClient.setToken(token);
   nocobaseClient.setAuthenticator(authenticator);
+  nocobaseClient.setRole(null);
   clearAcl();
 
   url.searchParams.delete("token");

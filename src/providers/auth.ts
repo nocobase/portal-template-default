@@ -30,7 +30,7 @@ type NocoBaseSignOutResponse = {
 };
 
 type CurrentUserCache = {
-  token: string;
+  sessionKey: string;
   user: NocoBaseUser;
   expiresAt: number;
 };
@@ -51,10 +51,14 @@ const clearCurrentUserCache = () => {
 
 const getCurrentUser = async (): Promise<NocoBaseUser> => {
   const token = nocobaseClient.getToken();
-  if (!token) throw new Error("No NocoBase token");
+  const sessionKey = token ?? "cookie";
 
   const cached = currentUserCache;
-  if (cached && cached.token === token && cached.expiresAt > Date.now()) {
+  if (
+    cached &&
+    cached.sessionKey === sessionKey &&
+    cached.expiresAt > Date.now()
+  ) {
     return cached.user;
   }
 
@@ -63,10 +67,12 @@ const getCurrentUser = async (): Promise<NocoBaseUser> => {
   currentUserRequest = (async () => {
     const user = await nocobaseClient.action<NocoBaseUser>("auth", "check", {
       token,
-      includeAuthenticator: true,
+      // A default authenticator header would override the server's
+      // authenticator cookie during a Cookie-only SSO session.
+      authenticator: token ? undefined : null,
     });
     currentUserCache = {
-      token: nocobaseClient.getToken() ?? token,
+      sessionKey: nocobaseClient.getToken() ?? "cookie",
       user,
       expiresAt: Date.now() + CURRENT_USER_CACHE_MS,
     };
@@ -216,22 +222,18 @@ export const authProvider: AuthProvider = {
     const token = nocobaseClient.getToken();
     let redirect: string | undefined;
     try {
-      if (token) {
-        const result = await nocobaseClient.action<NocoBaseSignOutResponse>(
-          "auth",
-          "signOut",
-          {
-            method: "POST",
-            token,
-            includeAuthenticator: true,
-          }
-        );
-        redirect = result?.redirect;
-      }
+      const result = await nocobaseClient.action<NocoBaseSignOutResponse>(
+        "auth",
+        "signOut",
+        {
+          method: "POST",
+          token,
+          authenticator: token ? undefined : null,
+        }
+      );
+      redirect = result?.redirect;
     } finally {
-      nocobaseClient.setToken(null);
-      nocobaseClient.setAuthenticator(null);
-      nocobaseClient.setRole(null);
+      nocobaseClient.clearAuthentication();
       clearCurrentUserCache();
       clearAcl();
     }
@@ -249,9 +251,7 @@ export const authProvider: AuthProvider = {
       await getCurrentUser();
       return { authenticated: true };
     } catch {
-      nocobaseClient.setToken(null);
-      nocobaseClient.setAuthenticator(null);
-      nocobaseClient.setRole(null);
+      nocobaseClient.clearAuthentication();
       clearCurrentUserCache();
       clearAcl();
       return { authenticated: false, redirectTo: "/login" };
@@ -291,9 +291,7 @@ export const authProvider: AuthProvider = {
       (error as { status?: number; statusCode?: number }).statusCode;
 
     if (status === 401) {
-      nocobaseClient.setToken(null);
-      nocobaseClient.setAuthenticator(null);
-      nocobaseClient.setRole(null);
+      nocobaseClient.clearAuthentication();
       clearCurrentUserCache();
       clearAcl();
       return { logout: true, redirectTo: "/login" };

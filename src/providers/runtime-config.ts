@@ -17,3 +17,43 @@ export const getPortalBase = () =>
 
 export const getRuntimeApiUrl = () =>
   getWindowValue("NOCOBASE_API_URL") ?? import.meta.env.NOCOBASE_API_URL;
+
+const getAppNameFromPortalBase = (base: string) =>
+  base.match(/\/x\/apps\/([^/]+)(?:\/|$)/)?.[1];
+
+const getAppNameFromApiUrl = (apiUrl?: string) =>
+  apiUrl?.match(/\/api\/__app\/([^/?#]+)(?:[/?#]|$)/)?.[1];
+
+export const resolveNocoBaseAppName = (portalBase: string, apiUrl?: string) =>
+  getAppNameFromPortalBase(portalBase) ??
+  getAppNameFromApiUrl(apiUrl) ??
+  "main";
+
+export const getNocoBaseAppName = () =>
+  resolveNocoBaseAppName(getPortalBase(), getRuntimeApiUrl());
+
+export const resolvePortalUrl = (path = "/") => {
+  if (typeof window === "undefined") return path;
+  if (/^[a-z][a-z\d+.-]*:/i.test(path)) return path;
+
+  const portalBase = getPortalBase();
+  const relativePath = path.replace(/^\/+/, "");
+  const portalUrl = new URL(
+    relativePath,
+    `${window.location.origin}${portalBase}`
+  );
+  const apiUrl = new URL(
+    getRuntimeApiUrl() || "/api",
+    window.location.origin
+  );
+
+  // Same-origin deployments should use a root-relative callback. Besides
+  // avoiding unnecessary origin coupling, this remains compatible with older
+  // SSO plugins that only accept NocoBase-local redirect paths. A standalone
+  // Portal dev server keeps the absolute URL so the callback can return to
+  // Vite instead of the deployed Portal route.
+  if (apiUrl.origin === portalUrl.origin) {
+    return `${portalUrl.pathname}${portalUrl.search}${portalUrl.hash}`;
+  }
+  return portalUrl.toString();
+};

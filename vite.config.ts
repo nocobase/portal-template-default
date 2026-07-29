@@ -37,6 +37,9 @@ const defaultRuntimeConfig = `<!-- nocobase-runtime-config:start -->
 <script>
   window.NOCOBASE_PORTAL_BASE = "/";
   window.NOCOBASE_API_URL = "/api";
+  window.__nocobase_api_client_storage_prefix__ = window.__nocobase_api_client_storage_prefix__ ?? "NOCOBASE_";
+  window.__nocobase_api_client_storage_type__ = window.__nocobase_api_client_storage_type__ ?? "localStorage";
+  window.__nocobase_api_client_share_token__ = window.__nocobase_api_client_share_token__ ?? false;
 </script>
 <!-- nocobase-runtime-config:end -->
 `;
@@ -99,7 +102,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: portalBase,
-    envPrefix: ["VITE_", "NOCOBASE_"],
+    envPrefix: ["VITE_", "NOCOBASE_", "API_CLIENT_"],
     plugins: [react(), tailwindcss(), copyRawIndexHtmlPlugin(portalBase)],
     resolve: {
       alias: {
