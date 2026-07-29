@@ -3,7 +3,8 @@
 Route surfaces keep URL navigation separate from visual presentation. The same
 business content can be hosted by a routed drawer, dialog, or full page.
 
-The Registry also installs a lazy-loaded Demo route at `/route-surfaces` with
+In development, the Registry also installs a lazy-loaded Demo route at
+`/dev/route-surfaces` with
 live drawer, dialog, child-page, nested-drawer, and mixed page/drawer/dialog
 scenarios plus a Prompt generator.
 

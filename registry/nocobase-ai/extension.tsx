@@ -47,112 +47,114 @@ function LazyDemoRoute({ children }: { children: ReactNode }) {
 const nocobaseAIExtension: AppExtension = {
   id: "nocobase-ai",
   Provider: NocoBaseAIExtensionProvider,
-  resources: [
-    {
-      name: "ai-components",
-      meta: {
-        label: "AI Components",
-        icon: <Bot />,
-        acl: { type: "authenticated" },
+  dev: {
+    resources: [
+      {
+        name: "ai-components",
+        meta: {
+          label: "AI Components",
+          icon: <Bot />,
+          acl: { type: "authenticated" },
+        },
       },
-    },
-    {
-      name: "ai-chat-window",
-      list: "/ai-chat",
-      meta: {
-        parent: "ai-components",
-        label: "Chat window",
-        icon: <MessageSquare />,
-        description:
-          "Build freely with AI while NocoBase keeps the application reliable.",
-        acl: { type: "authenticated" },
+      {
+        name: "ai-chat-window",
+        list: "ai-chat",
+        meta: {
+          parent: "ai-components",
+          label: "Chat window",
+          icon: <MessageSquare />,
+          description:
+            "Build freely with AI while NocoBase keeps the application reliable.",
+          acl: { type: "authenticated" },
+        },
       },
-    },
-    {
-      name: "ai-floating-chat",
-      list: "/ai-chat/floating",
-      meta: {
-        parent: "ai-components",
-        label: "Floating chat",
-        icon: <PanelRight />,
-        acl: { type: "authenticated" },
+      {
+        name: "ai-floating-chat",
+        list: "ai-chat/floating",
+        meta: {
+          parent: "ai-components",
+          label: "Floating chat",
+          icon: <PanelRight />,
+          acl: { type: "authenticated" },
+        },
       },
-    },
-    {
-      name: "ai-employee-tasks",
-      list: "/ai-chat/shortcut",
-      meta: {
-        parent: "ai-components",
-        label: "Employee tasks",
-        icon: <Sparkles />,
-        acl: { type: "authenticated" },
+      {
+        name: "ai-employee-tasks",
+        list: "ai-chat/shortcut",
+        meta: {
+          parent: "ai-components",
+          label: "Employee tasks",
+          icon: <Sparkles />,
+          acl: { type: "authenticated" },
+        },
       },
-    },
-    {
-      name: "ai-page-context",
-      list: "/ai-chat/context",
-      meta: {
-        parent: "ai-components",
-        label: "Page context",
-        icon: <MousePointer2 />,
-        acl: { type: "authenticated" },
+      {
+        name: "ai-page-context",
+        list: "ai-chat/context",
+        meta: {
+          parent: "ai-components",
+          label: "Page context",
+          icon: <MousePointer2 />,
+          acl: { type: "authenticated" },
+        },
       },
-    },
-    {
-      name: "ai-tool-cards",
-      list: "/ai-chat/tools",
-      meta: {
-        parent: "ai-components",
-        label: "Tool cards",
-        icon: <Wrench />,
-        acl: { type: "authenticated" },
+      {
+        name: "ai-tool-cards",
+        list: "ai-chat/tools",
+        meta: {
+          parent: "ai-components",
+          label: "Tool cards",
+          icon: <Wrench />,
+          acl: { type: "authenticated" },
+        },
       },
-    },
-  ],
-  routes: (
-    <Route key="nocobase-ai" path="/ai-chat" element={<Outlet />}>
-      <Route
-        index
-        element={
-          <LazyDemoRoute>
-            <AIChatPage />
-          </LazyDemoRoute>
-        }
-      />
-      <Route
-        path="floating"
-        element={
-          <LazyDemoRoute>
-            <FloatingChatPage />
-          </LazyDemoRoute>
-        }
-      />
-      <Route
-        path="shortcut"
-        element={
-          <LazyDemoRoute>
-            <ShortcutPage />
-          </LazyDemoRoute>
-        }
-      />
-      <Route
-        path="context"
-        element={
-          <LazyDemoRoute>
-            <PageContextPage />
-          </LazyDemoRoute>
-        }
-      />
-      <Route
-        path="tools"
-        element={
-          <LazyDemoRoute>
-            <ToolCardsPage />
-          </LazyDemoRoute>
-        }
-      />
-    </Route>
-  ),
+    ],
+    routes: (
+      <Route key="nocobase-ai" path="ai-chat" element={<Outlet />}>
+        <Route
+          index
+          element={
+            <LazyDemoRoute>
+              <AIChatPage />
+            </LazyDemoRoute>
+          }
+        />
+        <Route
+          path="floating"
+          element={
+            <LazyDemoRoute>
+              <FloatingChatPage />
+            </LazyDemoRoute>
+          }
+        />
+        <Route
+          path="shortcut"
+          element={
+            <LazyDemoRoute>
+              <ShortcutPage />
+            </LazyDemoRoute>
+          }
+        />
+        <Route
+          path="context"
+          element={
+            <LazyDemoRoute>
+              <PageContextPage />
+            </LazyDemoRoute>
+          }
+        />
+        <Route
+          path="tools"
+          element={
+            <LazyDemoRoute>
+              <ToolCardsPage />
+            </LazyDemoRoute>
+          }
+        />
+      </Route>
+    ),
+  },
 };
 
 export default nocobaseAIExtension;

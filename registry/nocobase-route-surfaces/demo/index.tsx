@@ -1,9 +1,15 @@
 import { ArrowLeft, ArrowRight, Layers3 } from "lucide-react";
-import { useOutlet, useNavigate } from "react-router";
+import { useLocation, useOutlet, useNavigate } from "react-router";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   RouteDialog,
   RouteDrawer,
@@ -13,7 +19,16 @@ import {
 import { RouteSurfacePromptGenerator } from "./prompt-generator";
 import { routeSurfaceScenarios } from "./scenarios";
 
-const demoBase = "/route-surfaces";
+const routeSurfaceRoot = "/route-surfaces";
+
+function useRouteSurfaceDemoBase() {
+  const { pathname } = useLocation();
+  const rootIndex = pathname.indexOf(routeSurfaceRoot);
+
+  return rootIndex >= 0
+    ? pathname.slice(0, rootIndex + routeSurfaceRoot.length)
+    : routeSurfaceRoot;
+}
 
 export function RouteSurfacesDemoHome() {
   const navigate = useNavigate();
@@ -29,8 +44,8 @@ export function RouteSurfacesDemoHome() {
           </h1>
           <p className="max-w-3xl text-muted-foreground">
             Keep business content independent from whether it appears as a page,
-            drawer, dialog, or nested combination. Every preview below supports a
-            direct URL and browser history.
+            drawer, dialog, or nested combination. Every preview below supports
+            a direct URL and browser history.
           </p>
         </div>
 
@@ -72,6 +87,7 @@ export function RouteSurfacesDemoHome() {
 export function DemoDrawerRoute() {
   const navigate = useNavigate();
   const nested = useOutlet();
+  const demoBase = useRouteSurfaceDemoBase();
 
   return (
     <RouteDrawer
@@ -96,6 +112,8 @@ export function DemoDrawerRoute() {
 }
 
 export function DemoSecondDrawerRoute() {
+  const demoBase = useRouteSurfaceDemoBase();
+
   return (
     <RouteDrawer
       title="Renewal activity"
@@ -113,6 +131,8 @@ export function DemoSecondDrawerRoute() {
 }
 
 export function DemoDialogRoute() {
+  const demoBase = useRouteSurfaceDemoBase();
+
   return (
     <RouteDialog
       title="Approve renewal"
@@ -131,6 +151,7 @@ export function DemoDialogRoute() {
 
 export function DemoPageRoute() {
   const nested = useOutlet();
+  const demoBase = useRouteSurfaceDemoBase();
 
   return (
     <RoutePage closeTo={demoBase}>
@@ -153,7 +174,8 @@ function DemoPageContent({ nested }: { nested: React.ReactNode }) {
               Customer workspace
             </h1>
             <p className="text-muted-foreground">
-              This route replaces the Demo home instead of rendering inside its Outlet.
+              This route replaces the Demo home instead of rendering inside its
+              Outlet.
             </p>
           </div>
           <Button variant="outline" onClick={() => void close()}>
@@ -169,7 +191,8 @@ function DemoPageContent({ nested }: { nested: React.ReactNode }) {
               <CardTitle>Page-owned workflow</CardTitle>
             </div>
             <CardDescription>
-              A page can still host routed overlays without becoming coupled to their content.
+              A page can still host routed overlays without becoming coupled to
+              their content.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -185,6 +208,7 @@ function DemoPageContent({ nested }: { nested: React.ReactNode }) {
 export function DemoPageDrawerRoute() {
   const navigate = useNavigate();
   const nested = useOutlet();
+  const demoBase = useRouteSurfaceDemoBase();
 
   return (
     <RouteDrawer
@@ -209,6 +233,8 @@ export function DemoPageDrawerRoute() {
 }
 
 export function DemoPageDrawerDialogRoute() {
+  const demoBase = useRouteSurfaceDemoBase();
+
   return (
     <RouteDialog
       title="Confirm follow-up"

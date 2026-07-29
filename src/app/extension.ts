@@ -7,6 +7,10 @@ export type AppExtension = {
   priority?: number;
   resources?: ResourceProps[];
   routes?: ReactElement;
+  dev?: {
+    resources?: ResourceProps[];
+    routes?: ReactElement;
+  };
   Provider?: ComponentType<PropsWithChildren>;
   AuthRuntimeProvider?: ComponentType<PropsWithChildren>;
   authRuntimePriority?: number;

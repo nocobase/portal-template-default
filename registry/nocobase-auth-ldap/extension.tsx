@@ -12,28 +12,30 @@ const LdapAuthDemoPage = lazy(() =>
 
 const ldapAuthExtension: AppExtension = {
   id: "nocobase-auth-ldap",
-  resources: [
-    {
-      name: "auth-ldap-demo",
-      list: "/auth/ldap",
-      meta: {
-        parent: "auth-components",
-        label: "LDAP",
-        icon: <ContactRound />,
-        acl: { type: "authenticated" },
+  dev: {
+    resources: [
+      {
+        name: "auth-ldap-demo",
+        list: "auth/ldap",
+        meta: {
+          parent: "auth-components",
+          label: "LDAP",
+          icon: <ContactRound />,
+          acl: { type: "authenticated" },
+        },
       },
-    },
-  ],
-  routes: (
-    <Route
-      path="/auth/ldap"
-      element={
-        <AuthDemoRoute>
-          <LdapAuthDemoPage />
-        </AuthDemoRoute>
-      }
-    />
-  ),
+    ],
+    routes: (
+      <Route
+        path="auth/ldap"
+        element={
+          <AuthDemoRoute>
+            <LdapAuthDemoPage />
+          </AuthDemoRoute>
+        }
+      />
+    ),
+  },
   authAdapters: [
     {
       authType: "LDAP",

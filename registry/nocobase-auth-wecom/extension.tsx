@@ -15,28 +15,30 @@ const wecomAuthExtension: AppExtension = {
   id: "nocobase-auth-wecom",
   AuthRuntimeProvider: WecomAutoLoginProvider,
   authRuntimePriority: 10,
-  resources: [
-    {
-      name: "auth-wecom-demo",
-      list: "/auth/wecom",
-      meta: {
-        parent: "auth-components",
-        label: "WeCom",
-        icon: <Building2 />,
-        acl: { type: "authenticated" },
+  dev: {
+    resources: [
+      {
+        name: "auth-wecom-demo",
+        list: "auth/wecom",
+        meta: {
+          parent: "auth-components",
+          label: "WeCom",
+          icon: <Building2 />,
+          acl: { type: "authenticated" },
+        },
       },
-    },
-  ],
-  routes: (
-    <Route
-      path="/auth/wecom"
-      element={
-        <AuthDemoRoute>
-          <WecomAuthDemoPage />
-        </AuthDemoRoute>
-      }
-    />
-  ),
+    ],
+    routes: (
+      <Route
+        path="auth/wecom"
+        element={
+          <AuthDemoRoute>
+            <WecomAuthDemoPage />
+          </AuthDemoRoute>
+        }
+      />
+    ),
+  },
   authAdapters: [
     {
       authType: "wecom",
