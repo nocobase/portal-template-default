@@ -6,19 +6,13 @@ const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   ".."
 );
-const configPath = path.join(projectRoot, "registry.config.json");
-const outputPath = path.join(projectRoot, "registry.json");
 const action = process.argv[2];
 
-if (!new Set(["build", "install-missing", "preview"]).has(action)) {
-  throw new Error(
-    "Usage: node scripts/registry.mjs <build|install-missing|preview>"
-  );
+if (!new Set(["build", "materialize"]).has(action)) {
+  throw new Error("Usage: node scripts/registry.mjs <build|materialize>");
 }
 
-function toPosix(value) {
-  return value.split(path.sep).join("/");
-}
+const toPosix = (value) => value.split(path.sep).join("/");
 
 function walkFiles(directory, root = directory) {
   return fs
@@ -44,26 +38,30 @@ function isIncluded(file, include) {
 }
 
 function assertSafePath(value, prefix, label) {
-  if (!value.startsWith(prefix) || value.includes("..")) {
+  if (
+    !value.startsWith(prefix) ||
+    path.isAbsolute(value) ||
+    value.split("/").includes("..")
+  ) {
     throw new Error(`Unsafe ${label} path: ${value}`);
   }
 }
 
-const sourceConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
-const sourceFiles = new Map();
-const sourceMappings = new Map();
+const config = JSON.parse(
+  fs.readFileSync(path.join(projectRoot, "registry.config.json"), "utf8")
+);
 const itemNames = new Set();
-
-const items = sourceConfig.items.map((item) => {
+const filesByRoot = new Map();
+const sourceItems = config.items.map((item) => {
   if (!item.name || itemNames.has(item.name)) {
     throw new Error(`Registry item name must be unique: ${item.name}`);
   }
   itemNames.add(item.name);
+
   const source = item.source;
   if (!source) {
     throw new Error(`Registry item ${item.name} is missing its source mapping`);
   }
-
   assertSafePath(source.root, "registry/", "source");
   assertSafePath(source.target, "src/extensions/", "target");
 
@@ -71,24 +69,12 @@ const items = sourceConfig.items.map((item) => {
   if (!fs.existsSync(sourceRoot)) {
     throw new Error(`Registry source does not exist: ${source.root}`);
   }
-
   if (!Array.isArray(source.include) || !source.include.length) {
     throw new Error(`Registry item ${item.name} must include at least one path`);
   }
 
-  const mappingKey = `${source.root}\0${source.target}`;
-  const mapping = sourceMappings.get(mappingKey) ?? {
-    root: source.root,
-    target: source.target,
-    include: new Set(),
-    install: source.install !== false,
-  };
-  source.include.forEach((entry) => mapping.include.add(entry));
-  mapping.install = mapping.install || source.install !== false;
-  sourceMappings.set(mappingKey, mapping);
-
-  const allFiles = sourceFiles.get(source.root) ?? walkFiles(sourceRoot);
-  sourceFiles.set(source.root, allFiles);
+  const allFiles = filesByRoot.get(source.root) ?? walkFiles(sourceRoot);
+  filesByRoot.set(source.root, allFiles);
   const includedFiles = allFiles.filter((file) =>
     isIncluded(file, source.include)
   );
@@ -98,67 +84,83 @@ const items = sourceConfig.items.map((item) => {
     );
   }
 
-  if (action !== "build") return item;
-  const { source: _source, ...registryItem } = item;
-
-  return {
-    ...registryItem,
-    files: includedFiles.map((file) => ({
-      path: path.posix.join(source.root, file),
-      type: "registry:file",
-      target: path.posix.join(source.target, file),
-    })),
-  };
+  return { item, includedFiles };
 });
 
-function copySource(source, overwrite) {
-  const sourcePath = path.join(projectRoot, source.root);
-  const targetPath = path.join(projectRoot, source.target);
-
-  if (fs.existsSync(targetPath) && !overwrite) {
-    console.log(`${source.target}: already installed, preserved`);
-    return;
-  }
-
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  const temporaryRoot = fs.mkdtempSync(
-    path.join(path.dirname(targetPath), `.${path.basename(targetPath)}-install-`)
-  );
-  const temporaryTarget = path.join(temporaryRoot, path.basename(targetPath));
-
-  try {
-    const includedFiles = walkFiles(sourcePath).filter((file) =>
-      isIncluded(file, [...source.include])
-    );
-    for (const file of includedFiles) {
-      const sourceFile = path.join(sourcePath, file);
-      const targetFile = path.join(temporaryTarget, file);
-      fs.mkdirSync(path.dirname(targetFile), { recursive: true });
-      fs.copyFileSync(sourceFile, targetFile);
-    }
-    if (overwrite) fs.rmSync(targetPath, { recursive: true, force: true });
-    fs.renameSync(temporaryTarget, targetPath);
-    console.log(
-      `${source.target}: ${overwrite ? "preview refreshed" : "installed"}`
-    );
-  } finally {
-    fs.rmSync(temporaryRoot, { recursive: true, force: true });
-  }
-}
-
 if (action === "build") {
-  const registry = {
-    $schema: "https://ui.shadcn.com/schema/registry.json",
-    ...sourceConfig,
-    items,
-  };
-  fs.writeFileSync(outputPath, `${JSON.stringify(registry, null, 2)}\n`);
+  const items = sourceItems.map(({ item, includedFiles }) => {
+    const { source, ...registryItem } = item;
+    return {
+      ...registryItem,
+      files: includedFiles.map((file) => ({
+        path: path.posix.join(source.root, file),
+        type: "registry:file",
+        target: path.posix.join(source.target, file),
+      })),
+    };
+  });
+
+  fs.writeFileSync(
+    path.join(projectRoot, "registry.json"),
+    `${JSON.stringify(
+      {
+        $schema: "https://ui.shadcn.com/schema/registry.json",
+        ...config,
+        items,
+      },
+      null,
+      2
+    )}\n`
+  );
+
   for (const item of items) {
     console.log(`${item.name}: ${item.files.length} files`);
   }
 } else {
-  for (const source of sourceMappings.values()) {
-    if (action === "install-missing" && !source.install) continue;
-    copySource(source, action === "preview");
+  const outputRootIndex = process.argv.indexOf("--output-root");
+  if (outputRootIndex !== -1 && !process.argv[outputRootIndex + 1]) {
+    throw new Error("--output-root requires a directory");
+  }
+  const outputRoot =
+    outputRootIndex === -1
+      ? projectRoot
+      : path.resolve(process.argv[outputRootIndex + 1]);
+  const mappings = new Map();
+
+  for (const { item } of sourceItems) {
+    const source = item.source;
+    if (source.install === false) continue;
+
+    const key = `${source.root}\0${source.target}`;
+    const mapping = mappings.get(key) ?? {
+      root: source.root,
+      target: source.target,
+      include: new Set(),
+    };
+    source.include.forEach((entry) => mapping.include.add(entry));
+    mappings.set(key, mapping);
+  }
+
+  for (const mapping of mappings.values()) {
+    if (fs.existsSync(path.join(outputRoot, mapping.target))) {
+      throw new Error(
+        `Default extension target already exists: ${mapping.target}`
+      );
+    }
+  }
+
+  for (const mapping of mappings.values()) {
+    const sourceRoot = path.join(projectRoot, mapping.root);
+    const files = walkFiles(sourceRoot).filter((file) =>
+      isIncluded(file, [...mapping.include])
+    );
+
+    for (const file of files) {
+      const targetFile = path.join(outputRoot, mapping.target, file);
+      fs.mkdirSync(path.dirname(targetFile), { recursive: true });
+      fs.copyFileSync(path.join(sourceRoot, file), targetFile);
+    }
+
+    console.log(`${mapping.target}: ${files.length} files`);
   }
 }

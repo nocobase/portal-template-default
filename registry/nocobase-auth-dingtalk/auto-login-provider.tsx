@@ -4,6 +4,7 @@ import { useLocation } from "react-router";
 import { LoadingState } from "@/components/app-shell/loading-state";
 import { clearAcl } from "@/lib/nocobase/acl";
 import { nocobaseClient } from "@/lib/nocobase/client";
+import { resolvePortalUrl } from "@/providers/runtime-config";
 
 import { isDingtalkBrowser } from "./use-dingtalk-sign-in";
 
@@ -103,7 +104,7 @@ export default function DingtalkAutoLoginProvider({
   const { pathname, search } = useLocation();
   const attemptedRef = useRef(false);
   const insideDingtalk = isDingtalkBrowser();
-  const redirect = `${pathname}${search}`;
+  const redirect = resolvePortalUrl(`${pathname}${search}`);
   const shouldCheck =
     insideDingtalk &&
     !nocobaseClient.getToken() &&

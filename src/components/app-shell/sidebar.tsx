@@ -35,7 +35,6 @@ import { filterMenuItemsByAcl, useAclState } from "@/lib/nocobase/acl";
 import { getResourceLabel } from "@/components/resources/resource-label";
 
 export function Sidebar() {
-  const { open } = useShadcnSidebar();
   const { menuItems, selectedKey } = useMenu();
   const acl = useAclState();
   const allowedMenuItems = React.useMemo(
@@ -45,6 +44,20 @@ export function Sidebar() {
         : [],
     [acl, menuItems]
   );
+
+  return (
+    <SidebarNavigation menuItems={allowedMenuItems} selectedKey={selectedKey} />
+  );
+}
+
+export function SidebarNavigation({
+  menuItems,
+  selectedKey,
+}: {
+  menuItems: TreeMenuItem[];
+  selectedKey?: string;
+}) {
+  const { open } = useShadcnSidebar();
 
   return (
     <ShadcnSidebar
@@ -67,7 +80,7 @@ export function Sidebar() {
           }
         )}
       >
-        {allowedMenuItems.map((item: TreeMenuItem) => (
+        {menuItems.map((item: TreeMenuItem) => (
           <SidebarItem
             key={item.key || item.name}
             item={item}

@@ -1,4 +1,4 @@
-import type { AppExtension } from "../../app/extension";
+import type { AppExtension } from "@/app/extension";
 import { Layers3 } from "lucide-react";
 import { lazy } from "react";
 import { Route } from "react-router";
@@ -36,84 +36,87 @@ const DemoPageDrawerDialog = lazy(() =>
 
 const routeSurfacesExtension: AppExtension = {
   id: "nocobase-route-surfaces",
-  resources: [
-    {
-      name: "route-surfaces",
-      list: "/route-surfaces",
-      meta: {
-        label: "Route surfaces",
-        icon: <Layers3 />,
-        description: "URL-backed drawer, dialog, page, and nested route patterns.",
-        acl: { type: "authenticated" },
+  dev: {
+    resources: [
+      {
+        name: "route-surfaces",
+        list: "route-surfaces",
+        meta: {
+          label: "Route surfaces",
+          icon: <Layers3 />,
+          description:
+            "URL-backed drawer, dialog, page, and nested route patterns.",
+          acl: { type: "authenticated" },
+        },
       },
-    },
-  ],
-  routes: (
-    <>
-      <Route
-        key="route-surfaces-overlays"
-        path="/route-surfaces"
-        element={
-          <LazyRouteSurfaceDemo>
-            <DemoHome />
-          </LazyRouteSurfaceDemo>
-        }
-      >
+    ],
+    routes: (
+      <>
         <Route
-          path="drawer"
+          key="route-surfaces-overlays"
+          path="route-surfaces"
           element={
             <LazyRouteSurfaceDemo>
-              <DemoDrawer />
+              <DemoHome />
             </LazyRouteSurfaceDemo>
           }
         >
           <Route
-            path="second"
+            path="drawer"
             element={
               <LazyRouteSurfaceDemo>
-                <DemoSecondDrawer />
+                <DemoDrawer />
               </LazyRouteSurfaceDemo>
             }
-          />
-        </Route>
-        <Route
-          path="dialog"
-          element={
-            <LazyRouteSurfaceDemo>
-              <DemoDialog />
-            </LazyRouteSurfaceDemo>
-          }
-        />
-      </Route>
-      <Route
-        key="route-surfaces-page"
-        path="/route-surfaces/page"
-        element={
-          <LazyRouteSurfaceDemo>
-            <DemoPage />
-          </LazyRouteSurfaceDemo>
-        }
-      >
-        <Route
-          path="drawer"
-          element={
-            <LazyRouteSurfaceDemo>
-              <DemoPageDrawer />
-            </LazyRouteSurfaceDemo>
-          }
-        >
+          >
+            <Route
+              path="second"
+              element={
+                <LazyRouteSurfaceDemo>
+                  <DemoSecondDrawer />
+                </LazyRouteSurfaceDemo>
+              }
+            />
+          </Route>
           <Route
             path="dialog"
             element={
               <LazyRouteSurfaceDemo>
-                <DemoPageDrawerDialog />
+                <DemoDialog />
               </LazyRouteSurfaceDemo>
             }
           />
         </Route>
-      </Route>
-    </>
-  ),
+        <Route
+          key="route-surfaces-page"
+          path="route-surfaces/page"
+          element={
+            <LazyRouteSurfaceDemo>
+              <DemoPage />
+            </LazyRouteSurfaceDemo>
+          }
+        >
+          <Route
+            path="drawer"
+            element={
+              <LazyRouteSurfaceDemo>
+                <DemoPageDrawer />
+              </LazyRouteSurfaceDemo>
+            }
+          >
+            <Route
+              path="dialog"
+              element={
+                <LazyRouteSurfaceDemo>
+                  <DemoPageDrawerDialog />
+                </LazyRouteSurfaceDemo>
+              }
+            />
+          </Route>
+        </Route>
+      </>
+    ),
+  },
 };
 
 export default routeSurfacesExtension;

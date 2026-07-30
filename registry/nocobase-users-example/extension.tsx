@@ -2,7 +2,7 @@ import { CanAccess } from "@/components/access-control/can-access";
 import { UsersRound } from "lucide-react";
 import { Route } from "react-router";
 
-import type { AppExtension } from "../../app/extension";
+import type { AppExtension } from "@/app/extension";
 import { AccessDenied } from "@/components/access-control/access-denied";
 import { UserCreate } from "./create";
 import { UserEdit } from "./edit";

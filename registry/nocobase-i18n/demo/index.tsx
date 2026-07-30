@@ -13,7 +13,7 @@ import { nocobaseClient } from "@/lib/nocobase/client";
 import {
   LanguageSwitcher,
   useEnabledLocales,
-} from "@/extensions/nocobase-i18n";
+} from "..";
 import { I18nPromptGenerator } from "./prompt-generator";
 
 export function I18nDemoPage() {

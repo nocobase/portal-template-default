@@ -12,28 +12,30 @@ const SmsAuthDemoPage = lazy(() =>
 
 const smsAuthExtension: AppExtension = {
   id: "nocobase-auth-sms",
-  resources: [
-    {
-      name: "auth-sms-demo",
-      list: "/auth/sms",
-      meta: {
-        parent: "auth-components",
-        label: "SMS",
-        icon: <Smartphone />,
-        acl: { type: "authenticated" },
+  dev: {
+    resources: [
+      {
+        name: "auth-sms-demo",
+        list: "auth/sms",
+        meta: {
+          parent: "auth-components",
+          label: "SMS",
+          icon: <Smartphone />,
+          acl: { type: "authenticated" },
+        },
       },
-    },
-  ],
-  routes: (
-    <Route
-      path="/auth/sms"
-      element={
-        <AuthDemoRoute>
-          <SmsAuthDemoPage />
-        </AuthDemoRoute>
-      }
-    />
-  ),
+    ],
+    routes: (
+      <Route
+        path="auth/sms"
+        element={
+          <AuthDemoRoute>
+            <SmsAuthDemoPage />
+          </AuthDemoRoute>
+        }
+      />
+    ),
+  },
   authAdapters: [
     {
       authType: "SMS",

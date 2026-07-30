@@ -65,6 +65,15 @@ const stripExistingRuntimeConfig = (html) => {
 
 const portalBase = normalizePortalBase(process.env.NOCOBASE_PORTAL_BASE);
 const apiUrl = String(process.env.NOCOBASE_API_URL || "/api").trim() || "/api";
+const storagePrefix =
+  String(process.env.API_CLIENT_STORAGE_PREFIX || "NOCOBASE_").trim() ||
+  "NOCOBASE_";
+const storageType =
+  String(process.env.API_CLIENT_STORAGE_TYPE || "localStorage").trim() ||
+  "localStorage";
+const shareToken = /^true$/i.test(
+  String(process.env.API_CLIENT_SHARE_TOKEN || "false").trim()
+);
 
 if (!fs.existsSync(rawIndexPath)) {
   throw new Error(
@@ -76,6 +85,9 @@ const runtimeConfig = `${startMarker}
 <script>
   window.NOCOBASE_PORTAL_BASE = ${JSON.stringify(portalBase)};
   window.NOCOBASE_API_URL = ${JSON.stringify(apiUrl)};
+  window.__nocobase_api_client_storage_prefix__ = ${JSON.stringify(storagePrefix)};
+  window.__nocobase_api_client_storage_type__ = ${JSON.stringify(storageType)};
+  window.__nocobase_api_client_share_token__ = ${JSON.stringify(shareToken)};
 </script>
 ${endMarker}
 `;

@@ -2,13 +2,11 @@ import { lazy } from "react";
 import { LogIn } from "lucide-react";
 import { Route } from "react-router";
 
-import type { AppExtension } from "../../app/extension";
-import { AuthDemoRoute } from "../../components/auth/demo";
+import type { AppExtension } from "@/app/extension";
+import { AuthDemoRoute } from "@/components/auth/demo";
 
 const OidcSignInButton = lazy(() => import("./oidc-sign-in-button"));
-const OidcAutoRedirectProvider = lazy(
-  () => import("./auto-redirect-provider")
-);
+const OidcAutoRedirectProvider = lazy(() => import("./auto-redirect-provider"));
 const OidcAuthDemoPage = lazy(() =>
   import("./demo").then((module) => ({ default: module.OidcAuthDemoPage }))
 );
@@ -17,28 +15,30 @@ const oidcAuthExtension: AppExtension = {
   id: "nocobase-auth-oidc",
   AuthRuntimeProvider: OidcAutoRedirectProvider,
   authRuntimePriority: 20,
-  resources: [
-    {
-      name: "auth-oidc-demo",
-      list: "/auth/oidc",
-      meta: {
-        parent: "auth-components",
-        label: "OIDC",
-        icon: <LogIn />,
-        acl: { type: "authenticated" },
+  dev: {
+    resources: [
+      {
+        name: "auth-oidc-demo",
+        list: "auth/oidc",
+        meta: {
+          parent: "auth-components",
+          label: "OIDC",
+          icon: <LogIn />,
+          acl: { type: "authenticated" },
+        },
       },
-    },
-  ],
-  routes: (
-    <Route
-      path="/auth/oidc"
-      element={
-        <AuthDemoRoute>
-          <OidcAuthDemoPage />
-        </AuthDemoRoute>
-      }
-    />
-  ),
+    ],
+    routes: (
+      <Route
+        path="auth/oidc"
+        element={
+          <AuthDemoRoute>
+            <OidcAuthDemoPage />
+          </AuthDemoRoute>
+        }
+      />
+    ),
+  },
   authAdapters: [
     {
       authType: "OIDC",

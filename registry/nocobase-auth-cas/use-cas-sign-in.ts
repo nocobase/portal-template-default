@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router";
 
 import type { Authenticator } from "@/components/auth/types";
 import { nocobaseClient } from "@/lib/nocobase/client";
+import { resolvePortalUrl } from "@/providers/runtime-config";
 
 export function useCasSignIn(authenticator: Authenticator) {
   const [searchParams] = useSearchParams();
@@ -15,11 +16,12 @@ export function useCasSignIn(authenticator: Authenticator) {
   }, [authenticator.name, searchParams]);
 
   const signIn = useCallback(() => {
-    const redirect =
-      searchParams.get("to") || searchParams.get("redirect") || "/";
+    const redirect = resolvePortalUrl(
+      searchParams.get("to") || searchParams.get("redirect") || "/"
+    );
     const url = nocobaseClient.buildUrl("cas:login", {
       authenticator: authenticator.name,
-      __appName: "main",
+      __appName: nocobaseClient.getAppName(),
       redirect,
     });
     window.location.replace(url.toString());

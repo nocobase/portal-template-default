@@ -19,40 +19,45 @@ export const routeSurfaceScenarios: RouteSurfaceScenario[] = [
     id: "drawer",
     number: "1",
     title: "Drawer route",
-    description: "Keep the current page mounted and open one URL-backed drawer.",
-    path: "/route-surfaces/drawer",
+    description:
+      "Keep the current page mounted and open one URL-backed drawer.",
+    path: "drawer",
     routeShape: "Page → Drawer",
   },
   {
     id: "dialog",
     number: "2",
     title: "Dialog route",
-    description: "Open focused content in a modal while preserving the page URL history.",
-    path: "/route-surfaces/dialog",
+    description:
+      "Open focused content in a modal while preserving the page URL history.",
+    path: "dialog",
     routeShape: "Page → Dialog",
   },
   {
     id: "page",
     number: "3",
     title: "Child page",
-    description: "Replace the current page instead of rendering the child inside an overlay.",
-    path: "/route-surfaces/page",
+    description:
+      "Replace the current page instead of rendering the child inside an overlay.",
+    path: "page",
     routeShape: "Page → Child page",
   },
   {
     id: "nested-drawers",
     number: "4",
     title: "Second-level drawer",
-    description: "Push the lower drawer outward and keep the top drawer at a stable size.",
-    path: "/route-surfaces/drawer/second",
+    description:
+      "Push the lower drawer outward and keep the top drawer at a stable size.",
+    path: "drawer/second",
     routeShape: "Page → Drawer → Drawer",
   },
   {
     id: "page-drawer-dialog",
     number: "5",
     title: "Page, drawer, and dialog",
-    description: "Compose different presentation types without coupling business content to them.",
-    path: "/route-surfaces/page/drawer/dialog",
+    description:
+      "Compose different presentation types without coupling business content to them.",
+    path: "page/drawer/dialog",
     routeShape: "Child page → Drawer → Dialog",
   },
 ];
@@ -66,15 +71,16 @@ export function getRouteSurfacePrompt(
       "Keep the current page mounted and open the target content with RouteDrawer. Closing the drawer returns to the page route.",
     dialog:
       "Keep the current page mounted and open the target content with RouteDialog. The dialog route must be directly addressable and dismissible through the shared close lifecycle.",
-    page:
-      "Render the target content as a real child page with RoutePage. Register it as a page route branch rather than placing it inside a drawer outlet.",
+    page: "Render the target content as a real child page with RoutePage. Register it as a page route branch rather than placing it inside a drawer outlet.",
     "nested-drawers":
       "Create a parent RouteDrawer with an Outlet and pass the rendered child outlet through its nested prop. The second RouteDrawer must push the lower drawer outward, keep equal widths, and close back to the parent route.",
     "page-drawer-dialog":
       "Render a RoutePage first, place a RouteDrawer route inside that page, then render a RouteDialog as the drawer's nested route. Closing each layer must return to the immediately lower URL.",
   }[scenario.id];
 
-  return `Build ${target || "the requested workflow"} with the installed NocoBase route surfaces.
+  return `Build ${
+    target || "the requested workflow"
+  } with the installed NocoBase route surfaces.
 
 Scenario:
 - ${scenario.routeShape}

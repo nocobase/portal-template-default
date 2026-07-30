@@ -30,8 +30,9 @@ const setState = (next: AclState) => {
 };
 
 const getSessionKey = () => {
-  const token = nocobaseClient.getToken();
-  return token ? `${token}:${nocobaseClient.getRole() ?? ""}` : undefined;
+  return `${nocobaseClient.getToken() ?? "cookie"}:${
+    nocobaseClient.getRole() ?? ""
+  }`;
 };
 
 const requestAcl = async (role?: string) =>
@@ -87,17 +88,11 @@ export const clearAcl = () => {
   activeRequest = undefined;
   loadedSessionKey = undefined;
   clearRecordPermissions();
-  nocobaseClient.setRole(null);
   setState({ status: "idle" });
 };
 
 const load = async ({ force = false } = {}) => {
   const sessionKey = getSessionKey();
-  if (!sessionKey) {
-    clearAcl();
-    return state;
-  }
-
   if (!force && state.status === "ready" && loadedSessionKey === sessionKey) {
     return state;
   }
@@ -157,10 +152,26 @@ export const switchRole = async (roleName: string) => {
       body: { roleName },
       withAclMeta: false,
     });
+    await nocobaseClient.action("auth", "syncCookies", {
+      method: "POST",
+      withAclMeta: false,
+    });
   } catch (error) {
     nocobaseClient.setRole(previousRole);
+    try {
+      await nocobaseClient.action("auth", "syncCookies", {
+        method: "POST",
+        withAclMeta: false,
+      });
+    } catch {
+      // Preserve the original role-switch error. The stored role still rolls
+      // back and will override a stale role cookie on subsequent requests.
+    }
     throw error;
   }
+
+  clearAcl();
+  await loadAcl();
 };
 
 export const aclStore: AclStore = {

@@ -402,9 +402,8 @@ Implementation requirements:
 - Export any public renderer types or components from registry/nocobase-ai/components/index.ts when application code needs them.
 
 Verification:
-- Run pnpm registry:preview.
-- Run pnpm exec tsc --noEmit.
-- Run the scoped ESLint check and pnpm registry:build.
+- Run pnpm build from the Registry source repository.
+- Run the relevant regression checks and a scoped ESLint check.
 - Verify the card in light and dark themes, narrow chat panels, expanded dialogs, pending approval, completed, and error states.`;
 
   return (

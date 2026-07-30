@@ -1,4 +1,4 @@
-import { AuthMethodDemo } from "../../components/auth/demo";
+import { AuthMethodDemo } from "@/components/auth/demo";
 import SamlSignInButton from "./saml-sign-in-button";
 
 const authenticator = {
