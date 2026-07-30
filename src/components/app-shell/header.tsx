@@ -11,13 +11,31 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { UserAvatar } from "@/components/app-shell/user-avatar";
 import { UserInfo } from "@/components/app-shell/user-info";
+import { CanAccess } from "@/components/access-control/can-access";
 import { useSidebar, SidebarTrigger } from "@/components/ui/sidebar";
-import { LogOutIcon } from "lucide-react";
+import { LogOutIcon, SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Brand } from "@/components/app-shell/brand";
 import { extensionUserMenuItems } from "@/app/extensions";
+import { resolveNocoBaseServerUrl } from "@/providers/runtime-config";
+
+const pluginSettingsResource = {
+  name: "plugin-settings",
+  meta: {
+    acl: {
+      type: "snippet",
+      name: "pm.*",
+    },
+  },
+} as const;
 
 export const Header = () => {
   const { isMobile } = useSidebar();
@@ -55,6 +73,7 @@ function DesktopHeader() {
         </span>
       </div>
       <div className="flex items-center gap-2">
+        <SettingsLink />
         <ThemeToggle />
         <UserDropdown />
       </div>
@@ -92,10 +111,46 @@ function MobileHeader() {
       />
       <Brand logoClassName="h-6" />
       <div className="flex shrink-0 items-center gap-1">
+        <SettingsLink className="size-9" />
         <ThemeToggle className="size-9" />
         <UserDropdown />
       </div>
     </header>
+  );
+}
+
+function SettingsLink({ className }: { className?: string }) {
+  const translate = useTranslate();
+  const label = translate("shell.settings", "System settings");
+
+  return (
+    <CanAccess resourceItem={pluginSettingsResource}>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              render={
+                <a
+                  href={resolveNocoBaseServerUrl("/settings")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                />
+              }
+              variant="outline"
+              size="icon"
+              className={cn(
+                "size-10 rounded-xl border-border/70 bg-background/60",
+                className
+              )}
+            >
+              <SettingsIcon />
+              <span className="sr-only">{label}</span>
+            </Button>
+          }
+        />
+        <TooltipContent>{label}</TooltipContent>
+      </Tooltip>
+    </CanAccess>
   );
 }
 

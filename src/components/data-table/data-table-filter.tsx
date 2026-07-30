@@ -647,6 +647,13 @@ export function DataTableFilterInput<TData>({
     return defaultOperatorFromProps || "eq";
   });
 
+  useEffect(() => {
+    columnFromProps.columnDef.meta = {
+      ...columnFromProps.columnDef.meta,
+      filterOperator: operator,
+    };
+  }, [columnFromProps, operator]);
+
   const handleApply = () => {
     columnFromProps.setFilterValue(filterValue);
   };
@@ -658,10 +665,6 @@ export function DataTableFilterInput<TData>({
 
   const handleOperatorChange = (value: CrudOperators) => {
     setOperator(value);
-    columnFromProps.columnDef.meta = {
-      ...columnFromProps.columnDef.meta,
-      filterOperator: value,
-    };
   };
 
   return (

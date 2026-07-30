@@ -86,7 +86,6 @@
       "source": {
         "root": "registry/nocobase-i18n",
         "target": "src/extensions/nocobase-i18n",
-        "install": false,
         "include": ["."]
       }
     },
@@ -103,7 +102,6 @@
       "source": {
         "root": "registry/nocobase-auth-oidc",
         "target": "src/extensions/nocobase-auth-oidc",
-        "install": false,
         "include": ["."]
       }
     },
@@ -120,7 +118,6 @@
       "source": {
         "root": "registry/nocobase-auth-saml",
         "target": "src/extensions/nocobase-auth-saml",
-        "install": false,
         "include": ["."]
       }
     },
@@ -137,7 +134,6 @@
       "source": {
         "root": "registry/nocobase-auth-cas",
         "target": "src/extensions/nocobase-auth-cas",
-        "install": false,
         "include": ["."]
       }
     },
@@ -150,7 +146,6 @@
       "source": {
         "root": "registry/nocobase-auth-ldap",
         "target": "src/extensions/nocobase-auth-ldap",
-        "install": false,
         "include": ["."]
       }
     },
@@ -163,7 +158,6 @@
       "source": {
         "root": "registry/nocobase-auth-sms",
         "target": "src/extensions/nocobase-auth-sms",
-        "install": false,
         "include": ["."]
       }
     },
@@ -180,7 +174,6 @@
       "source": {
         "root": "registry/nocobase-auth-wecom",
         "target": "src/extensions/nocobase-auth-wecom",
-        "install": false,
         "include": ["."]
       }
     },
@@ -198,7 +191,6 @@
       "source": {
         "root": "registry/nocobase-auth-dingtalk",
         "target": "src/extensions/nocobase-auth-dingtalk",
-        "install": false,
         "include": ["."]
       }
     },
@@ -316,6 +308,50 @@
       "source": {
         "root": "registry/nocobase-file-upload",
         "target": "src/extensions/nocobase-file-upload",
+        "include": ["."]
+      }
+    },
+    {
+      "name": "mail",
+      "type": "registry:block",
+      "title": "NocoBase Mail",
+      "description": "Mail inbox, compose, detail, and label components backed by the NocoBase mail API.",
+      "dependencies": [
+        "@refinedev/core@^5.0.8",
+        "@tiptap/extension-link@^3.29.0",
+        "@tiptap/extension-placeholder@^3.29.0",
+        "@tiptap/extension-text-style@3.29.0",
+        "@tiptap/pm@^3.29.0",
+        "@tiptap/react@^3.29.0",
+        "@tiptap/starter-kit@^3.29.0",
+        "date-fns@^4.1.0",
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2",
+        "sonner@^2.0.3"
+      ],
+      "registryDependencies": [
+        "alert-dialog",
+        "avatar",
+        "badge",
+        "button",
+        "checkbox",
+        "dialog",
+        "dropdown-menu",
+        "input",
+        "label",
+        "popover",
+        "select",
+        "separator",
+        "sheet",
+        "skeleton",
+        "tabs",
+        "textarea",
+        "toggle"
+      ],
+      "docs": "Requires a compatible NocoBase Starter with the mail plugin enabled. The mail API client uses the Starter's built-in API_URL, getNocoBaseHeaders, and NOCOBASE_TOKEN_KEY from @/providers/constants.",
+      "source": {
+        "root": "registry/nocobase-mail",
+        "target": "src/extensions/nocobase-mail",
         "include": ["."]
       }
     },

@@ -6,7 +6,9 @@ import {
 } from "react";
 import type { AppExtension } from "./extension";
 import { LoadingState } from "@/components/app-shell/loading-state";
+import { appRoutes, registryRoutesEnabled } from "@/routes";
 import { createDevelopmentRoute } from "./development";
+import { buildRouteResources, renderAppRoutes } from "./route-runtime";
 
 const extensionModules = import.meta.glob<{ default: AppExtension }>(
   "@/extensions/*/extension.tsx",
@@ -21,13 +23,23 @@ export const appExtensions = Object.values(extensionModules)
       left.id.localeCompare(right.id)
   );
 
-export const extensionResources = appExtensions.flatMap(
-  (extension) => extension.resources ?? []
-);
+const routeExtensions = registryRoutesEnabled ? appExtensions : [];
+const routeDefinitions = [
+  ...appRoutes,
+  ...routeExtensions.flatMap((extension) => extension.appRoutes ?? []),
+];
 
-export const extensionRouteElements = appExtensions
-  .map((extension) => extension.routes)
-  .filter((routes): routes is ReactElement => Boolean(routes));
+export const configuredResources = [
+  ...buildRouteResources(routeDefinitions),
+  ...routeExtensions.flatMap((extension) => extension.resources ?? []),
+];
+
+export const configuredRouteElements = [
+  ...renderAppRoutes(routeDefinitions),
+  ...routeExtensions
+    .map((extension) => extension.routes)
+    .filter((routes): routes is ReactElement => Boolean(routes)),
+];
 
 export const extensionStandaloneRouteElements = import.meta.env.DEV
   ? [createDevelopmentRoute(appExtensions)]

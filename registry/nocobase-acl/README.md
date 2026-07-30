@@ -12,11 +12,17 @@ After installation, import the components from `@/extensions/nocobase-acl`.
   normal roles, Anonymous when enabled, and Full permissions through the
   `__union__` role when the system role mode allows it.
 
-Route resource metadata and `AclPage` accept a `roles` constraint with `anyOf`,
-`allOf`, and `noneOf`. Role constraints use the roles in the current effective
-ACL context. In union mode this is the set of roles participating in the union;
-in single-role mode it is only the selected role. Regions, fields, and actions
-continue to use resource permissions.
+Application route definitions and `AclPage` accept a `roles` constraint with
+`anyOf`, `allOf`, and `noneOf`. Put route-level constraints in `access.roles`
+through `defineAppRoutes`; the Starter applies the same constraint to menu
+visibility and direct URL access. Role constraints use the roles in the current
+effective ACL context. In union mode this is the set of roles participating in
+the union; in single-role mode it is only the selected role. Regions, fields,
+and actions continue to use resource permissions.
+
+Nested routes inherit their parents' route access. The generated navigation
+item evaluates every constraint in that route chain, matching the nested route
+guards used for direct URL access.
 
 Use the Starter's `useGetRoles()` hook when application UI needs the same
 effective role names. Its result follows the familiar Refine query shape with
@@ -35,15 +41,23 @@ function CurrentAccessContext() {
 ```
 
 ```tsx
-const adminRoute = {
-  name: "administration",
-  meta: {
-    acl: {
-      type: "authenticated",
+import { defineAppRoutes } from "@/app/route-runtime";
+
+export const appRoutes = defineAppRoutes([
+  {
+    name: "administration",
+    path: "/administration",
+    element: <AdministrationPage />,
+    resource: {
+      meta: {
+        label: "Administration",
+      },
+    },
+    access: {
       roles: { anyOf: ["admin"] },
     },
   },
-};
+]);
 
 function AuditLogsRoute() {
   return (
@@ -56,9 +70,9 @@ function AuditLogsRoute() {
 }
 ```
 
-Mark non-collection resources with `meta.acl.type = "authenticated"`, or use
-the `collection`, `snippet`, and `route` ACL metadata variants when the resource
-should participate in NocoBase permission checks.
+The route runtime marks generated non-collection resources as authenticated.
+Use the `collection`, `snippet`, and `route` ACL metadata variants when a
+resource should also participate in NocoBase permission checks.
 
 The underlying `accessControlProvider`, `roles:check` cache, record permissions,
 and Refine integration are provided by the compatible Starter.

@@ -88,6 +88,9 @@ Scenario:
 
 Implementation requirements:
 - Import RouteDrawer, RouteDialog, RoutePage, and useRouteSurfaceClose from @/extensions/nocobase-route-surfaces as needed.
+- Define application-owned resource routes once with defineAppRoutes. resourceAction only binds a child path to the parent Refine resource's create, edit, or show URL; it does not choose a presentation.
+- With the default automatic resource outlet, every resourceAction element must render a RouteDrawer or RouteDialog. Never place a plain full-page form or detail component there because it will render below the list.
+- When a resource action must replace the list as a full page, set outlet: "manual" on the resource route and use an application-owned layout that renders or consumes useOutlet().
 - Keep data loading, forms, ACL guards, route paths, and business copy in application-owned files.
 - Keep business content independent from its presentation container so the same content can move between a drawer, dialog, or page.
 - Every surface must have an explicit closeTo URL.
@@ -95,6 +98,7 @@ Implementation requirements:
 - A full child page must be a page route branch, not an Outlet rendered inside a drawer.
 - For editable forms, use useRefineUnsavedChangesGuard, pass its beforeClose callback to the surface, render its confirmation node, and use useRouteSurfaceClose for Cancel and successful submission.
 - Direct URL entry, refresh, browser back/forward, Escape, the close button, and backdrop dismissal must all restore the correct layer stack.
+- Verify visually that no resource action page is appended below its parent list.
 - Apply Refine CanAccess with an AccessDenied fallback to each business resource/action independently; do not rely on a parent list permission for unrelated child pages.
 
 Deliver the complete route definitions and React components using the application's existing design system.`;

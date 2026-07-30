@@ -4,6 +4,10 @@ import fs from "node:fs";
 import path from "path";
 import { defineConfig, loadEnv } from "vite";
 
+const portalTemplate = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, "package.json"), "utf8")
+) as { displayName: string; version: string };
+
 const getDefaultProxyTarget = (apiUrl?: string) => {
   if (!apiUrl || apiUrl.startsWith("/")) return undefined;
 
@@ -106,6 +110,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: portalBase,
+    define: {
+      __PORTAL_TEMPLATE_NAME__: JSON.stringify(portalTemplate.displayName),
+      __PORTAL_TEMPLATE_VERSION__: JSON.stringify(portalTemplate.version),
+    },
     envPrefix: ["VITE_", "NOCOBASE_", "API_CLIENT_"],
     plugins: [react(), tailwindcss(), copyRawIndexHtmlPlugin(portalBase)],
     resolve: {

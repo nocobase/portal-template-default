@@ -1,6 +1,7 @@
 {
   "name": "@nocobase/portal-template-default",
-  "version": "1.0.12",
+  "displayName": "Default Template",
+  "version": "1.0.18",
   "packageManager": "pnpm@10.28.0",
   "type": "module",
   "devDependencies": {
@@ -24,6 +25,12 @@
     "@tailwindcss/vite": "^4.1.8",
     "@tanstack/react-query": "^5.81.5",
     "@tanstack/react-table": "^8.2.6",
+    "@tiptap/extension-link": "^3.29.0",
+    "@tiptap/extension-placeholder": "^3.29.0",
+    "@tiptap/extension-text-style": "3.29.0",
+    "@tiptap/pm": "^3.29.0",
+    "@tiptap/react": "^3.29.0",
+    "@tiptap/starter-kit": "^3.29.0",
     "@types/node": "^20",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
@@ -84,6 +91,7 @@
     "test:auth": "node tests/auth-session-regression.mjs",
     "test:acl": "node registry/nocobase-acl/tests/acl-regression.mjs",
     "test:i18n": "node registry/nocobase-i18n/tests/i18n-regression.mjs",
+    "test:mail": "node registry/nocobase-mail/tests/mail-regression.mjs",
     "start": "refine start",
     "refine": "refine"
   },

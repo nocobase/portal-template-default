@@ -11,7 +11,10 @@ import { Toaster } from "./components/notifications/toaster";
 import { ThemeProvider } from "./components/theme/theme-provider";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { BrandLogo } from "./components/app-shell/brand";
-import { AppAuthRuntimeProviders, extensionResources } from "./app/extensions";
+import {
+  AppAuthRuntimeProviders,
+  configuredResources,
+} from "./app/extensions";
 import "./App.css";
 import { authProvider } from "./providers/auth";
 import { accessControlProvider } from "./providers/access-control";
@@ -24,7 +27,7 @@ import { AppRoutes } from "./app/routes";
 const getResourcePriority = (resource: ResourceProps) =>
   typeof resource.meta?.priority === "number" ? resource.meta.priority : 100;
 
-const appResources = [...extensionResources].sort(
+const appResources = [...configuredResources].sort(
   (left, right) => getResourcePriority(left) - getResourcePriority(right)
 );
 

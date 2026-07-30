@@ -294,6 +294,7 @@ function SidebarFooter() {
   return (
     <ShadcnSidebarFooter className="border-t border-sidebar-border/70 p-0">
       <div
+        title={`${__PORTAL_TEMPLATE_NAME__} v${__PORTAL_TEMPLATE_VERSION__}`}
         className={cn(
           "flex min-h-16 items-center",
           open ? "gap-3 px-5 py-3" : "justify-center px-2"
@@ -306,10 +307,21 @@ function SidebarFooter() {
               {translate("shell.footer.freedom", "AI builds freely.")}
             </div>
             <div className="text-muted-foreground">
+              <a
+                href="https://nocobase.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-sidebar-foreground hover:underline"
+              >
+                NocoBase
+              </a>{" "}
               {translate(
-                "shell.footer.reliability",
-                "NocoBase keeps it reliable."
+                "shell.footer.reliabilitySuffix",
+                "keeps it reliable."
               )}
+            </div>
+            <div className="mt-1 font-mono text-[10px] text-muted-foreground/70">
+              {__PORTAL_TEMPLATE_NAME__} v{__PORTAL_TEMPLATE_VERSION__}
             </div>
           </div>
         )}

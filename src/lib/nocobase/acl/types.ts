@@ -13,6 +13,10 @@ export type RoleConstraint = {
   noneOf?: string[];
 };
 
+export type RouteAccessConstraint = {
+  roles: RoleConstraint;
+};
+
 export type AclActionParams = Record<string, unknown> & {
   fields?: string[];
   whitelist?: string[];

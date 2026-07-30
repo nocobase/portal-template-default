@@ -9,7 +9,13 @@ import {
   UserRoundCog,
   UsersRound,
 } from "lucide-react";
+import type { TreeMenuItem } from "@refinedev/core";
 
+import {
+  buildRouteResources,
+  defineAppRoutes,
+  RouteAccessGuard,
+} from "@/app/route-runtime";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CanAccess } from "@/components/access-control/can-access";
@@ -21,7 +27,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import type { RoleConstraint } from "@/lib/nocobase/acl";
+import {
+  filterMenuItemsByAcl,
+  type RoleConstraint,
+  useAclState,
+} from "@/lib/nocobase/acl";
 import { AclField, AclPage, AclRegion } from "../components/acl-boundary";
 import { AclPreviewProvider } from "./acl-preview-provider";
 import { AclBoundaryApi } from "./boundary-api";
@@ -57,6 +67,53 @@ const demoUsers = [
 const usersRouteRoles = {
   anyOf: ["admin"],
 } satisfies RoleConstraint;
+
+const navigationDemoRoutes = defineAppRoutes([
+  {
+    name: "dashboard",
+    path: "/dashboard",
+    resource: {
+      meta: {
+        label: "Dashboard",
+        icon: <LayoutPanelTop />,
+      },
+    },
+  },
+  {
+    name: "users",
+    path: "/users",
+    resource: {
+      meta: {
+        label: "Users",
+        icon: <UsersRound />,
+      },
+    },
+    access: {
+      roles: usersRouteRoles,
+    },
+  },
+  {
+    name: "roles",
+    path: "/roles",
+    resource: {
+      meta: {
+        label: "Roles",
+        icon: <UserRoundCog />,
+      },
+    },
+  },
+]);
+
+const navigationDemoResources = buildRouteResources(navigationDemoRoutes);
+const navigationDemoMenuItems: TreeMenuItem[] = navigationDemoResources.map(
+  (resource) => ({
+    key: resource.name,
+    name: resource.name,
+    route: typeof resource.list === "string" ? resource.list : undefined,
+    meta: resource.meta,
+    children: [],
+  })
+);
 
 const allowedRegionPermissions = {
   "users:list": {},
@@ -127,12 +184,12 @@ export function AclPatternsPage() {
           defaultScene: "User and role administration",
           defaultTarget:
             "Allow administrators to open Users, but remove it from navigation and block its direct URL for other roles.",
-          requirements: `- Put role constraints on the route resource through meta.acl.roles using anyOf, allOf, or noneOf.
-- Use meta.acl.type = "authenticated" when the route itself is role-controlled and its inner regions perform collection checks.
-- Let the Starter filter inaccessible sidebar items and choose the first accessible default route.
-- Wrap list, create, show, and edit routes with the Starter CanAccess and provide an AccessDenied fallback.
-- Mark non-collection utility pages as authenticated, snippet, route, or acl: false instead of treating them as collections.
-- If a parent route is denied but an accessible child remains, navigation must continue to the child route.`,
+          requirements: `- Define application-owned navigation once through defineAppRoutes in src/routes.tsx.
+- Put role constraints in the route access.roles field using anyOf, allOf, or noneOf.
+- Let the route runtime generate the Refine resource, filter the sidebar item, and wrap the direct route with CanAccess.
+- Do not repeat the same role list in Resource meta or a manually written route guard.
+- Keep resource/action, record, region, and field permissions in their dedicated ACL boundaries.
+- Let the Starter choose the first accessible route after inaccessible leaves and empty groups are removed.`,
         }}
       >
         <OutcomeComparison
@@ -343,21 +400,36 @@ function OutcomeComparison({
 }
 
 function NavigationPreview() {
+  const acl = useAclState();
+  const menuItems =
+    acl.status === "ready"
+      ? filterMenuItemsByAcl(navigationDemoMenuItems, acl.permissions)
+      : [];
+  const usersVisible = menuItems.some((item) => item.name === "users");
+  const usersRoute = navigationDemoRoutes.find(
+    (route) => route.name === "users"
+  );
+
   return (
     <div className="grid min-h-48 grid-cols-[150px_minmax(0,1fr)] overflow-hidden rounded-xl border bg-background">
       <aside className="border-r bg-muted/35 p-3">
         <div className="mb-3 text-xs font-semibold text-muted-foreground">
           Workspace
         </div>
-        <NavItem icon={<LayoutPanelTop />} label="Dashboard" />
-        <CanAccess roles={usersRouteRoles}>
-          <NavItem icon={<UsersRound />} label="Users" active />
-        </CanAccess>
-        <NavItem icon={<UserRoundCog />} label="Roles" />
+        {menuItems.map((item) => (
+          <NavItem
+            key={item.name}
+            icon={item.meta?.icon}
+            label={String(item.meta?.label ?? item.name)}
+            active={
+              usersVisible ? item.name === "users" : item.name === "dashboard"
+            }
+          />
+        ))}
       </aside>
       <div className="flex items-center justify-center p-5 text-center">
-        <CanAccess
-          roles={usersRouteRoles}
+        <RouteAccessGuard
+          access={usersRoute?.access}
           fallback={
             <div>
               <LayoutPanelTop className="mx-auto size-7 text-muted-foreground" />
@@ -375,7 +447,7 @@ function NavigationPreview() {
               Route is available
             </div>
           </div>
-        </CanAccess>
+        </RouteAccessGuard>
       </div>
     </div>
   );

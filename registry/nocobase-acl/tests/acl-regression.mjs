@@ -19,16 +19,19 @@ try {
   );
   const { filterMenuItemsByAcl, findFirstAccessibleRoute } =
     await server.ssrLoadModule("/src/lib/nocobase/acl/menu.ts");
+  const { buildRouteResources, defineAppRoutes } = await server.ssrLoadModule(
+    "/src/app/route-runtime.ts"
+  );
   const {
     clearRecordPermissions,
     getRecordActionPermission,
     updateRecordPermissions,
   } = await server.ssrLoadModule("/src/lib/nocobase/acl/record-permissions.ts");
   const { RoleSwitcher } = await server.ssrLoadModule(
-    "/src/extensions/nocobase-acl/components/role-switcher.tsx"
+    "@/extensions/nocobase-acl/components/role-switcher.tsx"
   );
   const { getRoleOptions, resolveRoleTitle } = await server.ssrLoadModule(
-    "/src/extensions/nocobase-acl/components/role-options.ts"
+    "@/extensions/nocobase-acl/components/role-options.ts"
   );
 
   const permissions = {
@@ -237,24 +240,93 @@ try {
   assert.equal(filteredMenu[0].route, undefined);
   assert.equal(findFirstAccessibleRoute(filteredMenu), "/public-child");
 
-  const roleFilteredMenu = filterMenuItemsByAcl(
-    [
+  const [restrictedResource] = buildRouteResources(
+    defineAppRoutes([
       {
-        key: "admin-only",
-        name: "admin-only",
-        route: "/admin-only",
-        meta: {
-          acl: {
-            type: "authenticated",
-            roles: { anyOf: ["admin"] },
+        name: "administration",
+        path: "/administration",
+        access: { roles: { anyOf: ["admin"] } },
+        children: [
+          {
+            name: "reports",
+            path: "reports",
+            resource: { meta: { label: "Reports" } },
+            access: { roles: { anyOf: ["auditor"] } },
+            children: [
+              {
+                name: "reports.create",
+                path: "create",
+                resourceAction: "create",
+              },
+            ],
           },
-        },
-        children: [],
+        ],
       },
-    ],
-    permissions
+    ])
   );
-  assert.deepEqual(roleFilteredMenu, []);
+  assert.equal(restrictedResource.list, "/administration/reports");
+  assert.equal(restrictedResource.create, "/administration/reports/create");
+  assert.deepEqual(restrictedResource.meta.acl, { type: "authenticated" });
+  assert.deepEqual(restrictedResource.meta.routeAccess, [
+    { roles: { anyOf: ["admin"] } },
+    { roles: { anyOf: ["auditor"] } },
+  ]);
+  assert.throws(
+    () =>
+      buildRouteResources([
+        {
+          name: "orphan-create",
+          path: "/create",
+          resourceAction: "create",
+        },
+      ]),
+    /declares resourceAction without a parent resource/
+  );
+  assert.throws(
+    () =>
+      buildRouteResources([
+        {
+          name: "duplicate-actions",
+          path: "/duplicate-actions",
+          resource: {},
+          children: [
+            {
+              name: "first-create",
+              path: "create",
+              resourceAction: "create",
+            },
+            {
+              name: "second-create",
+              path: "new",
+              resourceAction: "create",
+            },
+          ],
+        },
+      ]),
+    /declares multiple create routes/
+  );
+
+  const restrictedItem = {
+    key: "reports",
+    name: "reports",
+    route: restrictedResource.list,
+    meta: restrictedResource.meta,
+    children: [],
+  };
+  assert.equal(
+    filterMenuItemsByAcl([restrictedItem], {
+      roles: ["admin", "auditor"],
+    }).length,
+    1
+  );
+  assert.equal(
+    filterMenuItemsByAcl([restrictedItem], { roles: ["admin"] }).length,
+    0
+  );
+  assert.equal(
+    filterMenuItemsByAcl([restrictedItem], { roles: ["member"] }).length,
+    0
+  );
 
   assert.deepEqual(
     getRoleOptions({

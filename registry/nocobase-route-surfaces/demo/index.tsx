@@ -17,6 +17,7 @@ import {
   useRouteSurfaceClose,
 } from "../index";
 import { RouteSurfacePromptGenerator } from "./prompt-generator";
+import { ResourceActionGuide } from "./resource-action-guide";
 import { routeSurfaceScenarios } from "./scenarios";
 
 const routeSurfaceRoot = "/route-surfaces";
@@ -76,6 +77,8 @@ export function RouteSurfacesDemoHome() {
             </Card>
           ))}
         </div>
+
+        <ResourceActionGuide />
 
         <RouteSurfacePromptGenerator />
       </div>

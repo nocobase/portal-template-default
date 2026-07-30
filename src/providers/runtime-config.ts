@@ -32,6 +32,24 @@ export const resolveNocoBaseAppName = (portalBase: string, apiUrl?: string) =>
 export const getNocoBaseAppName = () =>
   resolveNocoBaseAppName(getPortalBase(), getRuntimeApiUrl());
 
+export const resolveNocoBaseServerUrl = (path = "/") => {
+  if (typeof window === "undefined") return path;
+
+  const apiUrl = new URL(
+    getRuntimeApiUrl() || "/api",
+    window.location.origin
+  );
+  const apiPathMatch = apiUrl.pathname.match(/\/api(?:\/|$)/);
+  const serverBasePath = apiPathMatch
+    ? apiUrl.pathname.slice(0, apiPathMatch.index)
+    : "";
+
+  return new URL(
+    path.replace(/^\/+/, ""),
+    `${apiUrl.origin}${serverBasePath}/`
+  ).toString();
+};
+
 export const resolvePortalUrl = (path = "/") => {
   if (typeof window === "undefined") return path;
   if (/^[a-z][a-z\d+.-]*:/i.test(path)) return path;

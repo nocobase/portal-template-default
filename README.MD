@@ -64,6 +64,10 @@ Installed extensions live in `src/extensions` and are ordinary
 application-owned source files. Their providers, resources, routes, login
 adapters, and user-menu items are discovered automatically.
 
+Set `registryRoutesEnabled` to `false` in `src/routes.tsx` when replacing the
+bundled example navigation with application-owned routes. Installed extension
+providers, login adapters, and the `/dev` component showcases remain available.
+
 Optional NocoBase integrations, including authentication methods and i18n, can
 be installed from the `@nocobase` Registry configured in `components.json`.
 After installation, the generated source can be customized and committed with

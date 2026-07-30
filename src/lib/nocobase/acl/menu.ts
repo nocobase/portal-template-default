@@ -1,7 +1,20 @@
 import type { TreeMenuItem } from "@refinedev/core";
 
-import { evaluateAccess } from "./evaluator";
-import type { AclPermissionSet } from "./types";
+import { evaluateAccess, matchesRoleConstraint } from "./evaluator";
+import type { AclPermissionSet, RouteAccessConstraint } from "./types";
+
+const matchesRouteAccess = (
+  item: TreeMenuItem,
+  permissions: AclPermissionSet
+) => {
+  const access = item.meta?.routeAccess as RouteAccessConstraint[] | undefined;
+  return (
+    !access?.length ||
+    access.every((constraint) =>
+      matchesRoleConstraint(permissions, constraint.roles)
+    )
+  );
+};
 
 export const filterMenuItemsByAcl = (
   items: TreeMenuItem[],
@@ -11,7 +24,8 @@ export const filterMenuItemsByAcl = (
     const children = filterMenuItemsByAcl(item.children ?? [], permissions);
     const isContainer = Boolean(item.meta?.group || item.children?.length);
     const canAccessItem = item.route
-      ? evaluateAccess(permissions, {
+      ? matchesRouteAccess(item, permissions) &&
+        evaluateAccess(permissions, {
           resource: item.name,
           action: "list",
           resourceItem: item,

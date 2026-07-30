@@ -1,7 +1,8 @@
 export const starter = {
   "shell.workspace": "AI application workspace",
+  "shell.settings": "System settings",
   "shell.footer.freedom": "AI builds freely.",
-  "shell.footer.reliability": "NocoBase keeps it reliable.",
+  "shell.footer.reliabilitySuffix": "keeps it reliable.",
   "auth.signOut": "Sign out",
   "auth.signingOut": "Signing out...",
   "buttons.apply": "Apply",
