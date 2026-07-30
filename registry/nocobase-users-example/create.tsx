@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useAIForm, type AIFormField } from "./optional-ai";
 import {
+  getFileFieldAppends,
+  serializeFileFieldValues,
+} from "@/extensions/nocobase-file-upload";
+import {
   RouteDrawer,
   RouteDrawerFooter,
   useRefineUnsavedChangesGuard,
@@ -16,9 +20,10 @@ import {
   getAIUserFormFields,
   getAIUserFormValues,
 } from "./form-context";
+import { userFileDescriptors } from "./file-descriptors";
 import { UserFormFields } from "./form-fields";
 import { userRoutes } from "./routes";
-import type { UserFormValues, UserRecord } from "./types";
+import type { UserFormValues, UserRecord, UserSubmitValues } from "./types";
 
 export const UserCreate = () => {
   const translate = useTranslate();
@@ -59,6 +64,9 @@ function UserCreateForm() {
       resource: "users",
       action: "create",
       redirect: false,
+      meta: {
+        appends: getFileFieldAppends(userFileDescriptors),
+      },
       onMutationSuccess: () => {
         close({ skipBeforeClose: true });
       },
@@ -69,6 +77,8 @@ function UserCreateForm() {
       email: "",
       phone: "",
       password: "",
+      avatar: null,
+      files: [],
     },
   });
   const aiFields = useMemo<AIFormField[]>(
@@ -83,11 +93,22 @@ function UserCreateForm() {
     setValues: (values) => applyAIUserFormValues(form, values),
   });
 
+  const submitUser = onFinish as unknown as (
+    values: UserSubmitValues
+  ) => void | Promise<void>;
+
   return (
     <Form {...form}>
       <form
         ref={aiFormRef}
-        onSubmit={form.handleSubmit((values) => onFinish(values))}
+        onSubmit={form.handleSubmit((values) => {
+          const payload = serializeFileFieldValues(
+            values,
+            userFileDescriptors
+          ) as UserSubmitValues;
+
+          return submitUser(payload);
+        })}
         className="flex min-h-0 flex-1 flex-col"
       >
         <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5 [&_[data-slot=input]]:h-10 [&_[data-slot=select-trigger]]:h-10 [&_[data-slot=textarea]]:min-h-56">

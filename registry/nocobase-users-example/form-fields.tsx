@@ -1,4 +1,3 @@
-import { type useTranslate } from "@refinedev/core";
 import type { UseFormReturn } from "react-hook-form";
 
 import {
@@ -10,9 +9,16 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { FileUploadField } from "@/extensions/nocobase-file-upload";
+import { userAvatarDescriptor, userFilesDescriptor } from "./file-descriptors";
+import {
+  getAvatarPreviewMessages,
+  getAvatarUploadMessages,
+  getFilesPreviewMessages,
+  getFilesUploadMessages,
+  type Translate,
+} from "./file-messages";
 import type { UserFormValues } from "./types";
-
-type Translate = ReturnType<typeof useTranslate>;
 
 export function UserFormFields({
   form,
@@ -25,6 +31,69 @@ export function UserFormFields({
 }) {
   return (
     <>
+      <FormField
+        control={form.control}
+        name={userAvatarDescriptor.fieldName}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>
+              {translate("users.fields.avatar", { ns: "app" }, "Avatar")}
+            </FormLabel>
+            <FormControl
+              render={
+                <FileUploadField
+                  descriptor={userAvatarDescriptor}
+                  value={field.value ?? null}
+                  onChange={field.onChange}
+                  maxFiles={1}
+                  messages={getAvatarUploadMessages(translate)}
+                  previewMessages={getAvatarPreviewMessages(translate)}
+                />
+              }
+            />
+            <FormDescription>
+              {translate(
+                "users.form.avatar.description",
+                { ns: "app" },
+                "Upload an image to use as this user's avatar."
+              )}
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name={userFilesDescriptor.fieldName}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>
+              {translate("users.fields.files", { ns: "app" }, "Files")}
+            </FormLabel>
+            <FormControl
+              render={
+                <FileUploadField
+                  descriptor={userFilesDescriptor}
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                  messages={getFilesUploadMessages(translate)}
+                  previewMessages={getFilesPreviewMessages(translate)}
+                />
+              }
+            />
+            <FormDescription>
+              {translate(
+                "users.form.files.description",
+                { ns: "app" },
+                "Upload multiple files to test the user's file relation."
+              )}
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       <FormField
         control={form.control}
         name="nickname"

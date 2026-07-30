@@ -45,6 +45,7 @@
         "react-router@^7.0.2"
       ],
       "registryDependencies": [
+	"@nocobase/file-upload",
         "@nocobase/route-surfaces",
         "alert",
         "badge",
