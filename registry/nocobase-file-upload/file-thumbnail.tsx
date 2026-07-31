@@ -11,6 +11,7 @@ import {
   FileVideo,
   type LucideIcon,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -91,18 +92,18 @@ const thumbnailStyles: Record<
 > = {
   archive: {
     Icon: FileArchive,
-    className: "bg-amber-50 text-amber-700",
-    badgeClassName: "bg-amber-600 text-white",
+    className: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+    badgeClassName: "bg-amber-600 text-white dark:bg-amber-500 dark:text-black",
   },
   audio: {
     Icon: FileAudio,
-    className: "bg-violet-50 text-violet-700",
-    badgeClassName: "bg-violet-600 text-white",
+    className: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
+    badgeClassName: "bg-violet-600 text-white dark:bg-violet-500 dark:text-black",
   },
   code: {
     Icon: FileCode,
-    className: "bg-slate-100 text-slate-700",
-    badgeClassName: "bg-slate-700 text-white",
+    className: "bg-slate-500/10 text-slate-700 dark:text-slate-300",
+    badgeClassName: "bg-slate-700 text-white dark:bg-slate-300 dark:text-black",
   },
   default: {
     Icon: FileIcon,
@@ -111,38 +112,38 @@ const thumbnailStyles: Record<
   },
   document: {
     Icon: FileText,
-    className: "bg-blue-50 text-blue-700",
-    badgeClassName: "bg-blue-600 text-white",
+    className: "bg-blue-500/10 text-blue-700 dark:text-blue-300",
+    badgeClassName: "bg-blue-600 text-white dark:bg-blue-500 dark:text-black",
   },
   image: {
     Icon: FileImage,
-    className: "bg-sky-50 text-sky-700",
-    badgeClassName: "bg-sky-600 text-white",
+    className: "bg-sky-500/10 text-sky-700 dark:text-sky-300",
+    badgeClassName: "bg-sky-600 text-white dark:bg-sky-500 dark:text-black",
   },
   json: {
     Icon: FileJson,
-    className: "bg-indigo-50 text-indigo-700",
-    badgeClassName: "bg-indigo-600 text-white",
+    className: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300",
+    badgeClassName: "bg-indigo-600 text-white dark:bg-indigo-500 dark:text-black",
   },
   pdf: {
     Icon: FileText,
-    className: "bg-red-50 text-red-700",
-    badgeClassName: "bg-red-600 text-white",
+    className: "bg-red-500/10 text-red-700 dark:text-red-300",
+    badgeClassName: "bg-red-600 text-white dark:bg-red-500 dark:text-black",
   },
   presentation: {
     Icon: FileChartColumn,
-    className: "bg-orange-50 text-orange-700",
-    badgeClassName: "bg-orange-600 text-white",
+    className: "bg-orange-500/10 text-orange-700 dark:text-orange-300",
+    badgeClassName: "bg-orange-600 text-white dark:bg-orange-500 dark:text-black",
   },
   spreadsheet: {
     Icon: FileSpreadsheet,
-    className: "bg-emerald-50 text-emerald-700",
-    badgeClassName: "bg-emerald-600 text-white",
+    className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    badgeClassName: "bg-emerald-600 text-white dark:bg-emerald-500 dark:text-black",
   },
   video: {
     Icon: FileVideo,
-    className: "bg-fuchsia-50 text-fuchsia-700",
-    badgeClassName: "bg-fuchsia-600 text-white",
+    className: "bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300",
+    badgeClassName: "bg-fuchsia-600 text-white dark:bg-fuchsia-500 dark:text-black",
   },
 };
 
@@ -216,14 +217,21 @@ export function FileThumbnail({
   showExtensionBadge = true,
 }: FileThumbnailProps) {
   const thumbnailUrl = file ? getThumbnailUrl(file) : "";
-  const showImage = Boolean(file && isImageFile(file) && thumbnailUrl);
+  const [imageFailed, setImageFailed] = useState(false);
+  const showImage = Boolean(
+    file && isImageFile(file) && thumbnailUrl && !imageFailed
+  );
+
+  useEffect(() => setImageFailed(false), [thumbnailUrl]);
 
   if (showImage) {
     return (
       <img
+        data-slot="file-thumbnail"
         src={thumbnailUrl}
         alt={alt ?? file?.title ?? file?.filename ?? ""}
         className={cn("h-full w-full object-cover", imageClassName)}
+        onError={() => setImageFailed(true)}
       />
     );
   }
@@ -236,6 +244,7 @@ export function FileThumbnail({
 
   return (
     <span
+      data-slot="file-thumbnail"
       className={cn(
         "relative flex h-full w-full items-center justify-center rounded-md",
         style.className,

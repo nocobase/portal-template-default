@@ -1,6 +1,7 @@
 import { nocobaseClient } from "@/lib/nocobase/client";
 
 import { getDataSourceHeaders } from "./storage";
+import { isNocoBaseManagedFileUrl } from "./file-url-policy";
 import type { FileFieldDescriptor, NocoBaseFileRecord } from "./types";
 
 type TemporaryUrlResponse = {
@@ -10,6 +11,18 @@ type TemporaryUrlResponse = {
 
 function resolveFileUrl(value?: string | null) {
   return value ? nocobaseClient.resolveUrl(value) : "";
+}
+
+function getFileUrlSource(file: NocoBaseFileRecord) {
+  return file.url || file.preview || file.path || "";
+}
+
+export function isNocoBaseFileUrl(value: string) {
+  return isNocoBaseManagedFileUrl(
+    value,
+    nocobaseClient.getApiUrl(),
+    typeof window === "undefined" ? undefined : window.location.href
+  );
 }
 
 function appendUrlFlag(value: string, flag: "download" | "preview") {
@@ -29,17 +42,19 @@ function appendUrlFlag(value: string, flag: "download" | "preview") {
 }
 
 export function getFileUrl(file: NocoBaseFileRecord) {
-  return resolveFileUrl(file.url || file.preview || file.path);
+  return resolveFileUrl(getFileUrlSource(file));
 }
 
 export function getPreviewFileUrl(file: NocoBaseFileRecord) {
+  const source = getFileUrlSource(file);
   const url = getFileUrl(file);
-  return isPermanentFileUrl(url) ? appendUrlFlag(url, "preview") : url;
+  return isNocoBaseFileUrl(source) ? appendUrlFlag(url, "preview") : url;
 }
 
 export function getThumbnailUrl(file: NocoBaseFileRecord) {
-  const url = resolveFileUrl(file.preview) || getFileUrl(file);
-  return isPermanentFileUrl(url) ? appendUrlFlag(url, "preview") : url;
+  const source = file.preview || getFileUrlSource(file);
+  const url = resolveFileUrl(source);
+  return isNocoBaseFileUrl(source) ? appendUrlFlag(url, "preview") : url;
 }
 
 export function getFileName(file: NocoBaseFileRecord) {
@@ -57,8 +72,9 @@ export function getDownloadFileName(file: NocoBaseFileRecord) {
 }
 
 export function getDownloadUrl(file: NocoBaseFileRecord) {
+  const source = getFileUrlSource(file);
   const url = getFileUrl(file);
-  return isPermanentFileUrl(url) ? appendUrlFlag(url, "download") : url;
+  return isNocoBaseFileUrl(source) ? appendUrlFlag(url, "download") : url;
 }
 
 export function triggerFileDownload(file: NocoBaseFileRecord) {
@@ -72,11 +88,6 @@ export function triggerFileDownload(file: NocoBaseFileRecord) {
   document.body.appendChild(link);
   link.click();
   link.remove();
-}
-
-export function isPermanentFileUrl(value: string) {
-  if (!value) return false;
-  return !/^(blob|data):/i.test(value);
 }
 
 export async function createTemporaryFileUrl(

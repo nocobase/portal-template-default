@@ -36,6 +36,10 @@ export async function uploadDirect(
       method: "POST",
       headers,
       signal,
+      query: {
+        uploadDataSourceKey:
+          dataSourceKey === "main" ? undefined : dataSourceKey,
+      },
       body: {
         name: file.name,
         size: file.size,
@@ -68,6 +72,10 @@ export async function uploadDirect(
       method: "POST",
       headers,
       signal,
+      query: {
+        uploadDataSourceKey:
+          dataSourceKey === "main" ? undefined : dataSourceKey,
+      },
       body: {
         title: fileInfo.title,
         filename: fileInfo.key,

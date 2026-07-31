@@ -91,6 +91,7 @@
     "test:auth": "node tests/auth-session-regression.mjs",
     "test:acl": "node registry/nocobase-acl/tests/acl-regression.mjs",
     "test:i18n": "node registry/nocobase-i18n/tests/i18n-regression.mjs",
+    "test:file-upload": "node --experimental-strip-types --test tests/file-upload-regression.test.ts",
     "test:mail": "node registry/nocobase-mail/tests/mail-regression.mjs",
     "start": "refine start",
     "refine": "refine"

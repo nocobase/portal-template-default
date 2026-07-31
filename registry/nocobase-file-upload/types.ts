@@ -35,7 +35,8 @@ export type FileStorageInfo = {
   title?: string;
   type: string;
   rules?: StorageUploadRules;
-  clientUpload: boolean;
+  // Newer NocoBase versions may expose this capability from storages:check.
+  clientUpload?: boolean;
 };
 
 export type StorageCheckResult = {
@@ -74,6 +75,18 @@ export type FileUploadOptions = {
   signal?: AbortSignal;
 };
 
+export type FileUploadMode = "auto" | "direct" | "multipart";
+
+export type FileUploadHandlerOptions = {
+  file: File;
+  descriptor: FileFieldDescriptor;
+  signal?: AbortSignal;
+};
+
+export type FileUploadHandler = (
+  options: FileUploadHandlerOptions
+) => Promise<NocoBaseFileRecord>;
+
 export type FileUploadItem = {
   key: string;
   rawFile?: File;
@@ -103,7 +116,6 @@ export type FileUploadMessages = {
   retry: string;
   remove: string;
   cancel: string;
-  storageLoading: string;
   storageUnsupported: string;
   maxFilesReached: string;
   uploadDisabled: string;

@@ -35,6 +35,30 @@ The important fields are:
 - `relation`: the relation field's type. `belongsTo` and `hasOne` are single-file fields; `belongsToMany`, `hasMany`, and `belongsToArray` are multi-file fields.
 - `dataSourceKey`: set this when the field belongs to a non-main data source.
 
+## Upload strategy
+
+`FileUploadField` uses `uploadMode="auto"` by default. Auto mode honors the
+`clientUpload` capability when `storages:check` provides it and falls back to
+the current `s3-compatible` direct-upload behavior. Set `uploadMode` to
+`"direct"` or `"multipart"` when an installation needs an explicit choice.
+
+For demos, tests, or a custom storage adapter, pass `uploadFile`. The handler
+receives the selected file, descriptor, and abort signal and returns a complete
+file record. When this prop is present, the field does not call NocoBase storage
+APIs:
+
+```tsx
+<FileUploadField
+  descriptor={contractDocumentsDescriptor}
+  value={value}
+  onChange={setValue}
+  uploadFile={async ({ file, signal }) => {
+    const record = await customUpload(file, { signal });
+    return record;
+  }}
+/>
+```
+
 ## Editing
 
 Keep the full uploaded file record in form state. Serialize file fields only
@@ -102,6 +126,8 @@ video, Office documents through Microsoft Office Online, and a download fallback
 for unsupported or active-content files such as HTML, XML, and SVG. Private
 Office files require `descriptor` so the component can request a temporary URL;
 the temporary URL still has to be reachable by the Office Online service.
+Preview and download flags are added only to relative or same-origin NocoBase
+file URLs. Original third-party and pre-signed URLs are used without mutation.
 
 The preview value does not have to come from a file API. Public URLs can be used
 for demos and prototypes by creating records with stable mock ids and enough

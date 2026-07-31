@@ -9,7 +9,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ComponentProps } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -30,20 +30,23 @@ import { getAcceptAttribute } from "./validation";
 import type {
   FileFieldDescriptor,
   FileUploadFieldValue,
+  FileUploadHandler,
   FileUploadItem,
   FileUploadMessages,
+  FileUploadMode,
   FilePreviewMessages,
   NocoBaseFileRecord,
 } from "./types";
 
-export type FileUploadFieldProps = {
+export type FileUploadFieldProps = Omit<ComponentProps<"div">, "onChange"> & {
   descriptor: FileFieldDescriptor;
   value: FileUploadFieldValue;
   onChange: (value: FileUploadFieldValue) => void;
   disabled?: boolean;
   readOnly?: boolean;
   maxFiles?: number;
-  className?: string;
+  uploadMode?: FileUploadMode;
+  uploadFile?: FileUploadHandler;
   messages?: Partial<FileUploadMessages>;
   previewMessages?: Partial<FilePreviewMessages>;
   onUploadStart?: (file: File) => void;
@@ -64,7 +67,6 @@ const defaultMessages: FileUploadMessages = {
   retry: "Retry",
   remove: "Remove",
   cancel: "Cancel",
-  storageLoading: "Loading upload settings...",
   storageUnsupported: "This field is not connected to a file collection.",
   maxFilesReached: "The file limit has been reached.",
   uploadDisabled: "File upload is disabled.",
@@ -146,21 +148,27 @@ function IconButton({
   disabled?: boolean;
 }) {
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon-sm"
-      aria-label={label}
-      title={label}
-      disabled={disabled}
-      onClick={(event) => {
-        event.stopPropagation();
-        onClick();
-      }}
-      className="size-6 bg-black/50 text-white hover:bg-black/70 hover:text-white"
-    >
-      <Icon />
-    </Button>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={label}
+            disabled={disabled}
+            onClick={(event) => {
+              event.stopPropagation();
+              onClick();
+            }}
+            className="size-6 border border-border/60 bg-background/90 text-foreground shadow-sm backdrop-blur-sm hover:bg-background hover:text-foreground"
+          />
+        }
+      >
+        <Icon />
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -171,12 +179,15 @@ export function FileUploadField({
   disabled,
   readOnly,
   maxFiles,
+  uploadMode,
+  uploadFile,
   className,
   messages: messageOverrides,
   previewMessages: previewMessageOverrides,
   onUploadStart,
   onUploadComplete,
   onUploadError,
+  ...rootProps
 }: FileUploadFieldProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -210,6 +221,8 @@ export function FileUploadField({
     disabled,
     readOnly,
     maxFiles,
+    uploadMode,
+    uploadFile,
     messages,
     onUploadStart,
     onUploadComplete,
@@ -239,7 +252,16 @@ export function FileUploadField({
   };
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div
+      data-slot="file-upload-field"
+      className={cn("space-y-3", className)}
+      aria-busy={
+        items.some(
+          (item) => item.status === "checking" || item.status === "uploading"
+        ) || undefined
+      }
+      {...rootProps}
+    >
       {storageError ? (
         <Alert variant="destructive">
           <AlertDescription>{storageError.message}</AlertDescription>
@@ -248,171 +270,168 @@ export function FileUploadField({
 
       <TooltipProvider>
         <div
-        className={cn(
-          "flex flex-wrap gap-x-2 gap-y-8",
-          readOnly && !items.length ? "hidden" : null
-        )}
-      >
-        {items.map((item) => {
-          const itemPreviewIndex = item.record
-            ? previewableFiles.findIndex(
-                (file) => String(file.id) === String(item.record?.id)
-              )
-            : -1;
-          const canPreview = item.status === "done" && itemPreviewIndex >= 0;
+          className={cn(
+            "flex flex-wrap items-start gap-3",
+            readOnly && !items.length && "hidden"
+          )}
+        >
+          {items.map((item) => {
+            const itemPreviewIndex = item.record
+              ? previewableFiles.findIndex(
+                  (file) => String(file.id) === String(item.record?.id)
+                )
+              : -1;
+            const canPreview = item.status === "done" && itemPreviewIndex >= 0;
+            const canCancel =
+              item.status === "checking" || item.status === "uploading";
+            const filename = item.record
+              ? getFileName(item.record)
+              : item.displayName;
 
-          return (
-            <div key={item.key} className="w-[104px]">
-            <div
-              role={canPreview ? "button" : undefined}
-              tabIndex={canPreview ? 0 : undefined}
-              aria-label={
-                canPreview ? `${previewMessages.preview}: ${getFileName(item.record!)}` : undefined
-              }
-              onClick={() => {
-                if (!canPreview) return;
-                setPreviewIndex(itemPreviewIndex);
-                setPreviewOpen(true);
-              }}
-              onKeyDown={(event) => {
-                if (!canPreview) return;
-                if (event.key !== "Enter" && event.key !== " ") return;
-                event.preventDefault();
-                setPreviewIndex(itemPreviewIndex);
-                setPreviewOpen(true);
-              }}
-              className={cn(
-                "group relative flex h-[104px] w-[104px] items-center justify-center overflow-hidden rounded-lg border bg-card p-1",
-                item.status === "error" && "border-destructive",
-                canPreview && "cursor-zoom-in transition-colors hover:border-primary"
-              )}
-            >
-              {item.status === "uploading" || item.status === "checking" ? (
-                <div className="flex h-full w-full flex-col items-center justify-center rounded-md bg-muted/40 px-2 text-center">
-                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <FileThumbnail
-                  file={item.record}
-                  rawFile={item.rawFile}
-                  alt={item.record?.title || item.displayName}
-                />
-              )}
-
-              {item.showStatus ? (
-                <div className="absolute bottom-2 right-2">
-                  <UploadStatusIcon item={item} messages={messages} />
-                </div>
-              ) : null}
-
-              {!readOnly ? (
-                <div className="pointer-events-none absolute right-2 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-                  {item.status === "error" && item.rawFile ? (
-                    <IconButton
-                      icon={RotateCcw}
-                      label={messages.retry}
-                      disabled={disabled}
-                      onClick={() => void retryItem(item.key)}
-                    />
-                  ) : null}
-                  {item.status === "uploading" ? (
-                    <IconButton
-                      icon={X}
-                      label={messages.cancel}
-                      disabled={disabled}
-                      onClick={() => cancelItem(item.key)}
-                    />
+            return (
+              <div key={item.key} className="w-[104px]">
+                <div
+                  className={cn(
+                    "group relative flex h-[104px] w-[104px] items-center justify-center overflow-hidden rounded-lg border bg-card p-1 transition-colors",
+                    item.status === "error" && "border-destructive",
+                    canPreview && "hover:border-primary"
+                  )}
+                >
+                  {item.status === "uploading" || item.status === "checking" ? (
+                    <div className="flex size-full items-center justify-center rounded-md bg-muted/40">
+                      <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                    </div>
                   ) : (
-                    <IconButton
-                      icon={Trash2}
-                      label={messages.remove}
-                      disabled={disabled}
-                      onClick={() => removeItem(item.key)}
+                    <FileThumbnail
+                      file={item.record}
+                      rawFile={item.rawFile}
+                      alt={item.record?.title || item.displayName}
                     />
                   )}
-                </div>
-              ) : null}
-            </div>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <div
-                    className={cn(
-                      "mt-1 w-[104px] truncate text-center text-xs text-muted-foreground",
-                      item.status === "error" && "text-destructive"
-                    )}
-                    title={item.error?.message || item.displayName}
-                  />
-                }
-              >
-                {item.status === "error"
-                  ? item.error?.message || messages.failed
-                  : item.displayName}
-              </TooltipTrigger>
-              <TooltipContent>
-                {item.status === "error"
-                  ? item.error?.message || messages.failed
-                  : item.displayName}
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          );
-        })}
 
-        {selectable ? (
-          <div
-            onDragEnter={(event) => {
-              event.preventDefault();
-              if (!uploadDisabled) setIsDragging(true);
-            }}
-            onDragOver={(event) => {
-              event.preventDefault();
-              if (!uploadDisabled) setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={handleDrop}
-            className={cn(
-              "relative flex h-[104px] w-[104px] flex-col items-center justify-center overflow-hidden rounded-lg border border-dashed bg-card p-2 text-center transition-colors",
-              uploadDisabled
-                ? "cursor-not-allowed bg-muted/30 text-muted-foreground"
-                : "cursor-pointer hover:bg-muted/40",
-              isDragging && "border-primary bg-primary/5"
-            )}
-          >
-            <input
-              type="file"
-              multiple={multiple}
-              accept={getAcceptAttribute(descriptor.accept)}
-              disabled={uploadDisabled}
-              aria-label={multiple ? messages.chooseFiles : messages.chooseFile}
-              className="absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
-              onChange={(event) => {
-                handleSelectedFiles(event.currentTarget.files);
-                event.currentTarget.value = "";
+                  {canPreview ? (
+                    <button
+                      type="button"
+                      className="absolute inset-0 z-10 cursor-zoom-in rounded-[inherit] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                      aria-label={`${previewMessages.preview}: ${filename}`}
+                      onClick={() => {
+                        setPreviewIndex(itemPreviewIndex);
+                        setPreviewOpen(true);
+                      }}
+                    />
+                  ) : null}
+
+                  {item.showStatus ? (
+                    <div className="pointer-events-none absolute bottom-2 right-2 z-20">
+                      <UploadStatusIcon item={item} messages={messages} />
+                    </div>
+                  ) : null}
+
+                  {!readOnly ? (
+                    <div className="pointer-events-none absolute right-2 top-2 z-20 flex items-center gap-1 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+                      {item.status === "error" && item.rawFile ? (
+                        <IconButton
+                          icon={RotateCcw}
+                          label={messages.retry}
+                          disabled={disabled || reachedLimit}
+                          onClick={() => void retryItem(item.key)}
+                        />
+                      ) : null}
+                      {canCancel ? (
+                        <IconButton
+                          icon={X}
+                          label={messages.cancel}
+                          disabled={disabled}
+                          onClick={() => cancelItem(item.key)}
+                        />
+                      ) : (
+                        <IconButton
+                          icon={Trash2}
+                          label={messages.remove}
+                          disabled={disabled}
+                          onClick={() => removeItem(item.key)}
+                        />
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <div
+                        className={cn(
+                          "mt-1 w-[104px] truncate text-center text-xs text-muted-foreground",
+                          item.status === "error" && "text-destructive"
+                        )}
+                      />
+                    }
+                  >
+                    {item.status === "error"
+                      ? item.error?.message || messages.failed
+                      : item.displayName}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {item.status === "error"
+                      ? item.error?.message || messages.failed
+                      : item.displayName}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            );
+          })}
+
+          {selectable ? (
+            <div
+              onDragEnter={(event) => {
+                event.preventDefault();
+                setIsDragging(true);
               }}
-            />
-            <div className="pointer-events-none flex flex-col items-center justify-center">
-              <Plus className="mb-1 size-5 text-muted-foreground" />
-              <span className="px-1 text-xs font-medium">
-                {multiple ? messages.chooseFiles : messages.chooseFile}
-              </span>
+              onDragOver={(event) => {
+                event.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
+              className={cn(
+                "relative flex h-[104px] w-[104px] flex-col items-center justify-center overflow-hidden rounded-lg border border-dashed bg-card p-2 text-center transition-colors hover:bg-muted/40",
+                isDragging && "border-primary bg-primary/5"
+              )}
+            >
+              <input
+                type="file"
+                multiple={multiple}
+                accept={getAcceptAttribute(descriptor.accept)}
+                aria-label={multiple ? messages.chooseFiles : messages.chooseFile}
+                className="absolute inset-0 z-10 size-full cursor-pointer opacity-0"
+                onChange={(event) => {
+                  handleSelectedFiles(event.currentTarget.files);
+                  event.currentTarget.value = "";
+                }}
+              />
+              <div className="pointer-events-none flex flex-col items-center justify-center">
+                <Plus className="mb-1 size-5 text-muted-foreground" />
+                <span className="px-1 text-xs font-medium">
+                  {multiple ? messages.chooseFiles : messages.chooseFile}
+                </span>
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
         </div>
       </TooltipProvider>
 
-      <p className="text-xs text-muted-foreground">
-        {reachedLimit
-          ? messages.maxFilesReached
-          : disabled
-          ? messages.uploadDisabled
-          : isDragging
-          ? messages.dragActive
-          : descriptor.accept
-          ? getAcceptAttribute(descriptor.accept)
-          : messages.dragInactive}
-      </p>
+      {!readOnly ? (
+        <p className="text-xs text-muted-foreground">
+          {reachedLimit
+            ? messages.maxFilesReached
+            : disabled
+            ? messages.uploadDisabled
+            : isDragging
+            ? messages.dragActive
+            : descriptor.accept
+            ? getAcceptAttribute(descriptor.accept)
+            : messages.dragInactive}
+        </p>
+      ) : null}
 
       {readOnly && !items.length ? (
         <p className="text-sm text-muted-foreground">{messages.noFiles}</p>

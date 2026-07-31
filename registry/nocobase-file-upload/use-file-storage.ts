@@ -5,15 +5,21 @@ import { nocobaseClient } from "@/lib/nocobase/client";
 import { getDataSourceHeaders } from "./storage";
 import type { FileFieldDescriptor, StorageCheckResult } from "./types";
 
-export function checkFileStorage(descriptor: FileFieldDescriptor) {
+export function checkFileStorage(
+  descriptor: FileFieldDescriptor,
+  options: { signal?: AbortSignal } = {}
+) {
   const dataSourceKey = descriptor.dataSourceKey ?? "main";
 
   return nocobaseClient.action<StorageCheckResult>("storages", "check", {
     method: "POST",
     query: {
       fileCollectionName: descriptor.fileCollection,
+      uploadDataSourceKey:
+        dataSourceKey === "main" ? undefined : dataSourceKey,
     },
     headers: getDataSourceHeaders(dataSourceKey),
+    signal: options.signal,
   });
 }
 

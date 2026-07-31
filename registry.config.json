@@ -45,7 +45,7 @@
         "react-router@^7.0.2"
       ],
       "registryDependencies": [
-	"@nocobase/file-upload",
+        "@nocobase/file-upload",
         "@nocobase/route-surfaces",
         "alert",
         "badge",
@@ -298,10 +298,8 @@
       ],
       "registryDependencies": [
         "alert",
-        "badge",
         "button",
         "dialog",
-        "skeleton",
         "tooltip"
       ],
       "docs": "Requires the Starter NocoBase client and a field targeting a file-template collection.",

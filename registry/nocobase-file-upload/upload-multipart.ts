@@ -21,6 +21,10 @@ export async function uploadMultipart({
       body: formData,
       signal,
       headers: getDataSourceHeaders(dataSourceKey),
+      query: {
+        uploadDataSourceKey:
+          dataSourceKey === "main" ? undefined : dataSourceKey,
+      },
     }
   );
 }

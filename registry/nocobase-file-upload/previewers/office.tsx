@@ -19,16 +19,19 @@ export function OfficePreviewer({
   messages,
   onDownload,
 }: FilePreviewerProps) {
+  const canCreateTemporaryUrl = Boolean(
+    descriptor && file.id != null && file.storageId != null
+  );
   const [temporaryUrl, setTemporaryUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [loadingTemporaryUrl, setLoadingTemporaryUrl] = useState(
-    Boolean(descriptor && file.id)
+    canCreateTemporaryUrl
   );
 
   useEffect(() => {
     let cancelled = false;
 
-    if (!descriptor || !file.id) {
+    if (!canCreateTemporaryUrl || !descriptor) {
       setLoadingTemporaryUrl(false);
       setTemporaryUrl(null);
       setFailed(false);
@@ -53,7 +56,7 @@ export function OfficePreviewer({
     return () => {
       cancelled = true;
     };
-  }, [descriptor, file]);
+  }, [canCreateTemporaryUrl, descriptor, file]);
 
   const officeUrl = useMemo(() => {
     const fileUrl = temporaryUrl || getPreviewFileUrl(file);

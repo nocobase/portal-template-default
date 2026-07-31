@@ -85,6 +85,30 @@ export function validateFileBeforeUpload(
   return { valid: true };
 }
 
+export function validateFileForField(
+  file: File,
+  descriptor: FileFieldDescriptor,
+  messages: Pick<FileUploadMessages, "fileSizeExceeded" | "fieldMimeTypeRejected">
+): FileValidationResult {
+  if (descriptor.maxSize !== undefined && file.size > descriptor.maxSize) {
+    return {
+      valid: false,
+      code: "size",
+      message: messages.fileSizeExceeded(descriptor.maxSize),
+    };
+  }
+
+  if (!matchesFileRules(file, descriptor.accept)) {
+    return {
+      valid: false,
+      code: "mimetype",
+      message: messages.fieldMimeTypeRejected,
+    };
+  }
+
+  return { valid: true };
+}
+
 export function getAcceptAttribute(accept?: string | string[]) {
   if (!accept) return undefined;
   return Array.isArray(accept) ? accept.join(",") : accept;

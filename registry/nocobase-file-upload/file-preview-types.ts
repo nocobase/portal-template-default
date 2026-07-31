@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import type { ComponentProps, ComponentType } from "react";
 
 import { AudioPreviewer, IframePreviewer, VideoPreviewer } from "./previewers/iframe";
 import { ImagePreviewer } from "./previewers/image";
@@ -12,12 +12,11 @@ import type {
   NocoBaseFileRecord,
 } from "./types";
 
-export type FilePreviewFieldProps = {
+export type FilePreviewFieldProps = Omit<ComponentProps<"div">, "children"> & {
   value: FileUploadFieldValue;
   descriptor?: FileFieldDescriptor;
   size?: number;
   showFileName?: boolean;
-  className?: string;
   messages?: Partial<FilePreviewMessages>;
 };
 
@@ -71,21 +70,46 @@ const activeContentMimeTypes = new Set([
 
 function normalizeExtname(value?: string) {
   if (!value) return "";
-  const extname = value.toLowerCase();
+  const extname = value.trim().toLowerCase();
   return extname.startsWith(".") ? extname : `.${extname}`;
+}
+
+function getExtensionFromValue(value?: string) {
+  if (!value) return "";
+
+  const withoutQuery = value.split(/[?#]/, 1)[0];
+  const lastSegment = withoutQuery.split("/").filter(Boolean).at(-1) ?? "";
+  let decodedSegment = lastSegment;
+  try {
+    decodedSegment = decodeURIComponent(lastSegment);
+  } catch {
+    // Keep malformed URL segments unchanged and continue best-effort matching.
+  }
+
+  const dotIndex = decodedSegment.lastIndexOf(".");
+  return dotIndex >= 0 ? decodedSegment.slice(dotIndex).toLowerCase() : "";
 }
 
 export function getFileExtension(file: NocoBaseFileRecord) {
   const explicit = normalizeExtname(file.extname);
   if (explicit) return explicit;
 
-  const filename = file.filename || file.title || "";
-  const dotIndex = filename.lastIndexOf(".");
-  return dotIndex >= 0 ? filename.slice(dotIndex).toLowerCase() : "";
+  for (const value of [
+    file.filename,
+    file.title,
+    file.url,
+    file.path,
+    file.preview,
+  ]) {
+    const extension = getExtensionFromValue(value);
+    if (extension) return extension;
+  }
+
+  return "";
 }
 
 export function getFileMimeType(file: NocoBaseFileRecord) {
-  return file.mimetype?.toLowerCase() ?? "";
+  return file.mimetype?.split(";", 1)[0].trim().toLowerCase() ?? "";
 }
 
 export function isOfficeFile(file: NocoBaseFileRecord) {
