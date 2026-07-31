@@ -124,6 +124,8 @@ export type FileUploadMessages = {
   storageMimeTypeRejected: string;
   fieldMimeTypeRejected: string;
   directUploadFailed: (status: number) => string;
+  uploadInProgress: string;
+  uploadFailedValidation: string;
 };
 
 export type FilePreviewMessages = {

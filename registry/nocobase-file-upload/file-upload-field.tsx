@@ -9,10 +9,14 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState, type ComponentProps } from "react";
+import { useMemo, useRef, useState, type ComponentProps } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import {
+  useRegisterFieldValidationController,
+  type FieldValidationController,
+} from "@/lib/field-validation";
 import {
   Tooltip,
   TooltipContent,
@@ -75,6 +79,8 @@ const defaultMessages: FileUploadMessages = {
   storageMimeTypeRejected: "File type is not allowed by storage.",
   fieldMimeTypeRejected: "File type is not allowed for this field.",
   directUploadFailed: (status) => `Direct upload failed (${status}).`,
+  uploadInProgress: "Wait for all files to finish uploading.",
+  uploadFailedValidation: "Retry or remove files that failed to upload.",
 };
 
 function formatFileSize(size?: number) {
@@ -228,6 +234,33 @@ export function FileUploadField({
     onUploadComplete,
     onUploadError,
   });
+  const validationItemsRef = useRef(items);
+  const validationMessagesRef = useRef(messages);
+  validationItemsRef.current = items;
+  validationMessagesRef.current = messages;
+  const validationController = useMemo<FieldValidationController>(
+    () => ({
+      validate: () => {
+        const validationItems = validationItemsRef.current;
+        if (
+          validationItems.some(
+            (item) =>
+              item.status === "pending" ||
+              item.status === "checking" ||
+              item.status === "uploading"
+          )
+        ) {
+          return validationMessagesRef.current.uploadInProgress;
+        }
+        if (validationItems.some((item) => item.status === "error")) {
+          return validationMessagesRef.current.uploadFailedValidation;
+        }
+        return true;
+      },
+    }),
+    []
+  );
+  useRegisterFieldValidationController(validationController);
   const uploadDisabled = !canUpload || reachedLimit;
   const selectable = !readOnly && !uploadDisabled;
   const previewableFiles = useMemo(

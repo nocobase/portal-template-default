@@ -8,10 +8,15 @@ import {
   useFormState,
   type ControllerProps,
   type FieldPath,
+  type FieldPathValue,
   type FieldValues,
 } from "react-hook-form";
 
 import { cn } from "@/lib/utils";
+import {
+  FieldValidationSlotContext,
+  useFieldValidationSlot,
+} from "@/lib/field-validation";
 import { Label } from "@/components/ui/label";
 
 const Form = FormProvider;
@@ -23,9 +28,7 @@ type FormFieldContextValue<
   name: TName;
 };
 
-const FormFieldContext = React.createContext<FormFieldContextValue>(
-  {} as FormFieldContextValue
-);
+const FormFieldContext = React.createContext<FormFieldContextValue | null>(null);
 
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
@@ -33,9 +36,44 @@ const FormField = <
 >({
   ...props
 }: ControllerProps<TFieldValues, TName>) => {
+  const validationSlot = useFieldValidationSlot();
+  const validateRegisteredControllers = validationSlot.validate;
+  const rules = React.useMemo(() => {
+    const validate = props.rules?.validate;
+    const mergedValidate =
+      typeof validate === "function"
+        ? (
+            value: FieldPathValue<TFieldValues, TName>,
+            formValues: TFieldValues
+          ) => {
+            const configuredResult = validate(value, formValues);
+            if (configuredResult instanceof Promise) {
+              return configuredResult.then((resolved) =>
+                resolved === true || resolved === undefined
+                  ? validateRegisteredControllers()
+                  : resolved
+              );
+            }
+            return configuredResult === true || configuredResult === undefined
+              ? validateRegisteredControllers()
+              : configuredResult;
+          }
+        : {
+            ...validate,
+            registeredController: validateRegisteredControllers,
+          };
+
+    return {
+      ...props.rules,
+      validate: mergedValidate,
+    };
+  }, [props.rules, validateRegisteredControllers]);
+
   return (
     <FormFieldContext.Provider value={{ name: props.name }}>
-      <Controller {...props} />
+      <FieldValidationSlotContext.Provider value={validationSlot}>
+        <Controller {...props} rules={rules} />
+      </FieldValidationSlotContext.Provider>
     </FormFieldContext.Provider>
   );
 };
@@ -43,13 +81,14 @@ const FormField = <
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext);
   const itemContext = React.useContext(FormItemContext);
-  const { getFieldState } = useFormContext();
-  const formState = useFormState({ name: fieldContext.name });
-  const fieldState = getFieldState(fieldContext.name, formState);
 
   if (!fieldContext) {
     throw new Error("useFormField should be used within <FormField>");
   }
+
+  const { getFieldState } = useFormContext();
+  const formState = useFormState({ name: fieldContext.name });
+  const fieldState = getFieldState(fieldContext.name, formState);
 
   const { id } = itemContext;
 

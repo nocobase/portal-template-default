@@ -15,6 +15,7 @@ import {
   resolveMaxFileSize,
   validateFileForField,
 } from "../registry/nocobase-file-upload/validation.ts";
+import { validateFieldValidationControllers } from "../src/lib/field-validation.ts";
 import type {
   FileFieldDescriptor,
   FileStorageInfo,
@@ -149,4 +150,31 @@ test("field and storage validation use the strictest rules", () => {
     ),
     { valid: false, code: "mimetype", message: "wrong field type" }
   );
+});
+
+test("field validation controllers stop at the first validation error", async () => {
+  const calls: string[] = [];
+  const result = await validateFieldValidationControllers([
+    {
+      validate: () => {
+        calls.push("first");
+        return true;
+      },
+    },
+    {
+      validate: async () => {
+        calls.push("second");
+        return "Upload is still in progress";
+      },
+    },
+    {
+      validate: () => {
+        calls.push("third");
+        return true;
+      },
+    },
+  ]);
+
+  assert.equal(result, "Upload is still in progress");
+  assert.deepEqual(calls, ["first", "second"]);
 });

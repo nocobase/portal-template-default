@@ -90,6 +90,12 @@ const payload = serializeFileFieldValues(values, fileDescriptors);
 // payload.documents is [{ id }, ...] because documents is belongsToMany.
 ```
 
+When rendered inside this Starter's `FormField`, the upload field registers its
+validation controller automatically. React Hook Form checks that controller
+during normal field validation, so submitting while a file is pending,
+checking storage, uploading, or waiting for a failed upload to be retried or
+removed is rejected without form-level upload callbacks or additional rules.
+
 Add file relation fields to `meta.appends` when loading records for edit pages,
 so the form receives full file records instead of only relation ids:
 
