@@ -3,12 +3,22 @@ name: Publish npm package
 on:
   workflow_dispatch:
     inputs:
+      release_target:
+        description: Packages to release (auto detects changes from release tags)
+        required: true
+        default: auto
+        type: choice
+        options:
+          - auto
+          - template
+          - sdk
+          - both
       version:
-        description: Exact version (leave blank to increment patch)
+        description: Exact template version (template/both; blank increments patch)
         required: false
         type: string
       sdk_version:
-        description: Exact Portal SDK version (leave blank to reuse it, or publish it when new)
+        description: Exact Portal SDK version (sdk/both; blank uses package.json)
         required: false
         type: string
       tag:
@@ -61,10 +71,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Resolve release version
+      - name: Resolve release
         id: release
         env:
           REF_TYPE: ${{ github.ref_type }}
+          REQUESTED_RELEASE_TARGET: ${{ inputs.release_target }}
           REQUESTED_VERSION: ${{ inputs.version }}
           REQUESTED_SDK_VERSION: ${{ inputs.sdk_version }}
         run: |
@@ -73,34 +84,112 @@ jobs:
             exit 1
           fi
 
-          if [ -n "$REQUESTED_VERSION" ]; then
-            npm version "$REQUESTED_VERSION" --no-git-tag-version
-          else
-            npm version patch --no-git-tag-version
+          RELEASE_TARGET=$REQUESTED_RELEASE_TARGET
+          if [ "$RELEASE_TARGET" = auto ]; then
+            LATEST_TEMPLATE_TAG=$(git tag --list 'v[0-9]*' --sort=-version:refname | head -n 1)
+            LATEST_SDK_TAG=$(git tag --list 'portal-sdk-v*' --sort=-version:refname | head -n 1)
+
+            TEMPLATE_CHANGED=true
+            if [ -n "$LATEST_TEMPLATE_TAG" ] && git diff --quiet "${LATEST_TEMPLATE_TAG}..HEAD" -- . ':(exclude)sdk'; then
+              TEMPLATE_CHANGED=false
+            fi
+
+            SDK_CHANGED=true
+            if [ -n "$LATEST_SDK_TAG" ] && git diff --quiet "${LATEST_SDK_TAG}..HEAD" -- sdk; then
+              SDK_CHANGED=false
+            fi
+
+            if [ "$TEMPLATE_CHANGED" = true ] && [ "$SDK_CHANGED" = true ]; then
+              RELEASE_TARGET=both
+            elif [ "$TEMPLATE_CHANGED" = true ]; then
+              RELEASE_TARGET=template
+            elif [ "$SDK_CHANGED" = true ]; then
+              RELEASE_TARGET=sdk
+            else
+              echo "No SDK or template changes were found after the latest release tags."
+              exit 1
+            fi
+
+            echo "Detected release target: ${RELEASE_TARGET}"
+            echo "Latest template tag: ${LATEST_TEMPLATE_TAG:-none}"
+            echo "Latest SDK tag: ${LATEST_SDK_TAG:-none}"
           fi
 
-          VERSION=$(node -p "require('./package.json').version")
-          node -e "const fs=require('fs');const pkg=require('./package.json');pkg.nocobase.defaultTemplateVersion=pkg.version;fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n')"
+          RELEASE_TEMPLATE=false
+          RELEASE_SDK=false
+          case "$RELEASE_TARGET" in
+            template)
+              RELEASE_TEMPLATE=true
+              ;;
+            sdk)
+              RELEASE_SDK=true
+              ;;
+            both)
+              RELEASE_TEMPLATE=true
+              RELEASE_SDK=true
+              ;;
+            *)
+              echo "Unsupported release target: ${RELEASE_TARGET}"
+              exit 1
+              ;;
+          esac
 
-          CURRENT_SDK_VERSION=$(node -p "require('./sdk/package.json').version")
-          if [ -n "$REQUESTED_SDK_VERSION" ] && [ "$REQUESTED_SDK_VERSION" != "$CURRENT_SDK_VERSION" ]; then
-            npm version "$REQUESTED_SDK_VERSION" --no-git-tag-version --prefix sdk
-          fi
-          SDK_VERSION=$(node -p "require('./sdk/package.json').version")
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          VERSION=$CURRENT_VERSION
+          PUBLISH_TEMPLATE=false
+          VERIFY_TEMPLATE=false
 
-          if git rev-parse --verify --quiet "refs/tags/v${VERSION}"; then
-            echo "Git tag v${VERSION} already exists."
+          if [ "$RELEASE_TEMPLATE" = true ]; then
+            CURRENT_TEMPLATE_TAG_EXISTS=false
+            if git rev-parse --verify --quiet "refs/tags/v${CURRENT_VERSION}"; then
+              CURRENT_TEMPLATE_TAG_EXISTS=true
+            fi
+
+            if [ -n "$REQUESTED_VERSION" ] && [ "$REQUESTED_VERSION" != "$CURRENT_VERSION" ]; then
+              npm version "$REQUESTED_VERSION" --no-git-tag-version
+            elif [ -z "$REQUESTED_VERSION" ] && [ "$CURRENT_TEMPLATE_TAG_EXISTS" = true ]; then
+              npm version patch --no-git-tag-version
+            fi
+
+            VERSION=$(node -p "require('./package.json').version")
+            node -e "const fs=require('fs');const pkg=require('./package.json');pkg.nocobase.defaultTemplateVersion=pkg.version;fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n')"
+
+            if git rev-parse --verify --quiet "refs/tags/v${VERSION}"; then
+              echo "Git tag v${VERSION} already exists."
+              exit 1
+            fi
+
+            if npm view "@nocobase/portal-template-default@${VERSION}" version >/dev/null 2>&1; then
+              VERIFY_TEMPLATE=true
+            else
+              PUBLISH_TEMPLATE=true
+            fi
+          elif [ -n "$REQUESTED_VERSION" ]; then
+            echo "version can only be used for template or both releases."
             exit 1
           fi
+
+          CURRENT_SDK_VERSION=$(node -p "require('./sdk/package.json').version")
+          if [ "$RELEASE_SDK" = true ]; then
+            CURRENT_SDK_TAG_EXISTS=false
+            if git rev-parse --verify --quiet "refs/tags/portal-sdk-v${CURRENT_SDK_VERSION}"; then
+              CURRENT_SDK_TAG_EXISTS=true
+            fi
+
+            if [ -n "$REQUESTED_SDK_VERSION" ] && [ "$REQUESTED_SDK_VERSION" != "$CURRENT_SDK_VERSION" ]; then
+              npm version "$REQUESTED_SDK_VERSION" --no-git-tag-version --prefix sdk
+            elif [ -z "$REQUESTED_SDK_VERSION" ] && [ "$CURRENT_SDK_TAG_EXISTS" = true ]; then
+              npm version patch --no-git-tag-version --prefix sdk
+            fi
+          elif [ -n "$REQUESTED_SDK_VERSION" ]; then
+            echo "sdk_version can only be used for sdk or both releases."
+            exit 1
+          fi
+          SDK_VERSION=$(node -p "require('./sdk/package.json').version")
 
           SDK_EXISTS=false
           if npm view "@nocobase/portal-sdk@${SDK_VERSION}" version >/dev/null 2>&1; then
             SDK_EXISTS=true
-          fi
-
-          TEMPLATE_EXISTS=false
-          if npm view "@nocobase/portal-template-default@${VERSION}" version >/dev/null 2>&1; then
-            TEMPLATE_EXISTS=true
           fi
 
           SDK_TAG="portal-sdk-v${SDK_VERSION}"
@@ -113,31 +202,45 @@ jobs:
             fi
           fi
 
-          if [ "$SDK_EXISTS" = false ] && [ "$SDK_TAG_EXISTS" = true ]; then
-            echo "Git tag ${SDK_TAG} exists, but @nocobase/portal-sdk@${SDK_VERSION} is not published."
-            exit 1
-          fi
-
           PUBLISH_SDK=false
           VERIFY_SDK=false
-          if [ "$SDK_EXISTS" = false ]; then
-            PUBLISH_SDK=true
-          elif [ "$SDK_MATCHES_TAG" = false ]; then
-            VERIFY_SDK=true
-          fi
-
           TAG_SDK=false
-          if [ "$SDK_TAG_EXISTS" = false ]; then
-            TAG_SDK=true
+
+          if [ "$RELEASE_SDK" = true ]; then
+            if [ "$SDK_EXISTS" = false ] && [ "$SDK_TAG_EXISTS" = true ]; then
+              echo "Git tag ${SDK_TAG} exists, but @nocobase/portal-sdk@${SDK_VERSION} is not published."
+              exit 1
+            fi
+
+            if [ "$SDK_EXISTS" = false ]; then
+              PUBLISH_SDK=true
+            elif [ "$SDK_MATCHES_TAG" = false ]; then
+              VERIFY_SDK=true
+            fi
+
+            if [ "$SDK_TAG_EXISTS" = false ]; then
+              TAG_SDK=true
+            fi
+
+            if [ "$PUBLISH_SDK" = false ] && [ "$VERIFY_SDK" = false ] && [ "$TAG_SDK" = false ]; then
+              echo "@nocobase/portal-sdk@${SDK_VERSION} is already fully released."
+              echo "Choose template, or provide a new sdk_version."
+              exit 1
+            fi
+          else
+            if [ "$SDK_EXISTS" = false ]; then
+              echo "Template releases require a published @nocobase/portal-sdk@${SDK_VERSION}."
+              echo "Publish the SDK first or choose release_target=both."
+              exit 1
+            fi
+            if [ "$SDK_MATCHES_TAG" = false ]; then
+              VERIFY_SDK=true
+            fi
           fi
 
-          PUBLISH_TEMPLATE=true
-          VERIFY_TEMPLATE=false
-          if [ "$TEMPLATE_EXISTS" = true ]; then
-            PUBLISH_TEMPLATE=false
-            VERIFY_TEMPLATE=true
-          fi
-
+          echo "release_target=${RELEASE_TARGET}" >> "$GITHUB_OUTPUT"
+          echo "release_template=${RELEASE_TEMPLATE}" >> "$GITHUB_OUTPUT"
+          echo "release_sdk=${RELEASE_SDK}" >> "$GITHUB_OUTPUT"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "sdk_version=${SDK_VERSION}" >> "$GITHUB_OUTPUT"
           echo "publish_sdk=${PUBLISH_SDK}" >> "$GITHUB_OUTPUT"
@@ -147,6 +250,7 @@ jobs:
           echo "verify_template=${VERIFY_TEMPLATE}" >> "$GITHUB_OUTPUT"
 
       - name: Materialize default extensions
+        if: steps.release.outputs.release_template == 'true'
         run: node scripts/registry.mjs materialize
 
       - name: Build
@@ -162,10 +266,16 @@ jobs:
           node registry/nocobase-mail/tests/mail-regression.mjs
           node registry/nocobase-route-surfaces/tests/route-surfaces-regression.mjs
 
-      - name: Pack SDK and template
+      - name: Pack SDK
+        if: steps.release.outputs.release_sdk == 'true' || steps.release.outputs.verify_sdk == 'true'
         run: |
-          mkdir -p "$RUNNER_TEMP/portal-sdk-local" "$RUNNER_TEMP/portal-template-local"
+          mkdir -p "$RUNNER_TEMP/portal-sdk-local"
           pnpm --dir sdk pack --pack-destination "$RUNNER_TEMP/portal-sdk-local"
+
+      - name: Pack template
+        if: steps.release.outputs.release_template == 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/portal-template-local"
           pnpm pack --pack-destination "$RUNNER_TEMP/portal-template-local"
 
       - name: Verify existing SDK package
@@ -209,16 +319,42 @@ jobs:
       - name: Commit and tag release
         env:
           TARGET_BRANCH: ${{ github.ref_name }}
+          RELEASE_TARGET: ${{ steps.release.outputs.release_target }}
+          RELEASE_TEMPLATE: ${{ steps.release.outputs.release_template }}
+          RELEASE_SDK: ${{ steps.release.outputs.release_sdk }}
           VERSION: ${{ steps.release.outputs.version }}
           SDK_VERSION: ${{ steps.release.outputs.sdk_version }}
           TAG_SDK: ${{ steps.release.outputs.tag_sdk }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json sdk/package.json
-          git commit -m "chore(release): portal template v${VERSION}"
-          git tag -a "v${VERSION}" -m "v${VERSION}"
-          PUSH_REFS=("HEAD:refs/heads/${TARGET_BRANCH}" "refs/tags/v${VERSION}")
+
+          if [ "$RELEASE_TEMPLATE" = true ]; then
+            git add package.json
+          fi
+          if [ "$RELEASE_SDK" = true ]; then
+            git add sdk/package.json
+          fi
+
+          if ! git diff --cached --quiet; then
+            case "$RELEASE_TARGET" in
+              sdk)
+                git commit -m "chore(release): portal SDK v${SDK_VERSION}"
+                ;;
+              template)
+                git commit -m "chore(release): portal template v${VERSION}"
+                ;;
+              both)
+                git commit -m "chore(release): portal template v${VERSION} and SDK v${SDK_VERSION}"
+                ;;
+            esac
+          fi
+
+          PUSH_REFS=("HEAD:refs/heads/${TARGET_BRANCH}")
+          if [ "$RELEASE_TEMPLATE" = true ]; then
+            git tag -a "v${VERSION}" -m "v${VERSION}"
+            PUSH_REFS+=("refs/tags/v${VERSION}")
+          fi
           if [ "$TAG_SDK" = true ]; then
             git tag -a "portal-sdk-v${SDK_VERSION}" -m "@nocobase/portal-sdk@${SDK_VERSION}"
             PUSH_REFS+=("refs/tags/portal-sdk-v${SDK_VERSION}")

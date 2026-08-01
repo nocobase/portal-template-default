@@ -73,6 +73,22 @@ templates in the same template major.
 7. Publish the SDK and coordinated template release through the repository
    release workflow.
 
+## Release workflow targets
+
+The release workflow defaults to `auto`. It compares `sdk/` with the latest
+`portal-sdk-v*` tag and the rest of the repository with the latest template
+`v*` tag, then selects one of these targets:
+
+- `sdk` publishes and tags only the SDK.
+- `template` publishes and tags only the template while verifying the installed
+  SDK package.
+- `both` publishes coordinated SDK and template releases.
+
+When no exact version is supplied, an already-tagged package receives a patch
+increment. Supply `sdk_version` or `version` for intentional minor or major
+releases. The workflow retains manual target overrides for release recovery and
+exceptional maintenance, but normal releases should use automatic detection.
+
 ## Portal project upgrade checklist
 
 1. Commit or back up application-owned changes.
