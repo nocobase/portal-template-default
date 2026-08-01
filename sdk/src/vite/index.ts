@@ -51,6 +51,21 @@ export const portalSdkCompatibilityPlugin = ({
         "The installed @nocobase/portal-sdk has incomplete compatibility metadata."
       );
     }
+    if (!semver.valid(defaultTemplateVersion)) {
+      throw new Error(
+        `Invalid nocobase.defaultTemplateVersion: ${defaultTemplateVersion}`
+      );
+    }
+    if (!semver.valid(sdkPackage.version)) {
+      throw new Error(
+        `Invalid @nocobase/portal-sdk version: ${sdkPackage.version}`
+      );
+    }
+    if (!semver.validRange(supportedDefaultTemplateRange)) {
+      throw new Error(
+        `Invalid SDK supportedDefaultTemplateRange: ${supportedDefaultTemplateRange}`
+      );
+    }
     if (!semver.satisfies(defaultTemplateVersion, supportedDefaultTemplateRange)) {
       throw new Error(
         formatPortalTemplateCompatibilityError({

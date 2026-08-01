@@ -3,8 +3,9 @@
 The Registry is split by capability so applications only install the code and dependencies they use.
 
 These entries target the compatible NocoBase admin starter family. The host must
-provide the `@` source alias, `/portal-sdk/client`, the standard shadcn UI
-components, and (for `@nocobase/ai`) the `/portal-sdk/extensions` discovery contract.
+provide the `@` source alias, `@nocobase/portal-sdk/client`, the standard shadcn
+UI components, and (for `@nocobase/ai`) the
+`@nocobase/portal-sdk/extensions` discovery contract.
 Applications with a different host can still reuse the providers and components,
 but should supply their own `AIService` adapter and integration entry.
 
