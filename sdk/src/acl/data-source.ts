@@ -1,4 +1,4 @@
-import type { ResourceAcl } from "./types.js";
+import type { ResourceAcl } from "./types.ts";
 
 type DataSourceMeta = {
   dataSourceKey?: unknown;

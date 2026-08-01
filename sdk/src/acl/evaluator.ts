@@ -1,7 +1,7 @@
 import ignore from "ignore";
 
-import { resolveAclDataSourceKey } from "./data-source.js";
-import { getRecordActionPermission } from "./record-permissions.js";
+import { resolveAclDataSourceKey } from "./data-source.ts";
+import { getRecordActionPermission } from "./record-permissions.ts";
 import type {
   AclAccessRequest,
   AclActionParams,
@@ -9,7 +9,7 @@ import type {
   AclResourcePermissions,
   ResourceAcl,
   RoleConstraint,
-} from "./types.js";
+} from "./types.ts";
 
 const REFINE_ACTION_MAP: Record<string, string> = {
   list: "list",

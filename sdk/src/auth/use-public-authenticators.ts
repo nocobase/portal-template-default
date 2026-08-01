@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { nocobaseClient } from "../client/index.js";
-import type { Authenticator } from "./types.js";
+import { nocobaseClient } from "../client/index.ts";
+import type { Authenticator } from "./types.ts";
 
 export const publicAuthenticatorsQueryKey = [
   "nocobase",

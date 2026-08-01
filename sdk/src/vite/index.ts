@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import semver from "semver";
 import type { Plugin } from "vite";
 
-import { formatPortalTemplateCompatibilityError } from "../compat/index.js";
+import { formatPortalTemplateCompatibilityError } from "../compat/index.ts";
 
 type PortalPackage = {
   name?: string;

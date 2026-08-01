@@ -2,9 +2,9 @@ import {
   API_ORIGIN,
   API_URL,
   NOCOBASE_AUTHENTICATOR,
-} from "../runtime/constants.js";
-import { authSession } from "./auth-session.js";
-import { getNocoBaseErrorMessage, NocoBaseHttpError } from "./error.js";
+} from "../runtime/constants.ts";
+import { authSession } from "./auth-session.ts";
+import { getNocoBaseErrorMessage, NocoBaseHttpError } from "./error.ts";
 
 type QueryValue =
   | string
@@ -311,5 +311,5 @@ const getUrlOrigin = (value: string) => {
 
 export const nocobaseClient = new NocoBaseClient();
 
-export * from "./auth-session.js";
-export * from "./error.js";
+export * from "./auth-session.ts";
+export * from "./error.ts";

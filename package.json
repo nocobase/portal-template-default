@@ -90,9 +90,7 @@
     "url": "git+https://github.com/nocobase/portal-template-default.git"
   },
   "scripts": {
-    "predev": "node ./scripts/prepare-portal-sdk.mjs",
-    "dev": "node ./scripts/dev.mjs",
-    "prebuild": "node ./scripts/prepare-portal-sdk.mjs",
+    "dev": "vite --host 0.0.0.0",
     "build": "tsc && refine build",
     "build:html": "node ./scripts/build-html.mjs",
     "start": "refine start",

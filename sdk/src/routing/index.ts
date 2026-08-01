@@ -9,12 +9,12 @@ import {
 } from "react";
 import { Outlet, Route } from "react-router";
 
-import type { ResourceAcl, RouteAccessConstraint } from "../acl/index.js";
+import type { ResourceAcl, RouteAccessConstraint } from "../acl/index.ts";
 
-export * from "./route-surface-context.js";
-export * from "./contextual-navigation.js";
-export * from "./use-route-surface-close.js";
-export * from "./use-route-surface-state.js";
+export * from "./route-surface-context.ts";
+export * from "./contextual-navigation.ts";
+export * from "./use-route-surface-close.ts";
+export * from "./use-route-surface-state.ts";
 
 type ResourceRouteAction = "create" | "edit" | "show";
 

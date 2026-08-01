@@ -4,9 +4,9 @@ import {
   aclStore,
   getAclState,
   loadAcl,
-} from "./store.js";
-import { evaluateAccess } from "./evaluator.js";
-import type { AclAccessRequest, RoleConstraint } from "./types.js";
+} from "./store.ts";
+import { evaluateAccess } from "./evaluator.ts";
+import type { AclAccessRequest, RoleConstraint } from "./types.ts";
 
 const toAclAccessRequest = ({
   resource,

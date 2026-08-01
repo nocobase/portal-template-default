@@ -1,7 +1,7 @@
 import type { I18nProvider } from "@refinedev/core";
 import { createInstance, type InitOptions, type TOptions } from "i18next";
 
-import { nocobaseClient } from "../client/index.js";
+import { nocobaseClient } from "../client/index.ts";
 import {
   configurePortalLocales,
   getDefaultLocale,
@@ -12,13 +12,13 @@ import {
   resolveSupportedLocale,
   setEnabledLocales,
   type LocaleDefinition,
-} from "./locales.js";
+} from "./locales.ts";
 import {
   getTranslationResources,
   setTranslationResolver,
   subscribeTranslationResources,
   type TranslationOptions,
-} from "./translation.js";
+} from "./translation.ts";
 
 export type LocaleResources = Record<
   string,

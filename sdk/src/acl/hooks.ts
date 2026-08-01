@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from "react";
 
-import { useAclState, useAclStore } from "./context.js";
-import { evaluateAccess } from "./evaluator.js";
-import type { AclAccessRequest } from "./types.js";
+import { useAclState, useAclStore } from "./context.ts";
+import { evaluateAccess } from "./evaluator.ts";
+import type { AclAccessRequest } from "./types.ts";
 
 export const useAclEvaluator = () => {
   const store = useAclStore();

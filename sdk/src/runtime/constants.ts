@@ -1,4 +1,4 @@
-import { getRuntimeApiUrl } from "./config.js";
+import { getRuntimeApiUrl } from "./config.ts";
 
 const rawApiUrl =
   getRuntimeApiUrl() ?? "http://127.0.0.1:13000/api";

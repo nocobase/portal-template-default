@@ -4,7 +4,7 @@ import { useNavigate } from "react-router";
 import type {
   RouteSurfaceClose,
   RouteSurfaceCloseOptions,
-} from "./route-surface-context.js";
+} from "./route-surface-context.ts";
 
 export type RouteSurfaceBeforeClose = () => boolean | Promise<boolean>;
 

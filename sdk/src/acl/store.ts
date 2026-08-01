@@ -1,12 +1,12 @@
-import { nocobaseClient, NocoBaseHttpError } from "../client/index.js";
-import type { AclStore } from "./context.js";
+import { nocobaseClient, NocoBaseHttpError } from "../client/index.ts";
+import type { AclStore } from "./context.ts";
 import {
   clearRecordPermissions,
   getRecordActionPermission,
   getRecordPermissions,
   subscribeRecordPermissions,
-} from "./record-permissions.js";
-import type { AclPermissionSet, AclResponse, AclState } from "./types.js";
+} from "./record-permissions.ts";
+import type { AclPermissionSet, AclResponse, AclState } from "./types.ts";
 
 const listeners = new Set<() => void>();
 let activeRequest:

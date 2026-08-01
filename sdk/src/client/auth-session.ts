@@ -1,4 +1,4 @@
-import { getNocoBaseAppName } from "../runtime/config.js";
+import { getNocoBaseAppName } from "../runtime/config.ts";
 
 export type AuthStorageType = "localStorage" | "sessionStorage" | "memory";
 export type AuthSessionField = "token" | "auth" | "role" | "locale";

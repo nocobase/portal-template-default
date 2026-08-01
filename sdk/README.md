@@ -19,6 +19,17 @@ Use documented package exports only. Imports from `src/` are not public API.
 - `@nocobase/portal-sdk/system-settings` — cached System Settings access, context, and hooks.
 - `@nocobase/portal-sdk/vite` — build compatibility and raw Portal HTML plugins.
 
+## Workspace development
+
+The workspace manifest resolves public SDK entry points directly from `src/`,
+so the Portal Template's Vite process compiles and watches SDK changes without a
+separate SDK watcher. During `pnpm pack` and `pnpm publish`, pnpm applies
+`publishConfig.exports` and rewrites those entry points to the compiled `dist/`
+files. SDK releases must therefore use the repository's pnpm release workflow.
+
+The release workflow verifies every packed export before publishing, including
+the corresponding JavaScript and declaration files.
+
 ## Compatibility
 
 The SDK package declares `nocobase.supportedDefaultTemplateRange`. Projects

@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from "react";
 
-import { AclStoreContext, type AclStore } from "./context.js";
+import { AclStoreContext, type AclStore } from "./context.ts";
 
 export function AclStoreProvider({
   children,

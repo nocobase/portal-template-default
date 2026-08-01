@@ -1,5 +1,5 @@
-import { nocobaseClient } from "../client/index.js";
-import type { SystemSettings } from "./context.js";
+import { nocobaseClient } from "../client/index.ts";
+import type { SystemSettings } from "./context.ts";
 
 let cachedSettings: SystemSettings | undefined;
 let settingsRequest: Promise<SystemSettings> | undefined;

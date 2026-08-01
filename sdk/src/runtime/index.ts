@@ -1,2 +1,2 @@
-export * from "./config.js";
-export * from "./constants.js";
+export * from "./config.ts";
+export * from "./constants.ts";

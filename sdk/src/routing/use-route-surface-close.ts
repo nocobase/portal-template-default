@@ -1,6 +1,6 @@
 import { useContext } from "react";
 
-import { RouteSurfaceContext } from "./route-surface-context.js";
+import { RouteSurfaceContext } from "./route-surface-context.ts";
 
 export function useRouteSurfaceClose() {
   const close = useContext(RouteSurfaceContext);

@@ -1,5 +1,5 @@
-import { clearAcl } from "../acl/index.js";
-import { nocobaseClient } from "../client/index.js";
+import { clearAcl } from "../acl/index.ts";
+import { nocobaseClient } from "../client/index.ts";
 
 export function captureAuthenticationCallback() {
   if (typeof window === "undefined") return false;

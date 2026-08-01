@@ -269,8 +269,10 @@ jobs:
       - name: Pack SDK
         if: steps.release.outputs.release_sdk == 'true' || steps.release.outputs.verify_sdk == 'true'
         run: |
-          mkdir -p "$RUNNER_TEMP/portal-sdk-local"
+          mkdir -p "$RUNNER_TEMP/portal-sdk-local" "$RUNNER_TEMP/portal-sdk-local-unpacked"
           pnpm --dir sdk pack --pack-destination "$RUNNER_TEMP/portal-sdk-local"
+          tar -xzf "$RUNNER_TEMP/portal-sdk-local/"*.tgz -C "$RUNNER_TEMP/portal-sdk-local-unpacked"
+          node sdk/tests/verify-packed-package.mjs "$RUNNER_TEMP/portal-sdk-local-unpacked/package"
 
       - name: Pack template
         if: steps.release.outputs.release_template == 'true'
@@ -283,9 +285,8 @@ jobs:
         env:
           SDK_VERSION: ${{ steps.release.outputs.sdk_version }}
         run: |
-          mkdir -p "$RUNNER_TEMP/portal-sdk-remote" "$RUNNER_TEMP/portal-sdk-local-unpacked" "$RUNNER_TEMP/portal-sdk-remote-unpacked"
+          mkdir -p "$RUNNER_TEMP/portal-sdk-remote" "$RUNNER_TEMP/portal-sdk-remote-unpacked"
           npm pack "@nocobase/portal-sdk@${SDK_VERSION}" --pack-destination "$RUNNER_TEMP/portal-sdk-remote"
-          tar -xzf "$RUNNER_TEMP/portal-sdk-local/"*.tgz -C "$RUNNER_TEMP/portal-sdk-local-unpacked"
           tar -xzf "$RUNNER_TEMP/portal-sdk-remote/"*.tgz -C "$RUNNER_TEMP/portal-sdk-remote-unpacked"
           if ! diff -ru "$RUNNER_TEMP/portal-sdk-remote-unpacked/package" "$RUNNER_TEMP/portal-sdk-local-unpacked/package"; then
             echo "Published @nocobase/portal-sdk@${SDK_VERSION} differs from the current SDK package."

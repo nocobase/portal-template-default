@@ -1,15 +1,15 @@
 import type { AuthProvider } from "@refinedev/core";
 
-import { nocobaseClient } from "../client/index.js";
+import { nocobaseClient } from "../client/index.ts";
 import {
   clearAcl,
   loadAcl,
   type Role,
-} from "../acl/index.js";
+} from "../acl/index.ts";
 import {
   getNocoBaseErrorMessage,
   NocoBaseHttpError,
-} from "../client/index.js";
+} from "../client/index.ts";
 
 type NocoBaseUser = {
   id: number | string;

@@ -1,7 +1,7 @@
 import type { TreeMenuItem } from "@refinedev/core";
 
-import { evaluateAccess, matchesRoleConstraint } from "./evaluator.js";
-import type { AclPermissionSet, RouteAccessConstraint } from "./types.js";
+import { evaluateAccess, matchesRoleConstraint } from "./evaluator.ts";
+import type { AclPermissionSet, RouteAccessConstraint } from "./types.ts";
 
 const matchesRouteAccess = (
   item: TreeMenuItem,

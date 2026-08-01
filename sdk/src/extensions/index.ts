@@ -1,7 +1,7 @@
 import type { ResourceProps } from "@refinedev/core";
 import type { ComponentType, PropsWithChildren, ReactElement } from "react";
-import type { AuthenticatorAdapter } from "../auth/index.js";
-import type { AppRouteDefinition } from "../routing/index.js";
+import type { AuthenticatorAdapter } from "../auth/index.ts";
+import type { AppRouteDefinition } from "../routing/index.ts";
 
 export type AppExtension = {
   id: string;

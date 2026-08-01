@@ -1,7 +1,7 @@
 import { createContext, useContext, useSyncExternalStore } from "react";
 
-import type { RecordPermissionResolver } from "./evaluator.js";
-import type { AclState } from "./types.js";
+import type { RecordPermissionResolver } from "./evaluator.ts";
+import type { AclState } from "./types.ts";
 
 export type AclStore = {
   getState: () => AclState;

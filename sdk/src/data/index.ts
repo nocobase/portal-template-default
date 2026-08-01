@@ -22,12 +22,12 @@ import type {
   UpdateResponse,
 } from "@refinedev/core";
 
-import { nocobaseClient } from "../client/index.js";
+import { nocobaseClient } from "../client/index.ts";
 import {
   resolveAclDataSourceKey,
   type ResourceAcl,
   updateRecordPermissions,
-} from "../acl/index.js";
+} from "../acl/index.ts";
 
 type NocoBaseListResponse<T> = {
   rows?: T[];
