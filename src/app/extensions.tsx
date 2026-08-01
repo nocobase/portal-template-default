@@ -1,84 +1,74 @@
 import {
   Suspense,
   type PropsWithChildren,
-  type ReactElement,
   type ReactNode,
 } from "react";
-import type { AppExtension } from "./extension";
+import {
+  collectAppExtensionContributions,
+  type AppExtension,
+} from "@nocobase/portal-sdk/extensions";
+import {
+  buildRouteResources,
+  renderAppRoutes,
+} from "@nocobase/portal-sdk/routing";
 import { LoadingState } from "@/components/app-shell/loading-state";
 import { appRoutes, registryRoutesEnabled } from "@/routes";
 import { createDevelopmentRoute } from "./development";
-import { buildRouteResources, renderAppRoutes } from "./route-runtime";
+import { RouteAccessGuard } from "./route-access-guard";
 
 const extensionModules = import.meta.glob<{ default: AppExtension }>(
   "@/extensions/*/extension.tsx",
   { eager: true }
 );
 
-export const appExtensions = Object.values(extensionModules)
-  .map((module) => module.default)
-  .sort(
-    (left, right) =>
-      (left.priority ?? 100) - (right.priority ?? 100) ||
-      left.id.localeCompare(right.id)
-  );
+const extensionContributions = collectAppExtensionContributions({
+  extensions: Object.values(extensionModules).map((module) => module.default),
+  appRoutes,
+  registryRoutesEnabled,
+});
 
-const routeExtensions = registryRoutesEnabled ? appExtensions : [];
-const routeDefinitions = [
-  ...appRoutes,
-  ...routeExtensions.flatMap((extension) => extension.appRoutes ?? []),
-];
+export const appExtensions = extensionContributions.extensions;
 
 export const configuredResources = [
-  ...buildRouteResources(routeDefinitions),
-  ...routeExtensions.flatMap((extension) => extension.resources ?? []),
+  ...buildRouteResources(extensionContributions.routeDefinitions),
+  ...extensionContributions.resources,
 ];
 
 export const configuredRouteElements = [
-  ...renderAppRoutes(routeDefinitions),
-  ...routeExtensions
-    .map((extension) => extension.routes)
-    .filter((routes): routes is ReactElement => Boolean(routes)),
+  ...renderAppRoutes(extensionContributions.routeDefinitions, {
+    AccessGuard: RouteAccessGuard,
+  }),
+  ...extensionContributions.routeElements,
 ];
 
 export const extensionStandaloneRouteElements = import.meta.env.DEV
   ? [createDevelopmentRoute(appExtensions)]
   : [];
 
-export const extensionUserMenuItems = appExtensions
-  .filter((extension) => extension.UserMenuItems)
-  .map((extension) => ({
-    id: extension.id,
-    Component: extension.UserMenuItems!,
-  }));
+export const extensionUserMenuItems = extensionContributions.userMenuItems;
 
-export const extensionAuthAdapters = appExtensions.flatMap(
-  (extension) => extension.authAdapters ?? []
-);
+export const extensionAuthAdapters = extensionContributions.authAdapters;
 
 export function AppExtensionProviders({ children }: PropsWithChildren) {
-  return appExtensions.reduceRight<ReactNode>((content, extension) => {
-    const Provider = extension.Provider;
-    return Provider ? <Provider>{content}</Provider> : content;
-  }, children);
+  return extensionContributions.providerExtensions.reduceRight<ReactNode>(
+    (content, extension) => {
+      const Provider = extension.Provider;
+      return Provider ? <Provider>{content}</Provider> : content;
+    },
+    children
+  );
 }
 
 export function AppAuthRuntimeProviders({ children }: PropsWithChildren) {
-  return [...appExtensions]
-    .filter((extension) => extension.AuthRuntimeProvider)
-    .sort(
-      (left, right) =>
-        (left.authRuntimePriority ?? 100) -
-          (right.authRuntimePriority ?? 100) || left.id.localeCompare(right.id)
-    )
-    .reduceRight<ReactNode>((content, extension) => {
+  return extensionContributions.authRuntimeExtensions.reduceRight<ReactNode>(
+    (content, extension) => {
       const Provider = extension.AuthRuntimeProvider!;
       return (
         <Suspense fallback={<LoadingState className="min-h-svh" />}>
           <Provider>{content}</Provider>
         </Suspense>
       );
-    }, children);
+    },
+    children
+  );
 }
-
-export type { AppExtension } from "./extension";

@@ -1,12 +1,12 @@
 import { AlertCircle, KeyRound } from "lucide-react";
 import { Fragment, Suspense, useEffect, useMemo } from "react";
+import {
+  usePublicAuthenticators,
+  type Authenticator,
+  type RenderAuthenticator,
+} from "@nocobase/portal-sdk/auth";
 
 import { authenticatorAdapterMap } from "@/components/auth/authenticator-adapters";
-import type {
-  Authenticator,
-  RenderAuthenticator,
-} from "@/components/auth/types";
-import { usePublicAuthenticators } from "@/components/auth/use-public-authenticators";
 import {
   Alert,
   AlertDescription,
@@ -22,7 +22,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { resolveTranslatableText } from "@/lib/i18n";
+import { resolveTranslatableText } from "@nocobase/portal-sdk/i18n";
 
 type DynamicSignInProps = {
   renderAuthenticator?: RenderAuthenticator;

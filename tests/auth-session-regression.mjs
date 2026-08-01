@@ -18,13 +18,13 @@ const createStorage = () => {
 
 try {
   const { AuthSession } = await server.ssrLoadModule(
-    "/src/lib/nocobase/auth-session.ts"
+    "@nocobase/portal-sdk/client"
   );
   const {
     resolveNocoBaseAppName,
     resolveNocoBaseSettingsUrl,
     resolvePortalUrl,
-  } = await server.ssrLoadModule("/src/providers/runtime-config.ts");
+  } = await server.ssrLoadModule("@nocobase/portal-sdk/runtime");
 
   assert.equal(
     resolveNocoBaseAppName(

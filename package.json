@@ -1,9 +1,15 @@
 {
   "name": "@nocobase/portal-template-default",
   "displayName": "Default Template",
-  "version": "1.0.22",
+  "version": "2.0.0",
   "packageManager": "pnpm@10.28.0",
   "type": "module",
+  "nocobase": {
+    "defaultTemplateVersion": "2.0.0"
+  },
+  "dependencies": {
+    "@nocobase/portal-sdk": "workspace:^"
+  },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",
     "@base-ui/react": "^1.6.0",
@@ -52,7 +58,6 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "eventsource-parser": "3.1.0",
     "globals": "^16.0.0",
-    "i18next": "^25.3.2",
     "ignore": "^7.0.6",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.487.0",
@@ -85,17 +90,14 @@
     "url": "git+https://github.com/nocobase/portal-template-default.git"
   },
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
+    "predev": "node ./scripts/prepare-portal-sdk.mjs",
+    "dev": "node ./scripts/dev.mjs",
+    "prebuild": "node ./scripts/prepare-portal-sdk.mjs",
     "build": "tsc && refine build",
     "build:html": "node ./scripts/build-html.mjs",
-    "test:auth": "node tests/auth-session-regression.mjs",
-    "test:acl": "node registry/nocobase-acl/tests/acl-regression.mjs",
-    "test:i18n": "node registry/nocobase-i18n/tests/i18n-regression.mjs",
-    "test:file-upload": "node --experimental-strip-types --test tests/file-upload-regression.test.ts",
-    "test:mail": "node registry/nocobase-mail/tests/mail-regression.mjs",
-    "test:route-surfaces": "node registry/nocobase-route-surfaces/tests/route-surfaces-regression.mjs",
     "start": "refine start",
-    "refine": "refine"
+    "refine": "refine",
+    "sdk:check": "pnpm exec portal-sdk check"
   },
   "browserslist": {
     "production": [

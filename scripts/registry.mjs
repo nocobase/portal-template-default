@@ -52,6 +52,7 @@ const config = JSON.parse(
 );
 const itemNames = new Set();
 const filesByRoot = new Map();
+const portalSdkImport = "@nocobase/portal-sdk";
 const sourceItems = config.items.map((item) => {
   if (!item.name || itemNames.has(item.name)) {
     throw new Error(`Registry item name must be unique: ${item.name}`);
@@ -81,6 +82,25 @@ const sourceItems = config.items.map((item) => {
   if (!includedFiles.length) {
     throw new Error(
       `Registry item ${item.name} include paths did not match any files`
+    );
+  }
+
+  const includedSource = includedFiles
+    .filter((file) => /\.[cm]?[jt]sx?$/.test(file))
+    .map((file) => ({
+      file,
+      content: fs.readFileSync(path.join(sourceRoot, file), "utf8"),
+    }));
+  const usesPortalSdk = includedSource.some(({ content }) =>
+    content.includes(portalSdkImport)
+  );
+  const portalSdkDependency = item.dependencies?.find((dependency) =>
+    dependency.startsWith(`${portalSdkImport}@`)
+  );
+
+  if (usesPortalSdk && !portalSdkDependency) {
+    throw new Error(
+      `Registry item ${item.name} imports ${portalSdkImport} without declaring a versioned dependency`
     );
   }
 
@@ -115,11 +135,6 @@ if (action === "build") {
 
   for (const item of items) {
     console.log(`${item.name}: ${item.files.length} files`);
-  }
-} else if (action === "link" || action === "unlink") {
-  for (const source of sourceMappings.values()) {
-    if (action === "link") linkSource(source);
-    else unlinkSource(source);
   }
 } else {
   const outputRootIndex = process.argv.indexOf("--output-root");

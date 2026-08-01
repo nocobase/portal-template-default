@@ -1,4 +1,4 @@
-import { nocobaseClient } from "@/lib/nocobase/client";
+import { nocobaseClient } from "@nocobase/portal-sdk/client";
 
 import { getDataSourceHeaders } from "./storage";
 import type { FileUploadOptions, NocoBaseFileRecord } from "./types";

@@ -3,15 +3,15 @@
 import { AlertCircle, KeyRound } from "lucide-react";
 import { useState } from "react";
 import { useLink, useNotification, useRegister } from "@refinedev/core";
+import {
+  usePublicAuthenticators,
+  type Authenticator,
+  type AuthenticatorSignUpField,
+} from "@nocobase/portal-sdk/auth";
 import { useSearchParams } from "react-router";
 
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { InputPassword } from "@/components/auth/input-password";
-import type {
-  Authenticator,
-  AuthenticatorSignUpField,
-} from "@/components/auth/types";
-import { usePublicAuthenticators } from "@/components/auth/use-public-authenticators";
 import {
   Alert,
   AlertDescription,
@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
-import { resolveTranslatableText } from "@/lib/i18n";
+import { resolveTranslatableText } from "@nocobase/portal-sdk/i18n";
 
 type SignUpFieldValue = string | number | boolean;
 type SignUpValues = Record<string, SignUpFieldValue>;

@@ -5,44 +5,18 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
-
-import { LoadingState } from "@/components/app-shell/loading-state";
-import { nocobaseClient } from "@/lib/nocobase/client";
-import { applySystemLocale } from "../i18n";
+import { applySystemLocale } from "@nocobase/portal-sdk/i18n";
 import {
+  loadSystemSettings,
   SystemSettingsContext,
   type SystemSettings,
   type SystemSettingsContextValue,
-} from "./context";
+} from "@nocobase/portal-sdk/system-settings";
 
-let cachedSettings: SystemSettings | undefined;
-let settingsRequest: Promise<SystemSettings> | undefined;
-
-function requestSystemSettings(force = false) {
-  if (!force && cachedSettings) return Promise.resolve(cachedSettings);
-  if (!force && settingsRequest) return settingsRequest;
-
-  const request = nocobaseClient
-    .action<SystemSettings>("systemSettings", "get", {
-      method: "GET",
-      includeRole: false,
-      withAclMeta: false,
-    })
-    .then((settings) => {
-      cachedSettings = settings;
-      return settings;
-    });
-
-  settingsRequest = request;
-  const clearRequest = () => {
-    if (settingsRequest === request) settingsRequest = undefined;
-  };
-  void request.then(clearRequest, clearRequest);
-  return request;
-}
+import { LoadingState } from "@/components/app-shell/loading-state";
 
 export function SystemSettingsProvider({ children }: PropsWithChildren) {
-  const [settings, setSettings] = useState(cachedSettings);
+  const [settings, setSettings] = useState<SystemSettings>();
   const [error, setError] = useState<Error>();
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -50,7 +24,7 @@ export function SystemSettingsProvider({ children }: PropsWithChildren) {
   const load = useCallback(async (force = false) => {
     setLoading(true);
     try {
-      const nextSettings = await requestSystemSettings(force);
+      const nextSettings = await loadSystemSettings(force);
       await applySystemLocale(nextSettings);
       setSettings(nextSettings);
       setError(undefined);

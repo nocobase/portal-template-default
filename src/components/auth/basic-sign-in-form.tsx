@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useLink, useLogin } from "@refinedev/core";
+import type { AuthenticatorComponentProps } from "@nocobase/portal-sdk/auth";
 
 import { InputPassword } from "@/components/auth/input-password";
-import type { AuthenticatorComponentProps } from "@/components/auth/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

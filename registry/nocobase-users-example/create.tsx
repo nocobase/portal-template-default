@@ -1,6 +1,7 @@
 import { type HttpError, useTranslate } from "@refinedev/core";
 import { useForm } from "@refinedev/react-hook-form";
 import { useMemo } from "react";
+import { useRouteSurfaceClose } from "@nocobase/portal-sdk/routing";
 
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
@@ -13,7 +14,6 @@ import {
   RouteDrawer,
   RouteDrawerFooter,
   useRefineUnsavedChangesGuard,
-  useRouteSurfaceClose,
 } from "@/extensions/nocobase-route-surfaces";
 import {
   applyAIUserFormValues,

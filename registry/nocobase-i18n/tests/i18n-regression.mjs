@@ -8,16 +8,19 @@ const server = await createServer({
 });
 
 try {
+  const { portalI18nReady } = await server.ssrLoadModule(
+    "/src/providers/i18n/runtime.ts"
+  );
+  await portalI18nReady;
   await server.ssrLoadModule("/src/locales/index.ts");
   const {
     applySystemLocale,
     getCurrentLocale,
     i18n,
-    registerLocaleResources,
+    registerTranslationResources,
+    resolveTranslatableText,
     translate,
-  } = await server.ssrLoadModule("/src/providers/i18n/runtime.ts");
-  const { resolveTranslatableText } =
-    await server.ssrLoadModule("/src/lib/i18n.ts");
+  } = await server.ssrLoadModule("@nocobase/portal-sdk/i18n");
 
   await i18n.changeLanguage("en-US");
   assert.equal(translate("buttons.create", { ns: "starter" }, "Create"), "Create");
@@ -30,7 +33,7 @@ try {
     "全部权限"
   );
 
-  registerLocaleResources("example-feature", {
+  registerTranslationResources("example-feature", {
     "en-US": { title: "Example" },
     "zh-CN": { title: "示例" },
   });

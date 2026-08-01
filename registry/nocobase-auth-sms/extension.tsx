@@ -2,7 +2,7 @@ import { lazy } from "react";
 import { Smartphone } from "lucide-react";
 import { Route } from "react-router";
 
-import type { AppExtension } from "@/app/extensions";
+import type { AppExtension } from "@nocobase/portal-sdk/extensions";
 import { AuthDemoRoute } from "@/components/auth/demo/auth-demo-route";
 
 const SmsSignInForm = lazy(() => import("./sms-sign-in-form"));

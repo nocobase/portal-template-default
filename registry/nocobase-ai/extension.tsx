@@ -1,5 +1,5 @@
 import { NocoBaseAIExtensionProvider } from "./global-ai-chat";
-import type { AppExtension } from "@/app/extensions";
+import type { AppExtension } from "@nocobase/portal-sdk/extensions";
 import { LoadingState } from "@/components/app-shell/loading-state";
 import {
   Bot,

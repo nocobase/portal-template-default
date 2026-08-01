@@ -1,4 +1,5 @@
 import type { ResourceProps, TreeMenuItem } from "@refinedev/core";
+import type { AppExtension } from "@nocobase/portal-sdk/extensions";
 import { KeyRound, PanelsTopLeft } from "lucide-react";
 import type { ReactElement } from "react";
 import { Navigate, Outlet, Route, useLocation } from "react-router";
@@ -8,7 +9,6 @@ import { Header } from "@/components/app-shell/header";
 import { SidebarNavigation } from "@/components/app-shell/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import type { AppExtension } from "./extension";
 
 const coreDevelopmentResources: ResourceProps[] = [
   {

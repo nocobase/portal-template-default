@@ -1,6 +1,6 @@
 import type { PropsWithChildren, ReactNode } from "react";
+import { useCanAccess, type AclAccessRequest } from "@nocobase/portal-sdk/acl";
 
-import { useCanAccess, type AclAccessRequest } from "@/lib/nocobase/acl";
 
 export type CanAccessProps = PropsWithChildren<
   AclAccessRequest & {

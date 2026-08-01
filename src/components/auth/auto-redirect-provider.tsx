@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router";
+import { nocobaseClient } from "@nocobase/portal-sdk/client";
+import { resolvePortalUrl } from "@nocobase/portal-sdk/runtime";
 
 import { LoadingState } from "@/components/app-shell/loading-state";
-import { nocobaseClient } from "@/lib/nocobase/client";
-import { resolvePortalUrl } from "@/providers/runtime-config";
 
 type AutoRedirectResponse = {
   success?: boolean;

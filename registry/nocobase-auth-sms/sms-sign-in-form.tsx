@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import type { AuthenticatorComponentProps } from "@/components/auth/types";
+import type { AuthenticatorComponentProps } from "@nocobase/portal-sdk/auth";
 import {
   Alert,
   AlertDescription,

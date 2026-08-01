@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 
-import type { Authenticator } from "@/components/auth/types";
-import { nocobaseClient } from "@/lib/nocobase/client";
-import { resolvePortalUrl } from "@/providers/runtime-config";
+import type { Authenticator } from "@nocobase/portal-sdk/auth";
+import { nocobaseClient } from "@nocobase/portal-sdk/client";
+import { resolvePortalUrl } from "@nocobase/portal-sdk/runtime";
 
 export function useSamlSignIn(authenticator: Authenticator) {
   const [searchParams] = useSearchParams();

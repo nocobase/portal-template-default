@@ -6,7 +6,10 @@ import { useResourceParams, useTranslate } from "@refinedev/core";
 import { Breadcrumb } from "@/components/app-shell/breadcrumb";
 import { CreateButton } from "@/components/resources/buttons/create";
 import { useResourceLabel } from "@/components/resources/resource-label";
-import { resolveTranslatableText, type TranslationOptions } from "@/lib/i18n";
+import {
+  resolveTranslatableText,
+  type TranslationOptions,
+} from "@nocobase/portal-sdk/i18n";
 import { cn } from "@/lib/utils";
 
 type ListViewProps = PropsWithChildren<{

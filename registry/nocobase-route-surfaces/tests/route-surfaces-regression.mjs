@@ -13,9 +13,7 @@ try {
     buildRouteLocationHref,
     createRouteSurfaceNavigationState,
     resolveRouteSurfaceCloseTo,
-  } = await server.ssrLoadModule(
-    "/registry/nocobase-route-surfaces/demo/contextual-navigation.ts"
-  );
+  } = await server.ssrLoadModule("@nocobase/portal-sdk/routing");
   const location = {
     pathname: "/customers",
     search: "?status=renewal&page=2",

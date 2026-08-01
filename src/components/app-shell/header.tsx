@@ -3,6 +3,7 @@ import {
   useLogout,
   useTranslate,
 } from "@refinedev/core";
+import { resolveNocoBaseSettingsUrl } from "@nocobase/portal-sdk/runtime";
 import {
   DropdownMenu,
   DropdownMenuItem,
@@ -25,7 +26,6 @@ import { LogOutIcon, SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Brand } from "@/components/app-shell/brand";
 import { extensionUserMenuItems } from "@/app/extensions";
-import { resolveNocoBaseSettingsUrl } from "@/providers/runtime-config";
 
 const pluginSettingsResource = {
   name: "plugin-settings",

@@ -14,8 +14,8 @@ import type { TreeMenuItem } from "@refinedev/core";
 import {
   buildRouteResources,
   defineAppRoutes,
-  RouteAccessGuard,
-} from "@/app/route-runtime";
+} from "@nocobase/portal-sdk/routing";
+import { RouteAccessGuard } from "@/app/route-access-guard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CanAccess } from "@/components/access-control/can-access";
@@ -31,7 +31,7 @@ import {
   filterMenuItemsByAcl,
   type RoleConstraint,
   useAclState,
-} from "@/lib/nocobase/acl";
+} from "@nocobase/portal-sdk/acl";
 import { AclField, AclPage, AclRegion } from "../components/acl-boundary";
 import { AclPreviewProvider } from "./acl-preview-provider";
 import { AclBoundaryApi } from "./boundary-api";

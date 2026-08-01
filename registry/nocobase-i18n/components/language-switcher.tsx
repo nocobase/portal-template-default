@@ -1,4 +1,5 @@
 import { useGetLocale, useSetLocale, useTranslate } from "@refinedev/core";
+import { useEnabledLocales } from "@nocobase/portal-sdk/i18n";
 import { Languages, Loader2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
@@ -18,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useEnabledLocales } from "@/providers/i18n";
 
 export type LanguageSwitcherProps = {
   className?: string;

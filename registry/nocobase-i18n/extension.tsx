@@ -1,4 +1,4 @@
-import type { AppExtension } from "@/app/extensions";
+import type { AppExtension } from "@nocobase/portal-sdk/extensions";
 import { LoadingState } from "@/components/app-shell/loading-state";
 import { Languages } from "lucide-react";
 import { lazy, Suspense } from "react";

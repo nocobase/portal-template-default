@@ -1,6 +1,7 @@
+import type { AuthenticatorAdapter } from "@nocobase/portal-sdk/auth";
+
 import { extensionAuthAdapters } from "@/app/extensions";
 import { BasicSignInForm } from "@/components/auth/basic-sign-in-form";
-import type { AuthenticatorAdapter } from "@/components/auth/types";
 
 const coreAuthAdapters: AuthenticatorAdapter[] = [
   {

@@ -5,7 +5,7 @@ import {
   type AclActionParams,
   type AclState,
   type AclStore,
-} from "@/lib/nocobase/acl";
+} from "@nocobase/portal-sdk/acl";
 
 type PreviewRecordPermission = {
   dataSourceKey?: string;

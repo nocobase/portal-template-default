@@ -27,7 +27,7 @@ After installation, import the components from `@/extensions/nocobase-mail`.
 - Message detail resolves authenticated `cid:` inline images and keeps those images out of the
   regular attachment list.
 
-The mail API client (`mailApi`) uses the Starter's built-in `API_URL`, `getNocoBaseHeaders`, and `NOCOBASE_TOKEN_KEY` from `@/providers/constants`. A compatible NocoBase backend with the mail plugin enabled is required.
+The mail API client (`mailApi`) uses `nocobaseClient` from `@nocobase/portal-sdk/client`. A compatible NocoBase backend with the mail plugin enabled is required.
 
 ## Send modes
 

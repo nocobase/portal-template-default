@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@nocobase/portal-sdk':
+        specifier: workspace:^
+        version: link:sdk
     devDependencies:
       '@ai-sdk/react':
         specifier: 2.0.0
@@ -149,9 +153,6 @@ importers:
       globals:
         specifier: ^16.0.0
         version: 16.5.0
-      i18next:
-        specifier: ^25.3.2
-        version: 25.10.10(typescript@5.9.3)
       ignore:
         specifier: ^7.0.6
         version: 7.0.6
@@ -221,6 +222,46 @@ importers:
       zod:
         specifier: ^3.25.76
         version: 3.25.76
+
+  sdk:
+    dependencies:
+      '@refinedev/core':
+        specifier: ^5.0.0
+        version: 5.0.12(@tanstack/react-query@5.101.4(react@19.1.0))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.101.4(react@19.1.0)
+      i18next:
+        specifier: ^25.3.2
+        version: 25.10.10(typescript@5.9.3)
+      ignore:
+        specifier: ^7.0.6
+        version: 7.0.6
+      react:
+        specifier: ^19.0.0
+        version: 19.1.0
+      react-router:
+        specifier: ^7.0.0
+        version: 7.18.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      semver:
+        specifier: ^7.8.5
+        version: 7.8.5
+      vite:
+        specifier: '>=6.0.0 <8.0.0'
+        version: 6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19.1.0
+        version: 19.2.17
+      '@types/semver':
+        specifier: ^7.7.0
+        version: 7.7.1
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
 
 packages:
 
@@ -6709,7 +6750,7 @@ snapshots:
       json-schema-typed: 7.0.3
       onetime: 5.1.2
       pkg-up: 3.1.0
-      semver: 7.5.2
+      semver: 7.8.5
 
   content-disposition@0.5.4:
     dependencies:

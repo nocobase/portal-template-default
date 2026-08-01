@@ -40,7 +40,7 @@ try {
     "/registry/nocobase-ai/providers/sub-agent-stream.ts"
   );
   const { NocoBaseClient } = await server.ssrLoadModule(
-    "/src/lib/nocobase/client.ts"
+    "@nocobase/portal-sdk/client"
   );
 
   {

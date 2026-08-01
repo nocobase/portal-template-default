@@ -7,6 +7,10 @@ on:
         description: Exact version (leave blank to increment patch)
         required: false
         type: string
+      sdk_version:
+        description: Exact Portal SDK version (leave blank to reuse it, or publish it when new)
+        required: false
+        type: string
       tag:
         description: npm distribution tag
         required: true
@@ -62,6 +66,7 @@ jobs:
         env:
           REF_TYPE: ${{ github.ref_type }}
           REQUESTED_VERSION: ${{ inputs.version }}
+          REQUESTED_SDK_VERSION: ${{ inputs.sdk_version }}
         run: |
           if [ "$REF_TYPE" != "branch" ]; then
             echo "Run this workflow from a branch, not a tag."
@@ -75,32 +80,147 @@ jobs:
           fi
 
           VERSION=$(node -p "require('./package.json').version")
+          node -e "const fs=require('fs');const pkg=require('./package.json');pkg.nocobase.defaultTemplateVersion=pkg.version;fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n')"
+
+          CURRENT_SDK_VERSION=$(node -p "require('./sdk/package.json').version")
+          if [ -n "$REQUESTED_SDK_VERSION" ] && [ "$REQUESTED_SDK_VERSION" != "$CURRENT_SDK_VERSION" ]; then
+            npm version "$REQUESTED_SDK_VERSION" --no-git-tag-version --prefix sdk
+          fi
+          SDK_VERSION=$(node -p "require('./sdk/package.json').version")
+
           if git rev-parse --verify --quiet "refs/tags/v${VERSION}"; then
             echo "Git tag v${VERSION} already exists."
             exit 1
           fi
+
+          SDK_EXISTS=false
+          if npm view "@nocobase/portal-sdk@${SDK_VERSION}" version >/dev/null 2>&1; then
+            SDK_EXISTS=true
+          fi
+
+          TEMPLATE_EXISTS=false
+          if npm view "@nocobase/portal-template-default@${VERSION}" version >/dev/null 2>&1; then
+            TEMPLATE_EXISTS=true
+          fi
+
+          SDK_TAG="portal-sdk-v${SDK_VERSION}"
+          SDK_TAG_EXISTS=false
+          SDK_MATCHES_TAG=false
+          if git rev-parse --verify --quiet "refs/tags/${SDK_TAG}"; then
+            SDK_TAG_EXISTS=true
+            if git diff --quiet "${SDK_TAG}..HEAD" -- sdk; then
+              SDK_MATCHES_TAG=true
+            fi
+          fi
+
+          if [ "$SDK_EXISTS" = false ] && [ "$SDK_TAG_EXISTS" = true ]; then
+            echo "Git tag ${SDK_TAG} exists, but @nocobase/portal-sdk@${SDK_VERSION} is not published."
+            exit 1
+          fi
+
+          PUBLISH_SDK=false
+          VERIFY_SDK=false
+          if [ "$SDK_EXISTS" = false ]; then
+            PUBLISH_SDK=true
+          elif [ "$SDK_MATCHES_TAG" = false ]; then
+            VERIFY_SDK=true
+          fi
+
+          TAG_SDK=false
+          if [ "$SDK_TAG_EXISTS" = false ]; then
+            TAG_SDK=true
+          fi
+
+          PUBLISH_TEMPLATE=true
+          VERIFY_TEMPLATE=false
+          if [ "$TEMPLATE_EXISTS" = true ]; then
+            PUBLISH_TEMPLATE=false
+            VERIFY_TEMPLATE=true
+          fi
+
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "sdk_version=${SDK_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "publish_sdk=${PUBLISH_SDK}" >> "$GITHUB_OUTPUT"
+          echo "verify_sdk=${VERIFY_SDK}" >> "$GITHUB_OUTPUT"
+          echo "tag_sdk=${TAG_SDK}" >> "$GITHUB_OUTPUT"
+          echo "publish_template=${PUBLISH_TEMPLATE}" >> "$GITHUB_OUTPUT"
+          echo "verify_template=${VERIFY_TEMPLATE}" >> "$GITHUB_OUTPUT"
 
       - name: Materialize default extensions
         run: node scripts/registry.mjs materialize
 
-      - name: Inspect package
-        run: npm pack --dry-run
-
       - name: Build
         run: pnpm build
 
-      - name: Publish package
-        run: npm publish --access public --tag "${{ inputs.tag }}" --loglevel verbose
+      - name: Test SDK and integrations
+        run: |
+          pnpm --dir sdk test
+          node tests/auth-session-regression.mjs
+          node registry/nocobase-acl/tests/acl-regression.mjs
+          node registry/nocobase-i18n/tests/i18n-regression.mjs
+          node --experimental-strip-types --test tests/file-upload-regression.test.ts
+          node registry/nocobase-mail/tests/mail-regression.mjs
+          node registry/nocobase-route-surfaces/tests/route-surfaces-regression.mjs
+
+      - name: Pack SDK and template
+        run: |
+          mkdir -p "$RUNNER_TEMP/portal-sdk-local" "$RUNNER_TEMP/portal-template-local"
+          pnpm --dir sdk pack --pack-destination "$RUNNER_TEMP/portal-sdk-local"
+          pnpm pack --pack-destination "$RUNNER_TEMP/portal-template-local"
+
+      - name: Verify existing SDK package
+        if: steps.release.outputs.verify_sdk == 'true'
+        env:
+          SDK_VERSION: ${{ steps.release.outputs.sdk_version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/portal-sdk-remote" "$RUNNER_TEMP/portal-sdk-local-unpacked" "$RUNNER_TEMP/portal-sdk-remote-unpacked"
+          npm pack "@nocobase/portal-sdk@${SDK_VERSION}" --pack-destination "$RUNNER_TEMP/portal-sdk-remote"
+          tar -xzf "$RUNNER_TEMP/portal-sdk-local/"*.tgz -C "$RUNNER_TEMP/portal-sdk-local-unpacked"
+          tar -xzf "$RUNNER_TEMP/portal-sdk-remote/"*.tgz -C "$RUNNER_TEMP/portal-sdk-remote-unpacked"
+          if ! diff -ru "$RUNNER_TEMP/portal-sdk-remote-unpacked/package" "$RUNNER_TEMP/portal-sdk-local-unpacked/package"; then
+            echo "Published @nocobase/portal-sdk@${SDK_VERSION} differs from the current SDK package."
+            echo "Rerun with a new sdk_version."
+            exit 1
+          fi
+
+      - name: Verify existing template package
+        if: steps.release.outputs.verify_template == 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/portal-template-remote" "$RUNNER_TEMP/portal-template-local-unpacked" "$RUNNER_TEMP/portal-template-remote-unpacked"
+          npm pack "@nocobase/portal-template-default@${VERSION}" --pack-destination "$RUNNER_TEMP/portal-template-remote"
+          tar -xzf "$RUNNER_TEMP/portal-template-local/"*.tgz -C "$RUNNER_TEMP/portal-template-local-unpacked"
+          tar -xzf "$RUNNER_TEMP/portal-template-remote/"*.tgz -C "$RUNNER_TEMP/portal-template-remote-unpacked"
+          if ! diff -ru "$RUNNER_TEMP/portal-template-remote-unpacked/package" "$RUNNER_TEMP/portal-template-local-unpacked/package"; then
+            echo "Published @nocobase/portal-template-default@${VERSION} differs from the current template package."
+            echo "Rerun with a new template version."
+            exit 1
+          fi
+
+      - name: Publish SDK
+        if: steps.release.outputs.publish_sdk == 'true'
+        run: pnpm --dir sdk publish --no-git-checks --access public --tag "${{ inputs.tag }}"
+
+      - name: Publish template
+        if: steps.release.outputs.publish_template == 'true'
+        run: pnpm publish --no-git-checks --access public --tag "${{ inputs.tag }}"
 
       - name: Commit and tag release
         env:
           TARGET_BRANCH: ${{ github.ref_name }}
           VERSION: ${{ steps.release.outputs.version }}
+          SDK_VERSION: ${{ steps.release.outputs.sdk_version }}
+          TAG_SDK: ${{ steps.release.outputs.tag_sdk }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json
-          git commit -m "chore(release): v${VERSION}"
+          git add package.json sdk/package.json
+          git commit -m "chore(release): portal template v${VERSION}"
           git tag -a "v${VERSION}" -m "v${VERSION}"
-          git push --atomic origin "HEAD:refs/heads/${TARGET_BRANCH}" "refs/tags/v${VERSION}"
+          PUSH_REFS=("HEAD:refs/heads/${TARGET_BRANCH}" "refs/tags/v${VERSION}")
+          if [ "$TAG_SDK" = true ]; then
+            git tag -a "portal-sdk-v${SDK_VERSION}" -m "@nocobase/portal-sdk@${SDK_VERSION}"
+            PUSH_REFS+=("refs/tags/portal-sdk-v${SDK_VERSION}")
+          fi
+          git push --atomic origin "${PUSH_REFS[@]}"

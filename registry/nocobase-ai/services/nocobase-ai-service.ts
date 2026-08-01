@@ -1,4 +1,4 @@
-import { nocobaseClient, type NocoBaseClient } from "@/lib/nocobase/client";
+import { nocobaseClient, type NocoBaseClient } from "@nocobase/portal-sdk/client";
 import type {
   AIChatMessage,
   AIConversation,

@@ -2,7 +2,7 @@ import type {
   FileUploadFieldValue,
   SerializedFileFieldValue,
 } from "@/extensions/nocobase-file-upload";
-import type { Role } from "@/lib/nocobase/acl";
+import type { Role } from "@nocobase/portal-sdk/acl";
 
 export type UserRecord = {
   id: string | number;

@@ -1,4 +1,4 @@
-import type { AppExtension } from "@/app/extensions";
+import type { AppExtension } from "@nocobase/portal-sdk/extensions";
 import { Blocks, PanelsTopLeft, ShieldCheck } from "lucide-react";
 import { lazy } from "react";
 import { Outlet, Route } from "react-router";

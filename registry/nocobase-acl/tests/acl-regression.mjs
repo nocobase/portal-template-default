@@ -13,20 +13,20 @@ try {
     getEffectiveRoles,
     getPermissionsForDataSource,
     resolveActionPermission,
-  } = await server.ssrLoadModule("/src/lib/nocobase/acl/evaluator.ts");
+  } = await server.ssrLoadModule("/sdk/src/acl/evaluator.ts");
   const { resolveAclDataSourceKey } = await server.ssrLoadModule(
-    "/src/lib/nocobase/acl/data-source.ts"
+    "/sdk/src/acl/data-source.ts"
   );
   const { filterMenuItemsByAcl, findFirstAccessibleRoute } =
-    await server.ssrLoadModule("/src/lib/nocobase/acl/menu.ts");
+    await server.ssrLoadModule("/sdk/src/acl/menu.ts");
   const { buildRouteResources, defineAppRoutes } = await server.ssrLoadModule(
-    "/src/app/route-runtime.ts"
+    "/sdk/src/routing/index.ts"
   );
   const {
     clearRecordPermissions,
     getRecordActionPermission,
     updateRecordPermissions,
-  } = await server.ssrLoadModule("/src/lib/nocobase/acl/record-permissions.ts");
+  } = await server.ssrLoadModule("/sdk/src/acl/record-permissions.ts");
   const { RoleSwitcher } = await server.ssrLoadModule(
     "@/extensions/nocobase-acl/components/role-switcher.tsx"
   );

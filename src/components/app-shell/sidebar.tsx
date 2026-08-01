@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { filterMenuItemsByAcl, useAclState } from "@nocobase/portal-sdk/acl";
 import {
   useMenu,
   useLink,
@@ -31,7 +32,6 @@ import { Button } from "@/components/ui/button";
 import { ChevronRight, ListIcon, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Brand } from "@/components/app-shell/brand";
-import { filterMenuItemsByAcl, useAclState } from "@/lib/nocobase/acl";
 import { getResourceLabel } from "@/components/resources/resource-label";
 
 export function Sidebar() {

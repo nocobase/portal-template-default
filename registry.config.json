@@ -8,6 +8,7 @@
       "title": "NocoBase Route Surfaces",
       "description": "URL-backed drawer, dialog, and page containers with nested drawer stacking and a shared close lifecycle.",
       "dependencies": [
+        "@nocobase/portal-sdk@^1.0.0",
         "@base-ui/react@^1.6.0",
         "@refinedev/core@^5.0.8",
         "lucide-react@^0.487.0",
@@ -36,6 +37,7 @@
       "title": "NocoBase Users Example",
       "description": "Complete Users resource example with ACL-aware list, filters, route-backed drawers, nested role details, and optional AI page context.",
       "dependencies": [
+        "@nocobase/portal-sdk@^1.0.0",
         "@refinedev/core@^5.0.8",
         "@refinedev/react-hook-form@^5.0.0",
         "@refinedev/react-table@^6.0.0",
@@ -66,8 +68,9 @@
       "name": "i18n",
       "type": "registry:block",
       "title": "NocoBase i18n",
-      "description": "Optional NocoBase server-language resources, user preference persistence, reusable language controls, and an integrated showcase for the Starter's built-in i18n runtime.",
+      "description": "Optional NocoBase server-language resources, user preference persistence, reusable language controls, and an integrated showcase for the Portal SDK i18n runtime.",
       "dependencies": [
+        "@nocobase/portal-sdk@^1.0.0",
         "@refinedev/core@^5.0.8",
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
@@ -82,7 +85,7 @@
         "select",
         "textarea"
       ],
-      "docs": "Requires a compatible NocoBase Starter with the built-in i18n provider, shared System Settings bootstrap, and AppExtension Provider/UserMenuItems host fields. The Registry reuses systemSettings:get data and calls app:getLang only for registered dynamic namespaces such as lm-collections.",
+      "docs": "Requires a compatible Portal SDK i18n and System Settings runtime plus the template's AppExtension Provider/UserMenuItems host fields. The Registry reuses cached systemSettings:get data and calls app:getLang only for registered dynamic namespaces such as lm-collections.",
       "source": {
         "root": "registry/nocobase-i18n",
         "target": "src/extensions/nocobase-i18n",
@@ -95,6 +98,7 @@
       "title": "NocoBase OIDC Authentication",
       "description": "Dynamic OIDC sign-in adapter, headless sign-in hook, and integrated component demo.",
       "dependencies": [
+        "@nocobase/portal-sdk@^1.0.0",
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
       ],
@@ -111,6 +115,7 @@
       "title": "NocoBase SAML Authentication",
       "description": "Dynamic SAML sign-in adapter, automatic redirect provider, headless hook, and integrated demo.",
       "dependencies": [
+        "@nocobase/portal-sdk@^1.0.0",
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
       ],
@@ -127,6 +132,7 @@
       "title": "NocoBase CAS Authentication",
       "description": "Dynamic CAS sign-in adapter, headless sign-in hook, and integrated component demo.",
       "dependencies": [
+        "@nocobase/portal-sdk@^1.0.0",
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
       ],
@@ -142,6 +148,7 @@
       "type": "registry:block",
       "title": "NocoBase LDAP Authentication",
       "description": "Dynamic LDAP account/password form, headless sign-in hook, and integrated component demo.",
+      "dependencies": ["@nocobase/portal-sdk@^1.0.0"],
       "docs": "Requires the Starter authentication runtime and an enabled LDAP authenticator in NocoBase.",
       "source": {
         "root": "registry/nocobase-auth-ldap",
@@ -154,6 +161,7 @@
       "type": "registry:block",
       "title": "NocoBase SMS Authentication",
       "description": "Dynamic SMS verification-code form, delivery countdown, headless hook, and integrated demo.",
+      "dependencies": ["@nocobase/portal-sdk@^1.0.0"],
       "docs": "Requires the Starter authentication runtime, an enabled SMS authenticator, and a configured public SMS verifier in NocoBase.",
       "source": {
         "root": "registry/nocobase-auth-sms",
@@ -167,6 +175,7 @@
       "title": "NocoBase WeCom Authentication",
       "description": "Dynamic WeCom sign-in adapter, browser automatic login, headless hook, and integrated demo.",
       "dependencies": [
+        "@nocobase/portal-sdk@^1.0.0",
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
       ],
@@ -183,6 +192,7 @@
       "title": "NocoBase DingTalk Authentication",
       "description": "Dynamic DingTalk sign-in adapter, automatic login, headless hook, and integrated demo.",
       "dependencies": [
+        "@nocobase/portal-sdk@^1.0.0",
         "dingtalk-jsapi@3.1.1",
         "lucide-react@^0.487.0",
         "react-router@^7.0.2"
@@ -200,6 +210,7 @@
       "title": "NocoBase AI Runtime",
       "description": "NocoBase AI services, providers, transports, controllers, and avatars.",
       "dependencies": [
+        "@nocobase/portal-sdk@^1.0.0",
         "@ai-sdk/react@2.0.0",
         "ai@5.0.0",
         "@dicebear/core@^9.4.3",
@@ -266,7 +277,11 @@
       "type": "registry:block",
       "title": "NocoBase AI Components and Demo",
       "description": "Complete NocoBase AI component runtime with application resources, routes, and component showcase pages.",
-      "dependencies": ["@refinedev/core@^5.0.8", "react-router@^7.0.2"],
+      "dependencies": [
+        "@nocobase/portal-sdk@^1.0.0",
+        "@refinedev/core@^5.0.8",
+        "react-router@^7.0.2"
+      ],
       "registryDependencies": [
         "@nocobase/ai-chat",
         "@nocobase/ai-react-hook-form",
@@ -293,6 +308,7 @@
       "title": "NocoBase File Upload",
       "description": "Controlled shadcn/ui file upload field for NocoBase file collections.",
       "dependencies": [
+        "@nocobase/portal-sdk@^1.0.0",
         "@tanstack/react-query@^5.81.5",
         "lucide-react@^0.487.0"
       ],
@@ -302,7 +318,7 @@
         "dialog",
         "tooltip"
       ],
-      "docs": "Requires the Starter NocoBase client and a field targeting a file-template collection.",
+      "docs": "Requires a compatible Portal SDK client and a field targeting a file-template collection.",
       "source": {
         "root": "registry/nocobase-file-upload",
         "target": "src/extensions/nocobase-file-upload",
@@ -315,6 +331,7 @@
       "title": "NocoBase Mail",
       "description": "Mail inbox, compose, detail, and label components backed by the NocoBase mail API.",
       "dependencies": [
+        "@nocobase/portal-sdk@^1.0.0",
         "@refinedev/core@^5.0.8",
         "@tiptap/extension-link@^3.29.0",
         "@tiptap/extension-placeholder@^3.29.0",
@@ -346,7 +363,7 @@
         "textarea",
         "toggle"
       ],
-      "docs": "Requires a compatible NocoBase Starter with the mail plugin enabled. The mail API client uses the Starter's built-in API_URL, getNocoBaseHeaders, and NOCOBASE_TOKEN_KEY from @/providers/constants.",
+      "docs": "Requires a compatible Portal SDK and a NocoBase server with the mail plugin enabled. The mail API adapter uses the authenticated SDK client.",
       "source": {
         "root": "registry/nocobase-mail",
         "target": "src/extensions/nocobase-mail",
@@ -358,7 +375,11 @@
       "type": "registry:block",
       "title": "NocoBase ACL UI",
       "description": "Page, region, field, and role-switching components backed by the Starter's NocoBase accessControlProvider.",
-      "dependencies": ["@refinedev/core@^5.0.8", "lucide-react@^0.487.0"],
+      "dependencies": [
+        "@nocobase/portal-sdk@^1.0.0",
+        "@refinedev/core@^5.0.8",
+        "lucide-react@^0.487.0"
+      ],
       "registryDependencies": ["badge", "select"],
       "docs": "Requires a compatible NocoBase Starter with the built-in accessControlProvider and ACL store.",
       "source": {
@@ -372,7 +393,11 @@
       "type": "registry:block",
       "title": "NocoBase ACL Components and Demo",
       "description": "Complete ACL composition demo with live role switching, action matrix, multi-collection regions, and field permissions.",
-      "dependencies": ["@refinedev/core@^5.0.8", "react-router@^7.0.2"],
+      "dependencies": [
+        "@nocobase/portal-sdk@^1.0.0",
+        "@refinedev/core@^5.0.8",
+        "react-router@^7.0.2"
+      ],
       "registryDependencies": [
         "@nocobase/acl-ui",
         "button",

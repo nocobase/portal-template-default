@@ -1,9 +1,9 @@
 import { RotateCcw } from "lucide-react";
 import type { PropsWithChildren } from "react";
+import { useAclState, useAclStore } from "@nocobase/portal-sdk/acl";
 
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/app-shell/loading-state";
-import { useAclState, useAclStore } from "@/lib/nocobase/acl";
 
 export function AclGate({ children }: PropsWithChildren) {
   const store = useAclStore();

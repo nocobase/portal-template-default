@@ -7,7 +7,7 @@ import {
 import {
   parseTranslationExpression,
   type TranslationOptions,
-} from "@/lib/i18n";
+} from "@nocobase/portal-sdk/i18n";
 
 export type ResourceLabelForm = "plural" | "singular";
 

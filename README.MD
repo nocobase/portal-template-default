@@ -55,8 +55,16 @@ pnpm build:html
 Application pages and resources live under `src`. The included Users page is a
 working example based on the standard NocoBase `users` collection.
 
-Application translations live in `src/locales`. Shared UI components live in
+Application translations live in `src/locales`. Default locale, available
+locale labels, i18next options, and post-switch behavior remain customizable in
+`src/providers/i18n/runtime.ts`. Shared UI components live in
 `src/components/ui` and follow the shadcn Base UI conventions.
+
+Stable NocoBase runtime behavior is provided by `@nocobase/portal-sdk`.
+The template records its inherited base version in
+`nocobase.defaultTemplateVersion`; SDK installation, development, and builds
+stop with an actionable error when that version is outside the SDK's supported
+range. Application composition and visual source remain owned by this project.
 
 ## Extensions
 
@@ -73,6 +81,11 @@ be installed from the `@nocobase` Registry configured in `components.json`.
 After installation, the generated source can be customized and committed with
 the application.
 
+Registry implementations import runtime APIs from documented
+`@nocobase/portal-sdk` subpaths and continue to use `@/components` for
+application-owned visual composition. Each Registry item declares the minimum
+compatible SDK version in `registry.config.json`.
+
 In this Registry source repository, canonical extension source lives in
 `registry` and is loaded directly by `pnpm dev` and `pnpm build`. The published
 npm template contains the default extensions under `src/extensions` instead.
@@ -87,13 +100,22 @@ Customize `src/pages/login/index.tsx` to replace the whole login page, or use
 `DefaultSignInPage` to keep dynamic authentication while overriding individual
 authenticator UI.
 
-## Tests
+## Source repository checks
 
 ```bash
-pnpm test:auth
-pnpm test:acl
-pnpm test:i18n
+pnpm --dir sdk test
+node tests/auth-session-regression.mjs
+node registry/nocobase-acl/tests/acl-regression.mjs
+node registry/nocobase-i18n/tests/i18n-regression.mjs
+node --experimental-strip-types --test tests/file-upload-regression.test.ts
+node registry/nocobase-mail/tests/mail-regression.mjs
+node registry/nocobase-route-surfaces/tests/route-surfaces-regression.mjs
 ```
+
+Registry source checks are maintainer commands for this source repository; the
+published template contains materialized extensions instead of `registry/`.
+SDK breaking-change releases and project upgrade steps are documented in the
+[Portal SDK migration guide](https://github.com/nocobase/portal-template-default/blob/main/sdk/MIGRATION.md).
 
 ## Learn more
 

@@ -12,4 +12,7 @@ registry.config.json
 registry.json
 public/r/
 scripts/registry.mjs
+sdk/
+tests/
+.github/
 !.gitignore

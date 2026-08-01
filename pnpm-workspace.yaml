@@ -1,2 +1,6 @@
+packages:
+  - sdk
+
 allowBuilds:
+  '@nocobase/portal-sdk': true
   esbuild: true

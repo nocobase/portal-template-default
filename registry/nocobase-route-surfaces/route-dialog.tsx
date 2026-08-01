@@ -1,17 +1,15 @@
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { X } from "lucide-react";
 import { type ReactNode, useCallback, useContext } from "react";
-
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import {
   RouteOverlayDepthContext,
   RouteSurfaceContext,
-} from "./route-surface-context";
-import {
   type RouteSurfaceBeforeClose,
   useRouteSurfaceState,
-} from "./use-route-surface-state";
+} from "@nocobase/portal-sdk/routing";
+
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function RouteDialog({
   title,

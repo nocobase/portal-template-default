@@ -16,7 +16,7 @@ import {
   useAclState,
   type AclIdentity,
   type Role,
-} from "@/lib/nocobase/acl";
+} from "@nocobase/portal-sdk/acl";
 import { cn } from "@/lib/utils";
 import { getRoleOptions, resolveRoleTitle, UNION_ROLE } from "./role-options";
 

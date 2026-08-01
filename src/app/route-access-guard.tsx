@@ -1,8 +1,8 @@
 import type { PropsWithChildren, ReactNode } from "react";
+import type { RouteAccessConstraint } from "@nocobase/portal-sdk/acl";
 
 import { AccessDenied } from "@/components/access-control/access-denied";
 import { CanAccess } from "@/components/access-control/can-access";
-import type { RouteAccessConstraint } from "@/lib/nocobase/acl";
 
 export function RouteAccessGuard({
   access,

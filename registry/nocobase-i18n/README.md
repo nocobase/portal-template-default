@@ -3,10 +3,11 @@
 Optional NocoBase server-language integration and language controls for the
 NocoBase Admin Starter.
 
-The Starter owns the Refine i18n provider, local i18next runtime, application
-resources, locale selection, and the shared `systemSettings:get` bootstrap.
-This Registry reuses those foundations and adds only the NocoBase-specific
-remote capabilities:
+The Portal SDK owns the Refine i18n provider, i18next runtime, translation
+registration protocol, locale state, and shared `systemSettings:get` store.
+The application keeps its locale configuration and translation resources in
+template-owned source. This Registry adds the NocoBase-specific remote
+capabilities:
 
 - load registered dynamic namespaces from `app:getLang`;
 - persist a signed-in user's selected language through `users:updateLang`;
@@ -23,9 +24,9 @@ Application-owned React translations belong in `src/locales`, outside the
 installed Registry directory:
 
 ```ts
-import { registerLocaleResources } from "@/providers/i18n";
+import { registerTranslationResources } from "@nocobase/portal-sdk/i18n";
 
-registerLocaleResources("my-feature", {
+registerTranslationResources("my-feature", {
   "en-US": { title: "Orders" },
   "zh-CN": { title: "订单" },
 });
@@ -41,4 +42,4 @@ registerServerResourceNamespace("my-dynamic-namespace");
 
 Namespaces registered after startup are loaded incrementally. Existing exact
 NocoBase expressions such as `{{t("Orders")}}` remain supported by the
-Starter's translation compatibility helper.
+Portal SDK's translation compatibility helper.

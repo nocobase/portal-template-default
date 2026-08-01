@@ -1,4 +1,4 @@
-import type { AppExtension } from "@/app/extension";
+import type { AppExtension } from "@nocobase/portal-sdk/extensions";
 import {
   ListFilter,
   Mail,

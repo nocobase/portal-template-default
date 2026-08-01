@@ -1,6 +1,12 @@
 import { ArrowLeft, ArrowRight, Eye, Layers3, Pencil, Plus } from "lucide-react";
 import { useCallback, useRef } from "react";
 import {
+  buildRouteLocationHref,
+  createRouteSurfaceNavigationState,
+  resolveRouteSurfaceCloseTo,
+  useRouteSurfaceClose,
+} from "@nocobase/portal-sdk/routing";
+import {
   useLocation,
   useNavigate,
   useOutlet,
@@ -21,16 +27,10 @@ import {
   RouteDialog,
   RouteDrawer,
   RoutePage,
-  useRouteSurfaceClose,
 } from "../index";
 import { RouteSurfacePromptGenerator } from "./prompt-generator";
 import { ResourceActionGuide } from "./resource-action-guide";
 import { routeSurfaceScenarios } from "./scenarios";
-import {
-  buildRouteLocationHref,
-  createRouteSurfaceNavigationState,
-  resolveRouteSurfaceCloseTo,
-} from "./contextual-navigation";
 
 const routeSurfaceRoot = "/route-surfaces";
 

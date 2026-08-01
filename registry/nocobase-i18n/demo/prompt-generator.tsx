@@ -28,12 +28,12 @@ Application scene
 - Translate the complete visible user flow, including empty, loading, validation, and error states.
 
 Implementation contract
-- Use the Starter's @/providers/i18n runtime and the application's translation and locale hooks.
-- Put application-owned React messages in src/locales and register the app namespace through registerTranslationResources from @/lib/i18n.
-- Keep each Registry component's messages in its own namespace and register them with registerLocaleResources().
+- Use the documented @nocobase/portal-sdk/i18n runtime and the application's translation and locale hooks.
+- Put application-owned React messages in src/locales and register the app namespace through registerTranslationResources from @nocobase/portal-sdk/i18n.
+- Keep each Registry component's messages in its own namespace and register them with registerTranslationResources().
 - Do not place application messages inside src/extensions/nocobase-i18n/locales because installed Registry files may be refreshed independently.
 - Use the reusable LanguageSwitcher when the page needs an explicit language control; the signed-in user menu already includes one.
-- Reuse the Starter's shared system settings instead of requesting systemSettings:get again.
+- Reuse useSystemSettings from @nocobase/portal-sdk/system-settings instead of requesting systemSettings:get again.
 - Keep Starter and Registry UI resources local. Use app:getLang only for registered dynamic server namespaces such as lm-collections when the NocoBase i18n Registry is installed.
 - Let the shared NocoBase client send the selected locale through X-Locale.
 - Preserve compatibility when server metadata contains exact {{t("...")}} expressions.

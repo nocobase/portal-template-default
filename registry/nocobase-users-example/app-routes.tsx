@@ -1,6 +1,6 @@
 import { UsersRound } from "lucide-react";
 
-import { defineAppRoutes } from "@/app/route-runtime";
+import { defineAppRoutes } from "@nocobase/portal-sdk/routing";
 import { AccessDenied } from "@/components/access-control/access-denied";
 import { CanAccess } from "@/components/access-control/can-access";
 import { UserCreate } from "./create";

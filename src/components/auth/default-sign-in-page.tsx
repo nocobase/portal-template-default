@@ -1,6 +1,7 @@
+import type { RenderAuthenticator } from "@nocobase/portal-sdk/auth";
+
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { DynamicSignIn } from "@/components/auth/dynamic-sign-in";
-import type { RenderAuthenticator } from "@/components/auth/types";
 
 type DefaultSignInPageProps = {
   renderAuthenticator?: RenderAuthenticator;

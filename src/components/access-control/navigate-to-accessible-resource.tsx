@@ -1,11 +1,11 @@
 import { useMenu } from "@refinedev/core";
-import { Navigate } from "react-router";
-
 import {
   filterMenuItemsByAcl,
   findFirstAccessibleRoute,
   useAclState,
-} from "@/lib/nocobase/acl";
+} from "@nocobase/portal-sdk/acl";
+import { Navigate } from "react-router";
+
 import { AccessDenied } from "./access-denied";
 
 export function NavigateToAccessibleResource() {

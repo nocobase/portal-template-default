@@ -114,7 +114,7 @@ try {
     "/registry/nocobase-mail/components/mail-api.ts"
   );
   const { nocobaseClient } = await server.ssrLoadModule(
-    "/src/lib/nocobase/client.ts"
+    "@nocobase/portal-sdk/client"
   );
   const { default: mailExtension } = await server.ssrLoadModule(
     "/registry/nocobase-mail/extension.tsx"
