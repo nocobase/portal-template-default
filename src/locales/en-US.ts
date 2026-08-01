@@ -11,6 +11,11 @@ export const starter = {
   "pages.error.title": "Page not found.",
   "pages.error.description": "The page you're looking for does not exist.",
   "pages.error.backHome": "Back to homepage",
+  "pages.renderError.title": "Unable to display this page",
+  "pages.renderError.description":
+    "An unexpected error occurred while rendering the page. Reload it to try again, or return to the homepage.",
+  "pages.renderError.reload": "Reload page",
+  "pages.renderError.backHome": "Back to homepage",
   "table.filter.text.placeholder": "Filter by...",
   "table.filter.numeric.placeholder": "Filter by...",
   "table.filter.combobox.placeholder": "Select...",

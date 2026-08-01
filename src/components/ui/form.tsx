@@ -141,10 +141,15 @@ function FormLabel({
   );
 }
 
-function FormControl({
-  render,
-  ...props
-}: useRender.ComponentProps<"div">) {
+type FormControlProps = Omit<
+  useRender.ComponentProps<"div">,
+  "children" | "render"
+> & {
+  children?: never;
+  render: NonNullable<useRender.ComponentProps<"div">["render"]>;
+};
+
+function FormControl({ render, ...props }: FormControlProps) {
   const { error, formItemId, formDescriptionId, formMessageId } =
     useFormField();
 

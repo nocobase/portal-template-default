@@ -11,6 +11,11 @@ export const starter = {
   "pages.error.title": "页面不存在",
   "pages.error.description": "你访问的页面不存在。",
   "pages.error.backHome": "返回首页",
+  "pages.renderError.title": "无法显示此页面",
+  "pages.renderError.description":
+    "渲染页面时发生意外错误。请重新加载页面，或返回首页。",
+  "pages.renderError.reload": "重新加载页面",
+  "pages.renderError.backHome": "返回首页",
   "table.filter.text.placeholder": "输入筛选内容...",
   "table.filter.numeric.placeholder": "输入筛选数值...",
   "table.filter.combobox.placeholder": "请选择...",

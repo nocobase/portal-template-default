@@ -14,6 +14,7 @@ import { dataProvider } from "@nocobase/portal-sdk/data";
 import { i18nProvider } from "@nocobase/portal-sdk/i18n";
 import { getPortalBase } from "@nocobase/portal-sdk/runtime";
 import { DocumentTitleHandler } from "./components/app-shell/document-title-handler";
+import { PageErrorBoundary } from "./components/app-shell/page-error-boundary";
 import { useNotificationProvider } from "./components/notifications/use-notification-provider";
 import { Toaster } from "./components/notifications/toaster";
 import { ThemeProvider } from "./components/theme/theme-provider";
@@ -35,6 +36,7 @@ const appResources = [...configuredResources].sort(
 );
 
 const basename = getPortalBase().replace(/\/+$/, "");
+const homeHref = `${basename}/`;
 
 function App() {
   return (
@@ -62,7 +64,9 @@ function App() {
                     },
                   }}
                 >
-                  <AppRoutes />
+                  <PageErrorBoundary homeHref={homeHref}>
+                    <AppRoutes />
+                  </PageErrorBoundary>
 
                   <Toaster />
                   <UnsavedChangesNotifier />

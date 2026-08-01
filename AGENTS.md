@@ -12,6 +12,10 @@ Treat `src/components/ui` as the project's shadcn/ui foundation. When applicatio
 
 Components copied from shadcn/ui are owned and maintained by this project; upstream changes are not applied automatically. If a base component must be changed or updated, compare it with the upstream version first, then selectively merge bug fixes and improvements while preserving intentional local behavior. Do not blindly overwrite customized components.
 
+### Compose form controls with `render`
+
+This template uses the Base UI variant of shadcn/ui. Always compose a form input through the required `FormControl` `render` prop, for example `<FormControl render={<Input {...field} />} />`. Never pass the input as `FormControl` children. Keep `FormControl` inside the corresponding `FormField` render subtree, normally within `FormItem`, so it can read the field context and attach validation and accessibility attributes to the rendered input.
+
 ## Define application routes once
 
 Put application-owned business routes in `src/routes.tsx` with `defineAppRoutes`. A route with a `resource` entry contributes its Refine resource and navigation item, while the same definition generates its React Router route. Mark create, edit, and show children with `resourceAction` so their paths populate the same Refine resource instead of being repeated. Use `access.roles` for route-level role constraints; nested routes inherit parent constraints, and the runtime applies the complete chain to both menu visibility and direct URL access. Do not repeat those roles in `resource.meta.acl` or a manually written route guard.
