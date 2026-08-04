@@ -2,6 +2,14 @@ import type { BaseKey, IResourceItem } from "@refinedev/core";
 
 export type RoleMode = "default" | "allow-use-union" | "only-use-union";
 
+export type PortalAccessDeniedData = {
+  portalName: string;
+  role?: string;
+  roles: string[];
+  roleMode?: RoleMode;
+  allowAnonymous?: boolean;
+};
+
 export type Role = {
   name: string;
   title?: string;
@@ -72,6 +80,7 @@ export type AclState =
       status: "error";
       permissions?: undefined;
       error: Error;
+      portalAccessDenied?: PortalAccessDeniedData;
     };
 
 type ResourceAclRule = {
