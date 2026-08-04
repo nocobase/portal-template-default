@@ -3,10 +3,15 @@
 Controlled shadcn/ui file upload and preview fields for NocoBase file-template
 collections.
 
+Installations using the Starter's extension host also get a development-only
+file manager at `/dev/files`. Its preview gallery uses public remote URLs and
+does not require `attachments:list`; successful uploads to NocoBase's built-in
+`attachments` collection are appended to the gallery for the current session.
+
 This registry item is generic. Do not hard-code `users.avatar`, `users.files`,
-or the default `files` collection in generated pages. A page should only use the
-component after it has confirmed that the business field is a relation to a
-file-template collection.
+or the built-in `attachments` collection in generated business pages. A page
+should only use the component after it has confirmed that the business field is
+a relation to a file-template collection.
 
 ## Descriptor
 
@@ -90,6 +95,9 @@ const payload = serializeFileFieldValues(values, fileDescriptors);
 // payload.documents is [{ id }, ...] because documents is belongsToMany.
 ```
 
+Set `showRemoveTooltip={false}` when an icon-only remove action should retain
+its accessible label without displaying a visual tooltip.
+
 When rendered inside this Starter's `FormField`, the upload field registers its
 validation controller automatically. React Hook Form checks that controller
 during normal field validation, so submitting while a file is pending,
@@ -128,8 +136,9 @@ import { FilePreviewField } from "@/extensions/nocobase-file-upload";
 ```
 
 Preview support includes images, PDF through the browser, text/JSON, audio,
-video, Office documents through Microsoft Office Online, and a download fallback
-for unsupported or active-content files such as HTML, XML, and SVG. Private
+video, GitHub-flavored Markdown through `react-markdown`, Office documents
+through Microsoft Office Online, and a download fallback for unsupported or
+active-content files such as HTML, XML, and SVG. Private
 Office files require `descriptor` so the component can request a temporary URL;
 the temporary URL still has to be reachable by the Office Online service.
 Preview and download flags are added only to relative or same-origin NocoBase

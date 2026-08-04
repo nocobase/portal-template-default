@@ -1,4 +1,4 @@
-import { FileAudio, FileText, FileVideo } from "lucide-react";
+import { FileAudio, FileVideo } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { getPreviewFileUrl } from "../file-url";
@@ -15,19 +15,6 @@ function PreviewLabel({
     <div className="flex items-center gap-2 border-b px-4 py-2 text-sm font-medium">
       {icon}
       {label}
-    </div>
-  );
-}
-
-export function IframePreviewer({ file, messages }: FilePreviewerProps) {
-  return (
-    <div className="flex h-full min-h-[420px] flex-col bg-background">
-      <PreviewLabel icon={<FileText className="size-4" />} label={messages.textTitle} />
-      <iframe
-        src={getPreviewFileUrl(file)}
-        title={messages.textTitle}
-        className="h-full min-h-[360px] w-full flex-1"
-      />
     </div>
   );
 }

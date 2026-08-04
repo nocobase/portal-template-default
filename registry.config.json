@@ -66,7 +66,6 @@
         "react-router@^7.0.2"
       ],
       "registryDependencies": [
-        "@nocobase/file-upload",
         "@nocobase/route-surfaces",
         "alert",
         "badge",
@@ -332,15 +331,19 @@
       "dependencies": [
         "@nocobase/portal-sdk@^2.0.0",
         "@tanstack/react-query@^5.81.5",
-        "lucide-react@^0.487.0"
+        "lucide-react@^0.487.0",
+        "react-markdown@^10.1.0",
+        "remark-gfm@^4.0.1"
       ],
       "registryDependencies": [
         "alert",
         "button",
+        "card",
         "dialog",
+        "input",
         "tooltip"
       ],
-      "docs": "Requires a compatible Portal SDK client and a field targeting a file-template collection.",
+      "docs": "Requires a compatible Portal SDK client and a field targeting a file-template collection. The extension contributes a development-only file manager at /dev/files; its public-URL preview gallery does not require attachments:list.",
       "source": {
         "root": "registry/nocobase-file-upload",
         "target": "src/extensions/nocobase-file-upload",
