@@ -25,6 +25,10 @@ try {
     new URL("../components/mail-inbox.tsx", import.meta.url),
     "utf8"
   );
+  const mailUnreadSource = await readFile(
+    new URL("../components/mail-unread.tsx", import.meta.url),
+    "utf8"
+  );
   const mailPagesSource = await readFile(
     new URL("../mail-pages.tsx", import.meta.url),
     "utf8"
@@ -94,6 +98,16 @@ try {
     /searchParams\.get\("starred"\) === "1"/,
     "keeps legacy starred filter URLs working"
   );
+  assert.match(
+    mailUnreadSource,
+    /if \(!pollingEnabled\) return;[\s\S]*?refresh\(\);/,
+    "keeps the unread provider idle until an indicator subscribes"
+  );
+  assert.match(
+    mailUnreadSource,
+    /export function MailUnreadIndicator[\s\S]*?const \{ count, subscribe \} = useMailUnread\(\);[\s\S]*?useEffect\(\(\) => subscribe\(\), \[subscribe\]\);/,
+    "starts unread polling from the mounted indicator"
+  );
 
   const { getMailSenderCandidates, resolveMailSender } =
     await server.ssrLoadModule(
@@ -118,6 +132,12 @@ try {
   );
   const { default: mailExtension } = await server.ssrLoadModule(
     "/registry/nocobase-mail/extension.tsx"
+  );
+  const { MailUnreadProvider } = await server.ssrLoadModule(
+    "/registry/nocobase-mail/components/mail-unread.tsx"
+  );
+  const { createMailUnreadPollingSubscription } = await server.ssrLoadModule(
+    "/registry/nocobase-mail/components/mail-unread-subscription.ts"
   );
   const { appendRecipient, currentToken, mergeRecipients } =
     await server.ssrLoadModule(
@@ -221,8 +241,43 @@ try {
     undefined,
     "does not add Mail examples to the application navigation"
   );
+  assert.equal(
+    mailExtension.Provider,
+    MailUnreadProvider,
+    "keeps the unread provider available to indicators anywhere in the application"
+  );
   assert.ok(mailExtension.dev?.routes, "provides Mail routes under /dev");
+  const mailRootRoute = mailExtension.dev?.routes?.find(
+    (route) => route.name === "development.mail"
+  );
+  assert.equal(
+    mailRootRoute?.element,
+    undefined,
+    "does not couple unread polling to the Mail development route"
+  );
+  const pollingTransitions = [];
+  const subscribeToPolling = createMailUnreadPollingSubscription((active) =>
+    pollingTransitions.push(active)
+  );
+  const unsubscribeFirst = subscribeToPolling();
+  const unsubscribeSecond = subscribeToPolling();
+  unsubscribeFirst();
+  unsubscribeSecond();
+  unsubscribeSecond();
+  assert.deepEqual(
+    pollingTransitions,
+    [true, false],
+    "shares one polling lifecycle across indicators and ignores duplicate cleanup"
+  );
   const mailResources = mailExtension.dev?.resources ?? [];
+  const mailResource = mailResources.find(
+    (resource) => resource.name === "mail"
+  );
+  assert.equal(
+    mailResource?.meta?.label,
+    "Mail manager",
+    "uses the configured Mail menu label"
+  );
   const scenarioResources = mailResources.filter((resource) =>
     resource.name.startsWith("mail-scenario-")
   );
