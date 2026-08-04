@@ -1,3 +1,7 @@
+import { translate } from "@nocobase/portal-sdk/i18n";
+
+import { NOCOBASE_ERROR_BOUNDARY_I18N_NAMESPACE } from "./locales";
+
 export type ErrorBoundaryLabels = {
   backHome: string;
   copied: string;
@@ -10,52 +14,48 @@ export type ErrorBoundaryLabels = {
   title: string;
 };
 
-const labelsByLocale: Record<"en-US" | "zh-CN", ErrorBoundaryLabels> = {
-  "en-US": {
-    title: "Something went wrong",
-    description:
-      "This part of the application could not be displayed. Copy the diagnostic information if you need help.",
-    details: "Diagnostic information",
-    copyDetails: "Copy diagnostic information",
-    copied: "Copied",
-    copyFailed: "Copy failed",
-    retry: "Try again",
-    reload: "Reload page",
-    backHome: "Back to homepage",
-  },
-  "zh-CN": {
-    title: "页面出现错误",
-    description: "此区域暂时无法显示。如需协助，请复制下面的诊断信息。",
-    details: "诊断信息",
-    copyDetails: "复制诊断信息",
-    copied: "已复制",
-    copyFailed: "复制失败",
-    retry: "重试",
-    reload: "刷新页面",
-    backHome: "返回首页",
-  },
+const defaults: Record<keyof ErrorBoundaryLabels, string> = {
+  title: "Something went wrong",
+  description:
+    "This part of the application could not be displayed. Copy the diagnostic information if you need help.",
+  details: "Diagnostic information",
+  copyDetails: "Copy diagnostic information",
+  copied: "Copied",
+  copyFailed: "Copy failed",
+  retry: "Try again",
+  reload: "Reload page",
+  backHome: "Back to homepage",
 };
 
-const resolveDefaultLocale = () => {
-  if (typeof document !== "undefined" && document.documentElement.lang) {
-    return document.documentElement.lang.toLowerCase().startsWith("zh")
-      ? "zh-CN"
-      : "en-US";
-  }
-  if (typeof navigator !== "undefined" && navigator.language) {
-    return navigator.language.toLowerCase().startsWith("zh")
-      ? "zh-CN"
-      : "en-US";
-  }
-  return "en-US";
+const keys: Record<keyof ErrorBoundaryLabels, string> = {
+  title: "boundary.title",
+  description: "boundary.description",
+  details: "actions.details",
+  copyDetails: "actions.copyDetails",
+  copied: "actions.copied",
+  copyFailed: "actions.copyFailed",
+  retry: "actions.retry",
+  reload: "actions.reload",
+  backHome: "actions.backHome",
 };
 
 export function getErrorBoundaryLabels(
-  locale = resolveDefaultLocale(),
+  locale?: string,
   overrides: Partial<ErrorBoundaryLabels> = {}
 ): ErrorBoundaryLabels {
-  const defaults = locale.toLowerCase().startsWith("zh")
-    ? labelsByLocale["zh-CN"]
-    : labelsByLocale["en-US"];
-  return { ...defaults, ...overrides };
+  const translated = Object.fromEntries(
+    (Object.keys(keys) as Array<keyof ErrorBoundaryLabels>).map((name) => [
+      name,
+      translate(
+        keys[name],
+        {
+          ns: NOCOBASE_ERROR_BOUNDARY_I18N_NAMESPACE,
+          ...(locale ? { lng: locale } : {}),
+        },
+        defaults[name]
+      ),
+    ])
+  ) as ErrorBoundaryLabels;
+
+  return { ...translated, ...overrides };
 }

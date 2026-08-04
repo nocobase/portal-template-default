@@ -8,8 +8,12 @@ import {
 } from "../acl/index.ts";
 import {
   getNocoBaseErrorMessage,
+  isNocoBaseServiceError,
   NocoBaseHttpError,
+  type NocoBaseRuntimeError,
+  normalizeNocoBaseRuntimeError,
 } from "../client/index.ts";
+import { portalRuntimeStore } from "../runtime/store.ts";
 
 type NocoBaseUser = {
   id: number | string;
@@ -36,6 +40,23 @@ type CurrentUserCache = {
 };
 
 const CURRENT_USER_CACHE_MS = 30_000;
+const STALE_ROLE_ERROR_CODES = new Set([
+  "ROLE_NOT_FOUND_ERR",
+  "ROLE_NOT_FOUND_FOR_USER",
+]);
+const NO_ROLE_ERROR_CODE = "USER_HAS_NO_ROLES_ERR";
+const AUTHENTICATION_ERROR_CODES = new Set([
+  "BLOCKED_TOKEN",
+  "EMPTY_TOKEN",
+  "EXPIRED_SESSION",
+  "EXPIRED_TOKEN",
+  "INVALID_TOKEN",
+  "NOT_EXIST_USER",
+  "SKIP_TOKEN_RENEW",
+  "TOKEN_INVALID",
+  "TOKEN_RENEW_FAILED",
+  "USER_LOCKED",
+]);
 let currentUserCache: CurrentUserCache | undefined;
 let currentUserRequest: Promise<NocoBaseUser> | undefined;
 
@@ -48,6 +69,15 @@ const clearCurrentUserCache = () => {
   currentUserCache = undefined;
   currentUserRequest = undefined;
 };
+
+const clearCurrentRole = () => {
+  nocobaseClient.setRole(null);
+  clearCurrentUserCache();
+  clearAcl();
+};
+
+const reportRuntimeError = (error: NocoBaseRuntimeError) =>
+  portalRuntimeStore.setError(error);
 
 const getCurrentUser = async (): Promise<NocoBaseUser> => {
   const token = nocobaseClient.getToken();
@@ -250,7 +280,46 @@ export const authProvider: AuthProvider = {
     try {
       await getCurrentUser();
       return { authenticated: true };
-    } catch {
+    } catch (error) {
+      let runtimeError = normalizeNocoBaseRuntimeError(error, "http");
+
+      if (
+        runtimeError.code &&
+        STALE_ROLE_ERROR_CODES.has(runtimeError.code)
+      ) {
+        clearCurrentRole();
+        try {
+          await getCurrentUser();
+          return { authenticated: true };
+        } catch (retryError) {
+          runtimeError = normalizeNocoBaseRuntimeError(retryError, "http");
+          if (
+            runtimeError.code === NO_ROLE_ERROR_CODE ||
+            isNocoBaseServiceError(runtimeError)
+          ) {
+            reportRuntimeError(runtimeError);
+            return { authenticated: true };
+          }
+        }
+      }
+
+      if (
+        runtimeError.code === NO_ROLE_ERROR_CODE ||
+        isNocoBaseServiceError(runtimeError)
+      ) {
+        reportRuntimeError(runtimeError);
+        return { authenticated: true };
+      }
+
+      if (
+        runtimeError.status !== 401 &&
+        (!runtimeError.code ||
+          !AUTHENTICATION_ERROR_CODES.has(runtimeError.code))
+      ) {
+        reportRuntimeError(runtimeError);
+        return { authenticated: true };
+      }
+
       nocobaseClient.clearAuthentication();
       clearCurrentUserCache();
       clearAcl();
@@ -286,11 +355,29 @@ export const authProvider: AuthProvider = {
   },
 
   onError: async (error) => {
-    const status =
-      (error as { status?: number; statusCode?: number }).status ??
-      (error as { status?: number; statusCode?: number }).statusCode;
+    const runtimeError = normalizeNocoBaseRuntimeError(error, "http");
+    if (
+      runtimeError.code &&
+      STALE_ROLE_ERROR_CODES.has(runtimeError.code)
+    ) {
+      clearCurrentRole();
+      reportRuntimeError(runtimeError);
+      return {};
+    }
 
-    if (status === 401) {
+    if (
+      runtimeError.code === NO_ROLE_ERROR_CODE ||
+      isNocoBaseServiceError(runtimeError)
+    ) {
+      reportRuntimeError(runtimeError);
+      return {};
+    }
+
+    if (
+      runtimeError.status === 401 ||
+      (runtimeError.code !== undefined &&
+        AUTHENTICATION_ERROR_CODES.has(runtimeError.code))
+    ) {
       nocobaseClient.clearAuthentication();
       clearCurrentUserCache();
       clearAcl();

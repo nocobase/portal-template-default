@@ -10,6 +10,10 @@ type AuthSessionRuntime = Window & {
 };
 
 type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+export type AuthSessionListener = (
+  field: AuthSessionField,
+  value?: string
+) => void;
 
 type AuthSessionOptions = {
   appName?: string;
@@ -69,6 +73,7 @@ export class AuthSession {
   readonly storageType: AuthStorageType;
   readonly shareToken: boolean;
   private readonly storage: StorageLike;
+  private readonly listeners = new Set<AuthSessionListener>();
 
   constructor(options: AuthSessionOptions = {}) {
     const runtime = getRuntimeWindow();
@@ -109,8 +114,18 @@ export class AuthSession {
 
   set(field: AuthSessionField, value?: string | null) {
     const key = this.getStorageKey(field);
+    const previous = this.get(field);
     if (value) this.storage.setItem(key, value);
     else this.storage.removeItem(key);
+    const next = this.get(field);
+    if (next !== previous) {
+      this.listeners.forEach((listener) => listener(field, next));
+    }
+  }
+
+  subscribe(listener: AuthSessionListener) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
   }
 
   clearAuthentication() {

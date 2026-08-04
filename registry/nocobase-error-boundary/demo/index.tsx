@@ -10,7 +10,11 @@ import {
 import { AlertTriangle, Boxes, LayoutPanelTop } from "lucide-react";
 import { useState } from "react";
 
-import { NocoBaseErrorBoundary, useErrorBoundary } from "../index";
+import {
+  NocoBaseErrorBoundary,
+  NocoBaseRuntimeStatus,
+  useErrorBoundary,
+} from "../index";
 
 function RenderFailure({ active, label }: { active: boolean; label: string }) {
   if (active) {
@@ -95,8 +99,83 @@ function RootBoundaryPreview({ onClose }: { onClose: () => void }) {
   );
 }
 
+const runtimeScenarios = [
+  {
+    code: "APP_PREPARING",
+    label: "Preparing",
+    message: "application main is preparing, please wait patiently",
+    status: 503,
+    maintaining: true,
+  },
+  {
+    code: "APP_COMMANDING",
+    label: "Upgrading",
+    message: "upgrading plugins...",
+    status: 503,
+    maintaining: true,
+    command: { name: "upgrade" },
+  },
+  {
+    code: "APP_STOPPED",
+    label: "Stopped",
+    message: "application main is stopped",
+    status: 503,
+    maintaining: true,
+  },
+  {
+    code: "APP_ERROR",
+    label: "App error",
+    message: "Failed to start the application",
+    status: 503,
+    maintaining: true,
+  },
+  {
+    code: "USER_HAS_NO_ROLES_ERR",
+    label: "No roles",
+    message: "The current user has no roles. Please try another account.",
+    status: 401,
+  },
+  {
+    code: undefined,
+    label: "Proxy 503",
+    message: "Service Unavailable",
+    status: 503,
+  },
+  {
+    code: undefined,
+    label: "Proxy 504",
+    message: "Gateway Timeout",
+    status: 504,
+  },
+] as const;
+
+function RuntimeStatusPreview({
+  index,
+  onClose,
+}: {
+  index: number;
+  onClose: () => void;
+}) {
+  const scenario = runtimeScenarios[index];
+  return (
+    <div className="fixed inset-0 z-50 overflow-auto bg-background">
+      <NocoBaseRuntimeStatus
+        error={{ ...scenario, source: "http" }}
+        onRetry={onClose}
+        onLogout={scenario.code === "USER_HAS_NO_ROLES_ERR" ? onClose : undefined}
+        context={{
+          route: "/dev/error-boundary",
+          templateName: __PORTAL_TEMPLATE_NAME__,
+          templateVersion: __PORTAL_TEMPLATE_VERSION__,
+        }}
+      />
+    </div>
+  );
+}
+
 export default function ErrorBoundaryDemo() {
   const [rootPreview, setRootPreview] = useState(false);
+  const [runtimePreview, setRuntimePreview] = useState<number>();
 
   return (
     <div className="space-y-6">
@@ -169,7 +248,34 @@ export default function ErrorBoundaryDemo() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <AlertTriangle className="size-4" /> Runtime status
+          </div>
+          <CardTitle>Gateway and account states</CardTitle>
+          <CardDescription>
+            Preview the original NocoBase error codes received over HTTP and WebSocket.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          {runtimeScenarios.map((scenario, index) => (
+            <Button
+              key={scenario.label}
+              type="button"
+              variant="outline"
+              onClick={() => setRuntimePreview(index)}
+            >
+              {scenario.label}
+            </Button>
+          ))}
+        </CardContent>
+      </Card>
+
       {rootPreview && <RootBoundaryPreview onClose={() => setRootPreview(false)} />}
+      {runtimePreview !== undefined && (
+        <RuntimeStatusPreview index={runtimePreview} onClose={() => setRuntimePreview(undefined)} />
+      )}
     </div>
   );
 }

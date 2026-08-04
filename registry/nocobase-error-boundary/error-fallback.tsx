@@ -9,6 +9,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  copyPortalDiagnostic,
   formatPortalErrorDiagnostic,
   normalizePortalError,
   redactPortalErrorText,
@@ -20,27 +21,6 @@ import {
 } from "./labels";
 
 export type ErrorBoundaryVariant = "page" | "region" | "root";
-
-const copyText = async (value: string) => {
-  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(value);
-    return;
-  }
-
-  if (typeof document === "undefined") {
-    throw new Error("Clipboard is not available");
-  }
-  const textarea = document.createElement("textarea");
-  textarea.value = value;
-  textarea.setAttribute("readonly", "");
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-  const copied = document.execCommand("copy");
-  textarea.remove();
-  if (!copied) throw new Error("Unable to copy diagnostic information");
-};
 
 const secondaryButtonClassName =
   "inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-sm font-medium text-foreground shadow-xs transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50";
@@ -157,7 +137,7 @@ export function NocoBaseErrorFallback({
               className={`${secondaryButtonClassName} mt-3`}
               onClick={async () => {
                 try {
-                  await copyText(diagnostic);
+                  await copyPortalDiagnostic(diagnostic);
                   setCopyStatus("copied");
                 } catch (copyError) {
                   setCopyStatus("failed");

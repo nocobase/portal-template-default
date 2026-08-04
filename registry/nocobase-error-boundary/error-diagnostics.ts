@@ -23,6 +23,22 @@ const readStringProperty = (value: object, property: string) => {
   }
 };
 
+const readDiagnosticProperty = (value: object, property: string) => {
+  try {
+    const candidate = (value as Record<string, unknown>)[property];
+    if (
+      typeof candidate === "string" ||
+      typeof candidate === "number" ||
+      typeof candidate === "boolean"
+    ) {
+      return String(candidate);
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+};
+
 export function normalizePortalError(error: unknown): NormalizedPortalError {
   if (error instanceof Error) {
     return {
@@ -71,6 +87,26 @@ export function redactPortalErrorText(value: string) {
     .replace(/(https?:\/\/[^\s?#]+)\?[^#\s]*/gi, "$1?[REDACTED]");
 }
 
+export async function copyPortalDiagnostic(value: string) {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+  if (typeof document === "undefined") {
+    throw new Error("Clipboard is not available");
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("Unable to copy diagnostic information");
+}
+
 const appendDiagnosticLine = (
   lines: string[],
   label: string,
@@ -100,6 +136,37 @@ export function formatPortalErrorDiagnostic(
         .filter(Boolean)
         .join(" ")
     );
+  }
+
+  if (error && typeof error === "object") {
+    appendDiagnosticLine(
+      lines,
+      "HTTP status",
+      readDiagnosticProperty(error, "status")
+    );
+    appendDiagnosticLine(
+      lines,
+      "NocoBase code",
+      readDiagnosticProperty(error, "code")
+    );
+    appendDiagnosticLine(
+      lines,
+      "Source",
+      readDiagnosticProperty(error, "source")
+    );
+    appendDiagnosticLine(
+      lines,
+      "Request ID",
+      readDiagnosticProperty(error, "requestId")
+    );
+    const command = (error as { command?: unknown }).command;
+    if (command && typeof command === "object") {
+      appendDiagnosticLine(
+        lines,
+        "Command",
+        readDiagnosticProperty(command, "name")
+      );
+    }
   }
 
   lines.push(
