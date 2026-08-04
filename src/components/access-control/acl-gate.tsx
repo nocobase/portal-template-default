@@ -43,6 +43,15 @@ export function AclGate({ children }: PropsWithChildren) {
       );
     }
 
+    const errorMessage = state.error.message.trim();
+    const description =
+      errorMessage && errorMessage !== "Unable to load permissions"
+        ? errorMessage
+        : translate(
+            "acl.permissionsLoad.description",
+            "Permissions for the current role could not be loaded."
+          );
+
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-6">
         <div className="max-w-md text-center">
@@ -53,11 +62,7 @@ export function AclGate({ children }: PropsWithChildren) {
             )}
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            {state.error.message ??
-              translate(
-                "acl.permissionsLoad.description",
-                "The current role permissions could not be loaded."
-              )}
+            {description}
           </p>
           <Button
             className="mt-5"

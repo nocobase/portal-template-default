@@ -13,7 +13,7 @@ export const starter = {
   "acl.roleSwitcher.switchFailed": "Unable to switch role",
   "acl.permissionsLoad.title": "Unable to load permissions",
   "acl.permissionsLoad.description":
-    "The current role permissions could not be loaded.",
+    "Permissions for the current role could not be loaded.",
   "acl.permissionsLoad.retry": "Retry",
   "buttons.apply": "Apply",
   "buttons.clear": "Clear",
