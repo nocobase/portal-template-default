@@ -3,10 +3,9 @@ import { RotateCcw } from "lucide-react";
 import type { PropsWithChildren } from "react";
 import { useAclState, useAclStore } from "@nocobase/portal-sdk/acl";
 
-import { RoleSwitcher } from "@/extensions/nocobase-acl";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/app-shell/loading-state";
-import { AccessDenied } from "./access-denied";
+import { PortalAccessDenied } from "./portal-access-denied";
 
 export function AclGate({ children }: PropsWithChildren) {
   const translate = useTranslate();
@@ -18,28 +17,16 @@ export function AclGate({ children }: PropsWithChildren) {
   if (state.status === "error") {
     if (state.portalAccessDenied) {
       return (
-        <main className="flex min-h-screen items-center justify-center bg-background p-6">
-          <div className="w-full max-w-lg text-center">
-            <p className="text-6xl font-semibold tracking-tight text-foreground">
-              403
-            </p>
-            <AccessDenied
-              className="mt-5 min-h-0 border-0 bg-transparent p-0"
-              title={translate(
-                "acl.portalAccessDenied.title",
-                "You do not have access to this Portal"
-              )}
-              description={translate(
-                "acl.portalAccessDenied.description",
-                "Your current role cannot access this Portal. Select another role to try again."
-              )}
-            />
-            <RoleSwitcher
-              className="mx-auto mt-6 max-w-xs text-left"
-              showWhenUnavailable
-            />
-          </div>
-        </main>
+        <PortalAccessDenied
+          title={translate(
+            "acl.portalAccessDenied.title",
+            "You do not have access to this Portal"
+          )}
+          description={translate(
+            "acl.portalAccessDenied.description",
+            "Your current role cannot access this Portal. Select another role to try again."
+          )}
+        />
       );
     }
 

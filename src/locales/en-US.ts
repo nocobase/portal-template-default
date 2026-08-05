@@ -10,6 +10,9 @@ export const starter = {
     "Your current role cannot access this Portal. Select another role to try again.",
   "acl.roleSwitcher.switchRole": "Switch role",
   "acl.roleSwitcher.currentRole": "Current role",
+  "acl.roleSwitcher.selectRole": "Select role",
+  "acl.roleSwitcher.recheckPortalAccess":
+    "Portal access will be checked again after switching.",
   "acl.roleSwitcher.switchFailed": "Unable to switch role",
   "acl.permissionsLoad.title": "Unable to load permissions",
   "acl.permissionsLoad.description":

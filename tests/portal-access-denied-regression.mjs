@@ -39,8 +39,17 @@ try {
   const { AclGate } = await server.ssrLoadModule(
     "/src/components/access-control/acl-gate.tsx"
   );
+  const { PortalAccessDeniedView } = await server.ssrLoadModule(
+    "/src/components/access-control/portal-access-denied.tsx"
+  );
+  const { hasMultipleUserRoles } = await server.ssrLoadModule(
+    "/src/components/access-control/portal-access-denied-roles.ts"
+  );
   const { AclStoreProvider } = await server.ssrLoadModule(
     "@nocobase/portal-sdk/acl"
+  );
+  const { starter: zhCN } = await server.ssrLoadModule(
+    "/src/locales/zh-CN.ts"
   );
 
   const renderAclError = (message) => {
@@ -205,6 +214,61 @@ try {
       roleMode: "default",
       allowAnonymous: false,
     }
+  );
+
+  const portalDeniedMarkup = renderToStaticMarkup(
+    createElement(PortalAccessDeniedView, {
+      title: "You do not have access to this Portal",
+      description:
+        "Your current role cannot access this Portal. Select another role to try again.",
+      currentRoleTitle: "Administrator",
+      roleSwitcher: createElement("button", { type: "button" }, "Administrator"),
+    })
+  );
+  assert.match(portalDeniedMarkup, />403</);
+  assert.match(portalDeniedMarkup, /role="region"/);
+  assert.match(portalDeniedMarkup, /aria-label="Switch role"/);
+  assert.match(portalDeniedMarkup, /Current role/);
+  assert.match(portalDeniedMarkup, /Administrator/);
+  assert.match(portalDeniedMarkup, /Select role/);
+  assert.match(
+    portalDeniedMarkup,
+    /Portal access will be checked again after switching\./
+  );
+
+  const portalDeniedWithoutSwitcherMarkup = renderToStaticMarkup(
+    createElement(PortalAccessDeniedView, {
+      title: "You do not have access to this Portal",
+      description:
+        "Your current role cannot access this Portal. Select another role to try again.",
+    })
+  );
+  assert.doesNotMatch(portalDeniedWithoutSwitcherMarkup, /role="region"/);
+
+  assert.equal(zhCN["acl.portalAccessDenied.title"], "无权访问此门户");
+  assert.equal(
+    zhCN["acl.portalAccessDenied.description"],
+    "当前角色没有访问权限，请切换角色后重试。"
+  );
+  assert.equal(zhCN["acl.roleSwitcher.selectRole"], "选择角色");
+  assert.equal(
+    zhCN["acl.roleSwitcher.recheckPortalAccess"],
+    "切换后将重新检查门户访问权限"
+  );
+  assert.equal(hasMultipleUserRoles([{ name: "admin" }]), false);
+  assert.equal(
+    hasMultipleUserRoles([
+      { name: "__union__" },
+      { name: "admin" },
+    ]),
+    false
+  );
+  assert.equal(
+    hasMultipleUserRoles([
+      { name: "admin" },
+      { name: "member" },
+    ]),
+    true
   );
 
   console.log("NocoBase Portal access denied regression tests passed");
