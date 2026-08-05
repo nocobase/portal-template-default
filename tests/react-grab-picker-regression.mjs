@@ -12,6 +12,7 @@ const server = await createServer({
 try {
   const {
     REACT_GRAB_DISABLED_ACTIONS,
+    absolutizeSingleReactGrabCopyContent,
     appendReactGrabInputLine,
     hideDisabledReactGrabToolbarActions,
   } = await server.ssrLoadModule(
@@ -22,6 +23,52 @@ try {
   assert.equal(
     appendReactGrabInputLine("[default React Grab context]"),
     "[default React Grab context]\n"
+  );
+
+  const sourceRoot = "/workspace/portal-template-default";
+  const defaultContent =
+    "[<div /> in NocoBaseRuntimeStatus (at runtime-status.tsx) in PortalRuntimeGate (at portal-runtime-gate.tsx) in App (at App.tsx)]";
+  const context = {
+    fiber: {
+      _debugStack: {
+        stack: [
+          "Error: react-stack-top-frame",
+          "    at NocoBaseRuntimeStatus (http://localhost:5173/x/admin/registry/nocobase-error-boundary/runtime-status.tsx?t=1:501:7)",
+          "    at PortalRuntimeGate (http://localhost:5173/x/admin/src/components/app-shell/portal-runtime-gate.tsx?t=1:101:9)",
+          "    at App (http://localhost:5173/x/admin/src/App.tsx?t=1:42:5)",
+        ].join("\n"),
+      },
+    },
+  };
+
+  assert.equal(
+    absolutizeSingleReactGrabCopyContent(
+      defaultContent,
+      context,
+      sourceRoot,
+      "/x/admin/"
+    ),
+    `[<div /> in NocoBaseRuntimeStatus (at ${sourceRoot}/registry/nocobase-error-boundary/runtime-status.tsx) in PortalRuntimeGate (at ${sourceRoot}/src/components/app-shell/portal-runtime-gate.tsx) in App (at ${sourceRoot}/src/App.tsx)]`
+  );
+
+  const ambiguousContext = {
+    fiber: {
+      _debugStack: {
+        stack: [
+          "    at FirstCard (http://localhost:5173/x/admin/src/first/index.tsx:10:2)",
+          "    at SecondCard (http://localhost:5173/x/admin/src/second/index.tsx:20:4)",
+        ].join("\n"),
+      },
+    },
+  };
+  assert.equal(
+    absolutizeSingleReactGrabCopyContent(
+      "[<div /> in Card (at index.tsx)]",
+      ambiguousContext,
+      sourceRoot,
+      "/x/admin/"
+    ),
+    "[<div /> in Card (at index.tsx)]"
   );
 
   const createStyle = (display = "", priority = "") => {

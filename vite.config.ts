@@ -40,7 +40,7 @@ const normalizeBase = (base?: string) => {
 };
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const proxyTarget = getDefaultProxyTarget(env.NOCOBASE_API_URL);
   const proxyOrigin = proxyTarget
@@ -62,6 +62,9 @@ export default defineConfig(({ mode }) => {
   return {
     base: portalBase,
     define: {
+      __PORTAL_DEV_SOURCE_ROOT__: JSON.stringify(
+        command === "serve" ? path.resolve(__dirname) : ""
+      ),
       __PORTAL_TEMPLATE_NAME__: JSON.stringify(portalTemplate.displayName),
       __PORTAL_TEMPLATE_VERSION__: JSON.stringify(portalTemplate.version),
     },
