@@ -1,4 +1,5 @@
 import { Refine, type ResourceProps } from "@refinedev/core";
+import { lazy, Suspense } from "react";
 
 import { BrowserRouter } from "react-router";
 import routerProvider, {
@@ -37,6 +38,10 @@ const appResources = [...configuredResources].sort(
 
 const basename = getPortalBase().replace(/\/+$/, "");
 
+const ReactGrabPicker = import.meta.env.DEV
+  ? lazy(() => import("./components/development/react-grab-picker"))
+  : null;
+
 function App() {
   return (
     <BrowserRouter basename={basename || undefined}>
@@ -74,6 +79,11 @@ function App() {
               </SystemSettingsProvider>
             </AppAuthRuntimeProviders>
           </PortalRuntimeGate>
+          {ReactGrabPicker ? (
+            <Suspense fallback={null}>
+              <ReactGrabPicker />
+            </Suspense>
+          ) : null}
         </TooltipProvider>
       </ThemeProvider>
     </BrowserRouter>
