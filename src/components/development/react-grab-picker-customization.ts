@@ -9,27 +9,37 @@ export function appendReactGrabInputLine(content: string) {
   return `${content}\n`;
 }
 
-// React Grab 0.1.50 keeps these buttons in its Shadow DOM after their plugins
-// are unregistered, so hide the wrappers separately and restore them on cleanup.
+// React Grab 0.1.50 keeps disabled toolbar buttons and the post-copy menu in
+// its Shadow DOM, so hide those controls separately and restore them on cleanup.
 export function hideDisabledReactGrabToolbarActions(root: ParentNode) {
   const displaySnapshots = new Map<
     HTMLElement,
     { priority: string; value: string }
   >();
 
+  const hideElement = (element: HTMLElement) => {
+    if (displaySnapshots.has(element)) return;
+
+    displaySnapshots.set(element, {
+      priority: element.style.getPropertyPriority("display"),
+      value: element.style.getPropertyValue("display"),
+    });
+    element.style.setProperty("display", "none", "important");
+  };
+
   for (const action of REACT_GRAB_DISABLED_ACTIONS) {
     const selector = `[data-react-grab-toolbar-action="${action}"]`;
 
     for (const button of root.querySelectorAll<HTMLElement>(selector)) {
       const wrapper = button.parentElement ?? button;
-      if (displaySnapshots.has(wrapper)) continue;
-
-      displaySnapshots.set(wrapper, {
-        priority: wrapper.style.getPropertyPriority("display"),
-        value: wrapper.style.getPropertyValue("display"),
-      });
-      wrapper.style.setProperty("display", "none", "important");
+      hideElement(wrapper);
     }
+  }
+
+  for (const button of root.querySelectorAll<HTMLElement>(
+    "[data-react-grab-more-options]"
+  )) {
+    hideElement(button);
   }
 
   return () => {

@@ -52,6 +52,7 @@ try {
 
   const commentWrapper = { style: createStyle("inline-flex") };
   const editWrapper = { style: createStyle() };
+  const moreOptionsButton = { style: createStyle("inline-flex") };
   const toolbarRoot = {
     querySelectorAll(selector) {
       if (selector.includes('"comment"')) {
@@ -59,6 +60,9 @@ try {
       }
       if (selector.includes('"edit"')) {
         return [{ parentElement: editWrapper }];
+      }
+      if (selector === "[data-react-grab-more-options]") {
+        return [moreOptionsButton];
       }
       return [];
     },
@@ -68,9 +72,18 @@ try {
   assert.equal(commentWrapper.style.getPropertyValue("display"), "none");
   assert.equal(commentWrapper.style.getPropertyPriority("display"), "important");
   assert.equal(editWrapper.style.getPropertyValue("display"), "none");
+  assert.equal(moreOptionsButton.style.getPropertyValue("display"), "none");
+  assert.equal(
+    moreOptionsButton.style.getPropertyPriority("display"),
+    "important"
+  );
   restoreToolbarActions();
   assert.equal(commentWrapper.style.getPropertyValue("display"), "inline-flex");
   assert.equal(editWrapper.style.getPropertyValue("display"), "");
+  assert.equal(
+    moreOptionsButton.style.getPropertyValue("display"),
+    "inline-flex"
+  );
 
   const appSource = await readFile(
     new URL("../src/App.tsx", import.meta.url),
