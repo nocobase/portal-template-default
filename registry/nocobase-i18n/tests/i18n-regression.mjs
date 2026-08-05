@@ -9,10 +9,10 @@ const server = await createServer({
 
 try {
   const { portalI18nReady } = await server.ssrLoadModule(
-    "/src/providers/i18n/runtime.ts"
+    "/client/providers/i18n/runtime.ts"
   );
   await portalI18nReady;
-  await server.ssrLoadModule("/src/locales/index.ts");
+  await server.ssrLoadModule("/client/locales/index.ts");
   const {
     applySystemLocale,
     getCurrentLocale,

@@ -15,7 +15,7 @@ import {
   resolveMaxFileSize,
   validateFileForField,
 } from "../registry/nocobase-file-upload/validation.ts";
-import { validateFieldValidationControllers } from "../src/lib/field-validation.ts";
+import { validateFieldValidationControllers } from "../client/lib/field-validation.ts";
 import type {
   FileFieldDescriptor,
   FileStorageInfo,

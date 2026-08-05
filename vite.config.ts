@@ -22,7 +22,7 @@ const getDefaultProxyTarget = (apiUrl?: string) => {
   }
 };
 
-const getProxyPath = (apiUrl?: string) => {
+const getNocoBaseProxyPath = (apiUrl?: string) => {
   if (!apiUrl) return "/api";
   if (apiUrl.startsWith("/")) return apiUrl;
 
@@ -31,6 +31,11 @@ const getProxyPath = (apiUrl?: string) => {
   } catch {
     return "/api";
   }
+};
+
+const getAppServerTarget = (url?: string) => {
+  const normalized = String(url || "http://localhost:3000").trim();
+  return normalized || "http://localhost:3000";
 };
 
 const normalizeBase = (base?: string) => {
@@ -42,6 +47,7 @@ const normalizeBase = (base?: string) => {
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  const appServerTarget = getAppServerTarget(env.APP_SERVER_URL);
   const proxyTarget = getDefaultProxyTarget(env.NOCOBASE_API_URL);
   const proxyOrigin = proxyTarget
     ? (() => {
@@ -57,7 +63,41 @@ export default defineConfig(({ mode }) => {
   const registrySourceRoot = path.resolve(__dirname, "./registry");
   const extensionsRoot = fs.existsSync(registrySourceRoot)
     ? registrySourceRoot
-    : path.resolve(__dirname, "./src/extensions");
+    : path.resolve(__dirname, "./client/extensions");
+  const nocobaseProxyPath = getNocoBaseProxyPath(env.NOCOBASE_API_URL);
+  const legacyNocoBaseProxy =
+    proxyTarget && nocobaseProxyPath !== "/api"
+      ? {
+          [nocobaseProxyPath]: {
+            target: proxyTarget,
+            changeOrigin: true,
+            secure: false,
+            configure(proxy) {
+              proxy.on("proxyReq", (proxyRequest, request) => {
+                if (!request.url?.includes("aiConversations:")) return;
+                proxyRequest.setHeader("accept-encoding", "identity");
+                proxyRequest.setHeader("cache-control", "no-cache");
+              });
+              proxy.on("proxyRes", (proxyResponse) => {
+                const contentType = String(
+                  proxyResponse.headers["content-type"] ?? ""
+                );
+                if (!contentType.includes("text/event-stream")) return;
+                delete proxyResponse.headers["content-length"];
+                proxyResponse.headers["cache-control"] =
+                  "no-cache, no-transform";
+                proxyResponse.headers["x-accel-buffering"] = "no";
+              });
+            },
+            headers: proxyOrigin
+              ? {
+                  origin: proxyOrigin,
+                  referer: `${proxyOrigin}/`,
+                }
+              : undefined,
+          },
+        }
+      : {};
 
   return {
     base: portalBase,
@@ -75,42 +115,22 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@/extensions": extensionsRoot,
-        "@": path.resolve(__dirname, "./src"),
+        "@shared": path.resolve(__dirname, "./shared"),
+        "@": path.resolve(__dirname, "./client"),
       },
     },
-    server: proxyTarget
-      ? {
-          proxy: {
-            [getProxyPath(env.NOCOBASE_API_URL)]: {
-              target: proxyTarget,
-              changeOrigin: true,
-              secure: false,
-              configure(proxy) {
-                proxy.on("proxyReq", (proxyRequest, request) => {
-                  if (!request.url?.includes("aiConversations:")) return;
-                  proxyRequest.setHeader("accept-encoding", "identity");
-                  proxyRequest.setHeader("cache-control", "no-cache");
-                });
-                proxy.on("proxyRes", (proxyResponse) => {
-                  const contentType = String(
-                    proxyResponse.headers["content-type"] ?? ""
-                  );
-                  if (!contentType.includes("text/event-stream")) return;
-                  delete proxyResponse.headers["content-length"];
-                  proxyResponse.headers["cache-control"] =
-                    "no-cache, no-transform";
-                  proxyResponse.headers["x-accel-buffering"] = "no";
-                });
-              },
-              headers: proxyOrigin
-                ? {
-                    origin: proxyOrigin,
-                    referer: `${proxyOrigin}/`,
-                  }
-                : undefined,
-            },
-          },
-        }
-      : undefined,
+    server: {
+      proxy: {
+        "/_app/api": {
+          target: appServerTarget,
+          changeOrigin: true,
+        },
+        "/api": {
+          target: appServerTarget,
+          changeOrigin: true,
+        },
+        ...legacyNocoBaseProxy,
+      },
+    },
   };
 });

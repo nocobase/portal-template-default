@@ -18,9 +18,11 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/extensions/*": ["./registry/*", "./src/extensions/*"],
-      "@/*": ["./src/*"]
+      "@/extensions/*": ["./registry/*", "./client/extensions/*"],
+      "@shared/*": ["./shared/*"],
+      "@/*": ["./client/*"]
     }
   },
-  "include": ["src", "registry"]
+  "include": ["client", "registry", "shared"],
+  "exclude": ["client/extensions"]
 }
