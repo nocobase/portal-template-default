@@ -207,14 +207,52 @@ function observeReactGrabToolbar() {
   };
 }
 
+const REACT_GRAB_ACTIVE_CURSOR_ATTRIBUTE =
+  "data-nocobase-react-grab-active";
+
+function installReactGrabDefaultCursor(): {
+  dispose: () => void;
+  setActive: (active: boolean) => void;
+} {
+  if (typeof document === "undefined") {
+    return { dispose: () => {}, setActive: () => {} };
+  }
+
+  const style = document.createElement("style");
+  style.textContent = `
+html[${REACT_GRAB_ACTIVE_CURSOR_ATTRIBUTE}],
+html[${REACT_GRAB_ACTIVE_CURSOR_ATTRIBUTE}] * {
+  cursor: default !important;
+}`;
+  document.head.append(style);
+
+  return {
+    dispose() {
+      document.documentElement.removeAttribute(
+        REACT_GRAB_ACTIVE_CURSOR_ATTRIBUTE
+      );
+      style.remove();
+    },
+    setActive(active: boolean) {
+      document.documentElement.toggleAttribute(
+        REACT_GRAB_ACTIVE_CURSOR_ATTRIBUTE,
+        active
+      );
+    },
+  };
+}
+
 export function configureReactGrabPicker(api: ReactGrabAPI) {
   for (const action of REACT_GRAB_DISABLED_ACTIONS) {
     api.unregisterPlugin(action);
   }
   api.setToolbarState({ defaultAction: "copy" });
+  const cursor = installReactGrabDefaultCursor();
+  cursor.setActive(api.isActive());
   api.registerPlugin({
     name: PORTAL_COPY_PLUGIN,
     hooks: {
+      onStateChange: ({ isActive }) => cursor.setActive(isActive),
       transformCopyContent: transformReactGrabCopyContent,
     },
   });
@@ -223,6 +261,7 @@ export function configureReactGrabPicker(api: ReactGrabAPI) {
 
   return () => {
     stopObservingToolbar();
+    cursor.dispose();
     api.unregisterPlugin(PORTAL_COPY_PLUGIN);
   };
 }

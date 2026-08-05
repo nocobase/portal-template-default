@@ -14,6 +14,7 @@ try {
     REACT_GRAB_DISABLED_ACTIONS,
     absolutizeSingleReactGrabCopyContent,
     appendReactGrabInputLine,
+    configureReactGrabPicker,
     hideDisabledReactGrabToolbarActions,
   } = await server.ssrLoadModule(
     "/src/components/development/react-grab-picker-customization.ts"
@@ -131,6 +132,83 @@ try {
     moreOptionsButton.style.getPropertyValue("display"),
     "inline-flex"
   );
+
+  const activeCursorAttributes = new Set();
+  let cursorStyle = null;
+  let cursorStyleRemoved = false;
+  const previousDocument = globalThis.document;
+  const previousMutationObserver = globalThis.MutationObserver;
+
+  globalThis.document = {
+    createElement(tagName) {
+      assert.equal(tagName, "style");
+      return {
+        textContent: "",
+        remove() {
+          cursorStyleRemoved = true;
+        },
+      };
+    },
+    documentElement: {
+      removeAttribute(name) {
+        activeCursorAttributes.delete(name);
+      },
+      toggleAttribute(name, force) {
+        if (force) activeCursorAttributes.add(name);
+        else activeCursorAttributes.delete(name);
+      },
+    },
+    head: {
+      append(style) {
+        cursorStyle = style;
+      },
+    },
+    querySelectorAll() {
+      return [];
+    },
+  };
+  globalThis.MutationObserver = class {
+    disconnect() {}
+    observe() {}
+  };
+
+  try {
+    let pickerPlugin = null;
+    const unregisteredPlugins = [];
+    const removePickerCustomizations = configureReactGrabPicker({
+      isActive: () => false,
+      registerPlugin(plugin) {
+        pickerPlugin = plugin;
+      },
+      setToolbarState() {},
+      unregisterPlugin(name) {
+        unregisteredPlugins.push(name);
+      },
+    });
+
+    assert.match(cursorStyle?.textContent ?? "", /cursor:\s*default\s*!important/);
+    pickerPlugin.hooks.onStateChange({ isActive: true });
+    assert.equal(activeCursorAttributes.size, 1);
+    pickerPlugin.hooks.onStateChange({ isActive: false });
+    assert.equal(activeCursorAttributes.size, 0);
+
+    removePickerCustomizations();
+    assert.equal(cursorStyleRemoved, true);
+    assert.equal(activeCursorAttributes.size, 0);
+    assert.equal(
+      unregisteredPlugins.at(-1),
+      "nocobase-portal-copy-input-line"
+    );
+  } finally {
+    if (previousDocument === undefined) delete globalThis.document;
+    else globalThis.document = previousDocument;
+
+    if (previousMutationObserver === undefined) {
+      delete globalThis.MutationObserver;
+    } else {
+      globalThis.MutationObserver = previousMutationObserver;
+    }
+  }
 
   const appSource = await readFile(
     new URL("../src/App.tsx", import.meta.url),
