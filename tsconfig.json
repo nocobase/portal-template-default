@@ -16,7 +16,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "baseUrl": ".",
     "paths": {
       "@/extensions/*": ["./registry/*", "./client/extensions/*"],
       "@shared/*": ["./shared/*"],

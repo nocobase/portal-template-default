@@ -97,7 +97,7 @@
     "dev:server": "tsx watch server/index.ts",
     "build": "tsc && refine build",
     "build:html": "node ./scripts/build-html.mjs",
-    "build:server": "tsc -p tsconfig.server.json",
+    "build:server": "tsc -p tsconfig.server.json && tsc -p tsconfig.server.cjs.json && node ./scripts/write-server-cjs-package.mjs",
     "build:all": "pnpm build && pnpm build:html && pnpm build:server",
     "start": "node server-dist/server/index.js",
     "start:client": "refine start",

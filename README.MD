@@ -62,6 +62,9 @@ pnpm start:client
 pnpm build:html
 ```
 
+`pnpm build:server` emits the default ESM server build to `server-dist` and a
+CommonJS-compatible build to `server-dist-cjs`.
+
 Application pages and resources live under `client`. The included Users page is a
 working example based on the standard NocoBase `users` collection.
 
