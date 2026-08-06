@@ -104,22 +104,50 @@ Customize `src/pages/login/index.tsx` to replace the whole login page, or use
 `DefaultSignInPage` to keep dynamic authentication while overriding individual
 authenticator UI.
 
-## Source repository checks
+## Testing
+
+Frontend logic and component tests live under `tests/` and run with Vitest and
+Testing Library. Registry-owned tests live beside each item under
+`registry/<name>/tests`, while Portal SDK tests live under `sdk/tests` and run
+through the SDK package. These tests exercise local behavior without mocking
+NocoBase APIs, authentication, ACL, or data providers. Put behavior that needs
+real server data under `e2e/` instead.
 
 ```bash
-pnpm --dir sdk test
-node tests/auth-session-regression.mjs
-node tests/error-boundary-regression.mjs
-node registry/nocobase-acl/tests/acl-regression.mjs
-node registry/nocobase-ai/tests/i18n-regression.mjs
-node registry/nocobase-i18n/tests/i18n-regression.mjs
-node --experimental-strip-types --test tests/file-upload-regression.test.ts
-node registry/nocobase-mail/tests/mail-regression.mjs
-node registry/nocobase-route-surfaces/tests/route-surfaces-regression.mjs
+pnpm test
+pnpm test:watch
+pnpm test:coverage
+pnpm test:sdk
 ```
 
-Registry source checks are maintainer commands for this source repository; the
-published template contains materialized extensions instead of `registry/`.
+Playwright E2E tests connect to a real NocoBase environment. The included smoke
+test signs in through the actual Portal login page, verifies the server session,
+and confirms that authentication survives a reload. It does not depend on any
+Registry example page.
+
+Copy `.env.e2e.example` to `.env.e2e` and provide a dedicated test account.
+Playwright always starts an isolated Portal dev server at
+`http://127.0.0.1:4173` (configurable with `NOCOBASE_E2E_PORT`) and stops it when
+the run finishes. Set `NOCOBASE_E2E_API_URL` to the real NocoBase backend and
+`NOCOBASE_PORTAL_BASE` to the Portal path under test. The default command never
+reuses a manually started frontend.
+
+```bash
+pnpm test:e2e:install
+pnpm test:e2e
+pnpm test:e2e:ui
+```
+
+Reusable E2E helpers currently live in `e2e/support`. They provide environment
+and basename resolution, NocoBase resource/action requests, API sign-in and
+session checks, and browser session installation. Keep business-specific test
+data and assertions in the application. These helpers can move into the Portal
+SDK after their application-facing contract has stabilized.
+
+The root `pnpm test` command includes both template and Registry tests. The
+published template contains materialized extensions instead of `registry/`,
+but their tests remain source-repository checks and are not copied into user
+projects.
 Default Template source upgrades are documented in the
 [template migration guide](https://github.com/nocobase/portal-template-default/blob/main/MIGRATION.md).
 SDK API and compatibility changes are documented separately in the

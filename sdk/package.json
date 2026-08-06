@@ -122,7 +122,7 @@
     "preinstall": "node ./scripts/check-template-compatibility.mjs",
     "prepack": "pnpm build",
     "pretest": "pnpm build",
-    "test": "node --test ./tests/*.test.mjs"
+    "test": "vitest run"
   },
   "dependencies": {
     "ignore": "^7.0.6",
@@ -145,6 +145,7 @@
     "@types/node": "^20.0.0",
     "@types/react": "^19.1.0",
     "@types/semver": "^7.7.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.10"
   }
 }

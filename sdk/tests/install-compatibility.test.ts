@@ -1,10 +1,9 @@
-import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import test from "node:test";
+import { expect, it } from "vitest";
 
 import semver from "semver";
 
@@ -59,42 +58,38 @@ const runChecker = (packageJson) => {
   return result;
 };
 
-test("accepts a derived template with a compatible base version", () => {
+it("accepts a derived template with a compatible base version", () => {
   const result = runChecker({
     name: "@example/custom-portal",
     version: "8.4.0",
     nocobase: { defaultTemplateVersion: compatibleBaseVersion },
   });
-  assert.equal(result.status, 0, result.stderr);
-  assert.ok(
-    result.stdout.includes(
-      `supports Default Template ${compatibleBaseVersion}`
-    )
+  expect(result.status, result.stderr).toBe(0);
+  expect(result.stdout).toContain(
+    `supports Default Template ${compatibleBaseVersion}`
   );
 });
 
-test("rejects an incompatible base template version with an actionable error", () => {
+it("rejects an incompatible base template version with an actionable error", () => {
   const result = runChecker({
     name: "@example/custom-portal",
     version: "8.4.0",
     nocobase: { defaultTemplateVersion: incompatibleBaseVersion },
   });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /Incompatible NocoBase Portal SDK/);
-  assert.ok(
-    result.stderr.includes(
-      `Current Default Template: ${incompatibleBaseVersion}`
-    )
+  expect(result.status).toBe(1);
+  expect(result.stderr).toMatch(/Incompatible NocoBase Portal SDK/);
+  expect(result.stderr).toContain(
+    `Current Default Template: ${incompatibleBaseVersion}`
   );
-  assert.match(result.stderr, /Supported Default Template range/);
+  expect(result.stderr).toMatch(/Supported Default Template range/);
 });
 
-test("rejects projects that do not preserve their base template version", () => {
+it("rejects projects that do not preserve their base template version", () => {
   const result = runChecker({
     name: "@example/custom-portal",
     version: "8.4.0",
   });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /Unable to determine/);
-  assert.match(result.stderr, /nocobase\.defaultTemplateVersion/);
+  expect(result.status).toBe(1);
+  expect(result.stderr).toMatch(/Unable to determine/);
+  expect(result.stderr).toMatch(/nocobase\.defaultTemplateVersion/);
 });

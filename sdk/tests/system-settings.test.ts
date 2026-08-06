@@ -1,11 +1,10 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, it } from "vitest";
 
-import { nocobaseClient } from "../dist/client/index.js";
+import { nocobaseClient } from "../src/client/index.ts";
 import {
   clearSystemSettingsCache,
   loadSystemSettings,
-} from "../dist/system-settings/index.js";
+} from "../src/system-settings/index.ts";
 
 const deferred = () => {
   let resolve;
@@ -15,7 +14,7 @@ const deferred = () => {
   return { promise, resolve };
 };
 
-test("a stale System Settings request cannot overwrite a forced refresh", async () => {
+it("a stale System Settings request cannot overwrite a forced refresh", async () => {
   const originalAction = nocobaseClient.action;
   const first = deferred();
   const second = deferred();
@@ -30,20 +29,20 @@ test("a stale System Settings request cannot overwrite a forced refresh", async 
     const refreshRequest = loadSystemSettings(true);
 
     second.resolve({ appLang: "zh-CN" });
-    assert.deepEqual(await refreshRequest, { appLang: "zh-CN" });
+    await expect(refreshRequest).resolves.toEqual({ appLang: "zh-CN" });
 
     first.resolve({ appLang: "en-US" });
-    assert.deepEqual(await staleRequest, { appLang: "en-US" });
+    await expect(staleRequest).resolves.toEqual({ appLang: "en-US" });
 
-    assert.deepEqual(await loadSystemSettings(), { appLang: "zh-CN" });
-    assert.equal(requestCount, 2);
+    await expect(loadSystemSettings()).resolves.toEqual({ appLang: "zh-CN" });
+    expect(requestCount).toBe(2);
   } finally {
     clearSystemSettingsCache();
     nocobaseClient.action = originalAction;
   }
 });
 
-test("clearing System Settings ignores an in-flight response", async () => {
+it("clearing System Settings ignores an in-flight response", async () => {
   const originalAction = nocobaseClient.action;
   const first = deferred();
   const second = deferred();
@@ -61,8 +60,8 @@ test("clearing System Settings ignores an in-flight response", async () => {
 
     const nextRequest = loadSystemSettings();
     second.resolve({ appLang: "zh-CN" });
-    assert.deepEqual(await nextRequest, { appLang: "zh-CN" });
-    assert.equal(requestCount, 2);
+    await expect(nextRequest).resolves.toEqual({ appLang: "zh-CN" });
+    expect(requestCount).toBe(2);
   } finally {
     clearSystemSettingsCache();
     nocobaseClient.action = originalAction;

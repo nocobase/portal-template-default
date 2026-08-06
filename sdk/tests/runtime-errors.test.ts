@@ -1,7 +1,6 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, it } from "vitest";
 
-import { authProvider } from "../dist/auth/index.js";
+import { authProvider } from "../src/auth/index.ts";
 import {
   authSession,
   getNocoBaseErrorDetail,
@@ -11,8 +10,8 @@ import {
   NocoBaseWebSocketClient,
   normalizeNocoBaseRuntimeError,
   resolveNocoBaseWebSocketUrl,
-} from "../dist/client/index.js";
-import { portalRuntimeStore } from "../dist/runtime/index.js";
+} from "../src/client/index.ts";
+import { portalRuntimeStore } from "../src/runtime/index.ts";
 
 const jsonResponse = (status, payload) =>
   new Response(JSON.stringify(payload), {
@@ -23,39 +22,42 @@ const jsonResponse = (status, payload) =>
     },
   });
 
-test("runtime errors preserve server codes and authentication state", async () => {
+it("runtime errors preserve server codes and authentication state", async () => {
   const originalFetch = globalThis.fetch;
+  const originalWindow = globalThis.window;
   try {
-    assert.equal(
-      getNocoBaseErrorDetail({ error: { code: "APP_COMMANDING" } })?.code,
-      "APP_COMMANDING"
-    );
-    assert.equal(
-      getNocoBaseErrorDetail({ errors: [{ code: "ROLE_NOT_FOUND_ERR" }] })?.code,
-      "ROLE_NOT_FOUND_ERR"
-    );
-    assert.equal(
-      isNocoBaseLifecycleError({ code: "APP_PREPARING" }),
-      true
-    );
-    assert.equal(isNocoBaseServiceError({ status: 504 }), true);
-    assert.equal(isNocoBaseServiceError({ status: 401 }), false);
-    assert.deepEqual(
+    expect(
+      getNocoBaseErrorDetail({ error: { code: "APP_COMMANDING" } })?.code
+    ).toBe("APP_COMMANDING");
+    expect(
+      getNocoBaseErrorDetail({ errors: [{ code: "ROLE_NOT_FOUND_ERR" }] })?.code
+    ).toBe("ROLE_NOT_FOUND_ERR");
+    expect(isNocoBaseLifecycleError({ code: "APP_PREPARING" })).toBe(true);
+    expect(isNocoBaseServiceError({ status: 504 })).toBe(true);
+    expect(isNocoBaseServiceError({ status: 401 })).toBe(false);
+    expect(
       normalizeNocoBaseRuntimeError(
         { code: "APP_STOPPED", status: 503, message: "stopped" },
         "websocket"
-      ),
-      {
+      )
+    ).toEqual({
         code: "APP_STOPPED",
         status: 503,
         message: "stopped",
         payload: { code: "APP_STOPPED", status: 503, message: "stopped" },
         source: "websocket",
-      }
-    );
+      });
 
     authSession.clearAuthentication();
-    authSession.set("token", "role-token");
+    globalThis.window = {
+      location: { origin: "https://example.com" },
+      NOCOBASE_API_URL: "https://example.com/api",
+    } as Window & typeof globalThis;
+    globalThis.fetch = async () =>
+      jsonResponse(200, { data: { token: "role-token" } });
+    await expect(
+      authProvider.login({ account: "tester", password: "secret" })
+    ).resolves.toEqual({ success: true, redirectTo: "/" });
     authSession.set("role", "deleted-role");
     const roles = [];
     globalThis.fetch = async (_url, options) => {
@@ -68,10 +70,10 @@ test("runtime errors preserve server codes and authentication state", async () =
       return jsonResponse(200, { data: { id: 1, username: "tester" } });
     };
 
-    assert.deepEqual(await authProvider.check(), { authenticated: true });
-    assert.equal(authSession.get("token"), "role-token");
-    assert.equal(authSession.get("role"), undefined);
-    assert.deepEqual(roles, ["deleted-role", undefined]);
+    await expect(authProvider.check()).resolves.toEqual({ authenticated: true });
+    expect(authSession.get("token")).toBe("role-token");
+    expect(authSession.get("role")).toBeUndefined();
+    expect(roles).toEqual(["deleted-role", undefined]);
 
     authSession.set("token", "maintenance-token");
     portalRuntimeStore.clear();
@@ -85,9 +87,9 @@ test("runtime errors preserve server codes and authentication state", async () =
         },
       });
 
-    assert.deepEqual(await authProvider.check(), { authenticated: true });
-    assert.equal(authSession.get("token"), "maintenance-token");
-    assert.equal(portalRuntimeStore.getState().error?.code, "APP_PREPARING");
+    await expect(authProvider.check()).resolves.toEqual({ authenticated: true });
+    expect(authSession.get("token")).toBe("maintenance-token");
+    expect(portalRuntimeStore.getState().error?.code).toBe("APP_PREPARING");
 
     authSession.set("token", "no-role-token");
     portalRuntimeStore.clear();
@@ -101,10 +103,9 @@ test("runtime errors preserve server codes and authentication state", async () =
         ],
       });
 
-    assert.deepEqual(await authProvider.check(), { authenticated: true });
-    assert.equal(authSession.get("token"), "no-role-token");
-    assert.equal(
-      portalRuntimeStore.getState().error?.code,
+    await expect(authProvider.check()).resolves.toEqual({ authenticated: true });
+    expect(authSession.get("token")).toBe("no-role-token");
+    expect(portalRuntimeStore.getState().error?.code).toBe(
       "USER_HAS_NO_ROLES_ERR"
     );
 
@@ -115,19 +116,20 @@ test("runtime errors preserve server codes and authentication state", async () =
         errors: [{ code: "INVALID_TOKEN", message: "invalid token" }],
       });
 
-    assert.deepEqual(await authProvider.check(), {
+    await expect(authProvider.check()).resolves.toEqual({
       authenticated: false,
       redirectTo: "/login",
     });
-    assert.equal(authSession.get("token"), undefined);
+    expect(authSession.get("token")).toBeUndefined();
   } finally {
     globalThis.fetch = originalFetch;
+    globalThis.window = originalWindow;
     authSession.clearAuthentication();
     portalRuntimeStore.clear();
   }
 });
 
-test("the WebSocket URL preserves the server prefix and selects a sub-application", () => {
+it("the WebSocket URL preserves the server prefix and selects a sub-application", () => {
   const originalWindow = globalThis.window;
   try {
     globalThis.window = {
@@ -135,8 +137,7 @@ test("the WebSocket URL preserves the server prefix and selects a sub-applicatio
       NOCOBASE_API_URL: "https://example.com/nocobase/api/__app/crm",
       NOCOBASE_PORTAL_BASE: "/nocobase/x/apps/crm/customer/",
     };
-    assert.equal(
-      resolveNocoBaseWebSocketUrl(),
+    expect(resolveNocoBaseWebSocketUrl()).toBe(
       "wss://example.com/nocobase/ws?__appName=crm"
     );
   } finally {
@@ -144,7 +145,7 @@ test("the WebSocket URL preserves the server prefix and selects a sub-applicatio
   }
 });
 
-test("a stale WebSocket cannot disrupt its replacement", () => {
+it("a stale WebSocket cannot disrupt its replacement", () => {
   const originalWebSocket = globalThis.WebSocket;
   const originalWindow = globalThis.window;
   const originalSetInterval = globalThis.setInterval;
@@ -214,27 +215,27 @@ test("a stale WebSocket cannot disrupt its replacement", () => {
     client.subscribe((message) => messages.push(message));
     client.connect();
     sockets[0].open();
-    assert.deepEqual(sentMessages.at(-1), {
+    expect(sentMessages.at(-1)).toEqual({
       type: "auth:token",
       payload: { token: "socket-token", authenticator: "basic" },
     });
     client.authenticate();
-    assert.deepEqual(sentMessages.at(-1), {
+    expect(sentMessages.at(-1)).toEqual({
       type: "auth:token",
       payload: { token: "socket-token", authenticator: "basic" },
     });
-    assert.equal(sentMessages.length, 2);
+    expect(sentMessages).toHaveLength(2);
     client.reconnect();
     sockets[1].open();
 
     sockets[0].message({ type: "maintaining", payload: { code: "APP_ERROR" } });
     sockets[0].finishClose();
-    assert.equal(intervals.size, 1);
-    assert.equal(timeouts.size, 0);
-    assert.deepEqual(messages, []);
+    expect(intervals.size).toBe(1);
+    expect(timeouts.size).toBe(0);
+    expect(messages).toEqual([]);
 
     sockets[1].message({ type: "maintaining", payload: { code: "APP_STOPPED" } });
-    assert.equal(messages[0]?.payload?.code, "APP_STOPPED");
+    expect(messages[0]?.payload?.code).toBe("APP_STOPPED");
     client.close();
   } finally {
     globalThis.WebSocket = originalWebSocket;
@@ -248,7 +249,7 @@ test("a stale WebSocket cannot disrupt its replacement", () => {
   }
 });
 
-test("only explicit application lifecycle responses become global runtime states", async () => {
+it("only explicit application lifecycle responses become global runtime states", async () => {
   const originalFetch = globalThis.fetch;
   const client = new NocoBaseClient("https://example.com/api");
 
@@ -257,8 +258,8 @@ test("only explicit application lifecycle responses become global runtime states
     globalThis.fetch = async () =>
       jsonResponse(504, { message: "report timed out" });
 
-    await assert.rejects(() => client.request("reports:run"));
-    assert.equal(portalRuntimeStore.getState().error, undefined);
+    await expect(client.request("reports:run")).rejects.toThrow();
+    expect(portalRuntimeStore.getState().error).toBeUndefined();
 
     globalThis.fetch = async () =>
       jsonResponse(503, {
@@ -270,9 +271,9 @@ test("only explicit application lifecycle responses become global runtime states
         },
       });
 
-    await assert.rejects(() => client.request("reports:run"));
-    assert.equal(portalRuntimeStore.getState().error?.code, "APP_PREPARING");
-    assert.equal(portalRuntimeStore.getState().error?.status, 503);
+    await expect(client.request("reports:run")).rejects.toThrow();
+    expect(portalRuntimeStore.getState().error?.code).toBe("APP_PREPARING");
+    expect(portalRuntimeStore.getState().error?.status).toBe(503);
   } finally {
     globalThis.fetch = originalFetch;
     portalRuntimeStore.clear();

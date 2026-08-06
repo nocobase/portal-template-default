@@ -6,6 +6,11 @@ logs/
 .env
 .env.*
 !.env.example
+!.env.e2e.example
+
+coverage/
+playwright-report/
+test-results/
 
 registry/
 registry.config.json
@@ -13,6 +18,5 @@ registry.json
 public/r/
 scripts/registry.mjs
 sdk/
-tests/
 .github/
 !.gitignore

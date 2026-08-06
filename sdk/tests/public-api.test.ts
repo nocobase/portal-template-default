@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { evaluateAccess } from "../dist/acl/index.js";
@@ -18,14 +17,13 @@ import {
 } from "../dist/i18n/index.js";
 import { loadSystemSettings } from "../dist/system-settings/index.js";
 
-test("published ACL and routing entry points are executable in Node", () => {
-  assert.equal(
+it("published ACL and routing entry points are executable in Node", () => {
+  expect(
     evaluateAccess(
       { allowAll: true, roles: [] },
       { resource: "users", action: "list" }
-    ),
-    true
-  );
+    )
+  ).toBe(true);
 
   const routes = defineAppRoutes([
     {
@@ -38,8 +36,8 @@ test("published ACL and routing entry points are executable in Node", () => {
     },
   ]);
   const resources = buildRouteResources(routes);
-  assert.equal(resources[0].list, "/users");
-  assert.equal(resources[0].create, "/users/create");
+  expect(resources[0].list).toBe("/users");
+  expect(resources[0].create).toBe("/users/create");
 
   const location = {
     pathname: "/customers",
@@ -47,24 +45,22 @@ test("published ACL and routing entry points are executable in Node", () => {
     hash: "#renewal",
     state: { activeTab: "mine" },
   };
-  assert.equal(
-    buildRouteLocationHref(location),
+  expect(buildRouteLocationHref(location)).toBe(
     "/customers?page=2#renewal"
   );
-  assert.deepEqual(createRouteSurfaceNavigationState(location), {
+  expect(createRouteSurfaceNavigationState(location)).toEqual({
     activeTab: "mine",
     routeSurfaceReturnTo: "/customers?page=2#renewal",
   });
-  assert.equal(
+  expect(
     resolveRouteSurfaceCloseTo(
       { routeSurfaceReturnTo: "/customers?page=2" },
       { pathname: "/customers" }
-    ),
-    "/customers?page=2"
-  );
+    )
+  ).toBe("/customers?page=2");
 });
 
-test("published i18n and System Settings entry points are executable", async () => {
+it("published i18n and System Settings entry points are executable", async () => {
   registerTranslationResources("test", {
     "en-US": { greeting: "Hello" },
   });
@@ -74,11 +70,11 @@ test("published i18n and System Settings entry points are executable", async () 
     initOptions: { defaultNS: "test", initImmediate: true },
   });
 
-  assert.equal(translate("greeting", { ns: "test" }), "Hello");
-  assert.equal(typeof loadSystemSettings, "function");
+  expect(translate("greeting", { ns: "test" })).toBe("Hello");
+  expect(loadSystemSettings).toBeTypeOf("function");
 });
 
-test("application routes defer lazy page modules until they render", () => {
+it("application routes defer lazy page modules until they render", () => {
   let loadCount = 0;
   const lazyRoute = async () => {
     loadCount += 1;
@@ -100,17 +96,15 @@ test("application routes defer lazy page modules until they render", () => {
     }
   );
 
-  assert.equal(renderToStaticMarkup(routeElement.props.element), "Denied");
-  assert.equal(loadCount, 0);
-  assert.equal(
-    routeElement.props.element.props.children.props.fallback,
+  expect(renderToStaticMarkup(routeElement.props.element)).toBe("Denied");
+  expect(loadCount).toBe(0);
+  expect(routeElement.props.element.props.children.props.fallback).toBe(
     "Loading reports"
   );
 });
 
-test("application routes reject ambiguous eager and lazy content", () => {
-  assert.throws(
-    () =>
+it("application routes reject ambiguous eager and lazy content", () => {
+  expect(() =>
       renderAppRoutes([
         {
           name: "invalid",
@@ -118,7 +112,6 @@ test("application routes reject ambiguous eager and lazy content", () => {
           element: "eager",
           lazy: async () => ({ default: () => null }),
         },
-      ]),
-    /cannot declare both element and lazy/
-  );
+      ])
+  ).toThrow(/cannot declare both element and lazy/);
 });

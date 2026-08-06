@@ -2,10 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const sdkRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  ".."
-);
+const sdkRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const packageRoot = process.argv[2]
   ? path.resolve(process.argv[2])

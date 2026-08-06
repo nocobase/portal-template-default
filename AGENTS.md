@@ -4,7 +4,7 @@ This repository is a starter for building a NocoBase-powered application. Keep c
 
 ## Reuse existing extensions
 
-Before writing new code, inspect `registry` in the Registry source repository or `src/extensions` in a published template for similar pages, hooks, components, and integration patterns. Reuse an existing implementation directly when it already fits the requirement, and extend or compose it when only a small adaptation is needed.
+When the active milestone requires application source changes, search `registry` in the Registry source repository or `src/extensions` in a published template for similar pages, hooks, components, and integration patterns before writing that source. Inspect the closest matching implementation and only the direct dependencies needed to understand its contract. Expand the search when a specific unanswered question blocks implementation; do not recursively read Registry or extension directories to build a complete inventory. Reuse an existing implementation directly when it already fits the requirement, and extend or compose it when only a small adaptation is needed.
 
 ## Customize UI components through composition
 
@@ -15,6 +15,12 @@ Components copied from shadcn/ui are owned and maintained by this project; upstr
 ## Add dependencies as development dependencies
 
 Portal production deployments serve the built `dist` output and do not install or execute the project's Node.js dependencies. Add every new package to `devDependencies`, including packages imported by application runtime source, because they are required only while installing, developing, checking, or building the Portal. Use the package manager's development-dependency option and do not add new entries to `dependencies`.
+
+## Test at the correct boundary
+
+Put frontend logic and component tests under `tests/`. Keep them independent of backend data: pass ordinary props to components and test local rendering and interaction without mocking NocoBase APIs, authentication, ACL, or data providers. If behavior requires real data, authentication, roles, permissions, routing integration, files, AI, or another server capability, test it under `e2e/` with Playwright against a real NocoBase test environment. Do not make application tests depend on bundled Registry example pages.
+
+Run the relevant frontend tests while developing and update a focused E2E flow when a critical user workflow changes. Avoid tests that only assert that a component exists or duplicate implementation details.
 
 ## Define application routes once
 
