@@ -1,22 +1,8 @@
-import { Hono } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { NocoBaseUpstreamClient } from "../clients/nocobase-upstream-client.js";
-import { config } from "../config.js";
-import { createServerRequestContext } from "./portal-data.js";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
-
-const getProxyQuery = (searchParams: URLSearchParams) => {
-  const output: Record<string, string | number | boolean | null | undefined> = {};
-
-  for (const [key, value] of searchParams.entries()) {
-    if (output[key] !== undefined) continue;
-    output[key] = value;
-  }
-
-  return output;
-};
 
 const getUsersCreateValues = (body: unknown) => {
   if (!isRecord(body)) return {};
@@ -56,20 +42,34 @@ const assertUsersCreateAllowed = (body: unknown) => {
   }
 };
 
-export const nocobaseProxyInterceptorRouter = new Hono();
+const replaceJsonRequestBody = (ctx: Context, body: unknown) => {
+  const headers = new Headers(ctx.req.raw.headers);
+  headers.set("content-type", "application/json");
+  headers.delete("content-length");
 
-nocobaseProxyInterceptorRouter.post("/users:create", async (context) => {
-  const body = await context.req.json().catch(() => undefined);
-  assertUsersCreateAllowed(body);
-  const upstream = new NocoBaseUpstreamClient({
-    context: createServerRequestContext(context),
-    target: config.nocobaseApiTarget,
+  ctx.req.raw = new Request(ctx.req.url, {
+    body: JSON.stringify(body),
+    headers,
+    method: ctx.req.method,
+    signal: ctx.req.raw.signal,
   });
+  ctx.req.bodyCache = {};
+};
 
-  context.header("x-portal-proxy-intercepted", "users:create");
-  return context.json(await upstream.request("users:create", {
-    body: withUsersCreateDefaults(body),
-    method: "POST",
-    query: getProxyQuery(new URL(context.req.url).searchParams),
-  }));
-});
+export const nocobaseProxyInterceptor: MiddlewareHandler = async (
+  ctx,
+  next
+) => {
+  const pathname = new URL(ctx.req.url).pathname;
+  if (ctx.req.method !== "POST" || pathname !== "/api/users:create") {
+    await next();
+    return;
+  }
+
+  const body = await ctx.req.json().catch(() => undefined);
+  assertUsersCreateAllowed(body);
+  replaceJsonRequestBody(ctx, withUsersCreateDefaults(body));
+
+  ctx.header("x-portal-proxy-intercepted", "users:create");
+  await next();
+};

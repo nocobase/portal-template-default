@@ -3,8 +3,8 @@ import type { AppHealthResponse } from "../../shared/api.js";
 
 export const healthRouter = new Hono();
 
-healthRouter.get("/healthz", (context) => {
-  return context.json({
+healthRouter.get("/healthz", (ctx) => {
+  return ctx.json({
     ok: true,
     service: "bff",
     uptime: process.uptime(),

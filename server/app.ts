@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { config } from "./config.js";
-import { nocobaseProxyInterceptorRouter } from "./middleware/nocobase-proxy-interceptor.js";
+import { nocobaseProxyInterceptor } from "./middleware/nocobase-proxy-interceptor.js";
 import { appApiRouter } from "./routes/app-api.js";
 import { healthRouter } from "./routes/health.js";
 import { createNocoBaseProxyRouter } from "./routes/nocobase-proxy.js";
@@ -21,23 +21,23 @@ const getErrorMessage = (error: unknown, status: number) => {
 export function createApp() {
   const app = new Hono();
 
-  app.onError((error, context) => {
+  app.onError((error, ctx) => {
     const status = getErrorStatus(error);
     console.error(error);
 
-    return context.json(
+    return ctx.json(
       { error: getErrorMessage(error, status) },
       status as ContentfulStatusCode
     );
   });
 
-  app.use(async (context, next) => {
+  app.use(async (ctx, next) => {
     const startedAt = Date.now();
     await next();
-    if (!context.error) {
+    if (!ctx.error) {
       const elapsedMs = Date.now() - startedAt;
       console.info(
-        `${context.req.method} ${new URL(context.req.url).pathname} ${context.res.status} ${elapsedMs}ms`
+        `${ctx.req.method} ${new URL(ctx.req.url).pathname} ${ctx.res.status} ${elapsedMs}ms`
       );
     }
   });
@@ -45,11 +45,11 @@ export function createApp() {
   app.route("/", healthRouter);
   app.route("/_app/api/users", usersRouter);
   app.route("/_app/api", appApiRouter);
-  app.route("/api", nocobaseProxyInterceptorRouter);
+  app.use("/api/*", nocobaseProxyInterceptor);
   app.route("/api", createNocoBaseProxyRouter(config.nocobaseApiTarget));
 
-  app.notFound((context) => {
-    return context.json({ error: "Not Found" }, 404);
+  app.notFound((ctx) => {
+    return ctx.json({ error: "Not Found" }, 404);
   });
 
   return app;

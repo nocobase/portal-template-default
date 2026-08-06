@@ -77,18 +77,18 @@ const normalizeProxyResponse = (response: Response) => {
 export function createNocoBaseProxyRouter(target?: string) {
   const router = new Hono();
 
-  const handler = async (context: Context) => {
+  const handler = async (ctx: Context) => {
     if (!target) {
-      return context.json(
+      return ctx.json(
         { error: "NOCOBASE_API_PROXY_TARGET is not configured" },
         502
       );
     }
 
-    const upstreamUrl = createUpstreamRequestUrl(target, context.req.url);
+    const upstreamUrl = createUpstreamRequestUrl(target, ctx.req.url);
     const response = await proxy(upstreamUrl, {
-      raw: context.req.raw,
-      headers: createProxyHeaders(context.req.raw, upstreamUrl),
+      raw: ctx.req.raw,
+      headers: createProxyHeaders(ctx.req.raw, upstreamUrl),
     });
 
     return normalizeProxyResponse(response);
