@@ -1,15 +1,10 @@
-import httpProxy from "http-proxy";
-import type { IncomingMessage, ServerResponse } from "node:http";
+import { Hono, type Context } from "hono";
+import { proxy } from "hono/proxy";
 
-const API_PREFIX = "/api";
-
-export const isNocoBaseApiRequest = (path: string) =>
-  path === API_PREFIX || path.startsWith(`${API_PREFIX}/`);
-
-const createUpstreamRequestUrl = (target: string, requestUrl = "/") => {
+const createUpstreamRequestUrl = (target: string, requestUrl: string) => {
   const targetUrl = new URL(target);
   const targetPath = targetUrl.pathname.replace(/\/+$/, "");
-  const parsedRequestUrl = new URL(requestUrl, "http://bff.local");
+  const parsedRequestUrl = new URL(requestUrl);
   const strippedPathname =
     parsedRequestUrl.pathname.replace(/^\/api(?=\/|$)/, "") || "/";
   const requestPath = strippedPathname.startsWith("/")
@@ -17,14 +12,13 @@ const createUpstreamRequestUrl = (target: string, requestUrl = "/") => {
     : `/${strippedPathname}`;
   const pathname = `${targetPath}${requestPath}`.replace(/\/{2,}/g, "/");
 
-  return `${pathname}${parsedRequestUrl.search}`;
+  targetUrl.pathname = pathname;
+  targetUrl.search = parsedRequestUrl.search;
+  return targetUrl;
 };
 
-const getHeaderValue = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value;
-
-const getRequestOrigin = (request: IncomingMessage) => {
-  const origin = getHeaderValue(request.headers.origin);
+const getRequestOrigin = (headers: Headers) => {
+  const origin = headers.get("origin");
   if (origin) {
     try {
       return new URL(origin);
@@ -33,7 +27,7 @@ const getRequestOrigin = (request: IncomingMessage) => {
     }
   }
 
-  const referer = getHeaderValue(request.headers.referer);
+  const referer = headers.get("referer");
   if (referer) {
     try {
       return new URL(referer);
@@ -45,68 +39,63 @@ const getRequestOrigin = (request: IncomingMessage) => {
   return undefined;
 };
 
-export function createNocoBaseProxyHandler(target?: string) {
-  const proxy = httpProxy.createProxyServer({
-    changeOrigin: true,
-    secure: false,
-    xfwd: false,
+const createProxyHeaders = (request: Request, upstreamUrl: URL) => {
+  const headers = new Headers(request.headers);
+  const requestOrigin = getRequestOrigin(headers);
+
+  headers.set("host", upstreamUrl.host);
+  if (requestOrigin) {
+    headers.set("x-forwarded-host", requestOrigin.host);
+    headers.set("x-forwarded-proto", requestOrigin.protocol.replace(/:$/, ""));
+  }
+
+  if (request.url.includes("aiConversations:")) {
+    headers.set("accept-encoding", "identity");
+    headers.set("cache-control", "no-cache");
+  }
+
+  return headers;
+};
+
+const normalizeProxyResponse = (response: Response) => {
+  const headers = new Headers(response.headers);
+  const contentType = headers.get("content-type") ?? "";
+
+  if (contentType.includes("text/event-stream")) {
+    headers.delete("content-length");
+    headers.set("cache-control", "no-cache, no-transform");
+    headers.set("x-accel-buffering", "no");
+  }
+
+  return new Response(response.body, {
+    headers,
+    status: response.status,
+    statusText: response.statusText,
   });
+};
 
-  proxy.on("proxyReq", (proxyRequest, request) => {
-    const requestOrigin = getRequestOrigin(request);
-    if (requestOrigin) {
-      proxyRequest.setHeader("x-forwarded-host", requestOrigin.host);
-      proxyRequest.setHeader(
-        "x-forwarded-proto",
-        requestOrigin.protocol.replace(/:$/, "")
-      );
-    }
+export function createNocoBaseProxyRouter(target?: string) {
+  const router = new Hono();
 
-    if (!request.url?.includes("aiConversations:")) return;
-    proxyRequest.setHeader("accept-encoding", "identity");
-    proxyRequest.setHeader("cache-control", "no-cache");
-  });
-
-  proxy.on("proxyRes", (proxyResponse) => {
-    const contentType = String(proxyResponse.headers["content-type"] ?? "");
-    if (!contentType.includes("text/event-stream")) return;
-
-    delete proxyResponse.headers["content-length"];
-    proxyResponse.headers["cache-control"] = "no-cache, no-transform";
-    proxyResponse.headers["x-accel-buffering"] = "no";
-  });
-
-  proxy.on("error", (_error, _request, response) => {
-    if (!response || !("writeHead" in response) || response.headersSent) return;
-    response.writeHead(502, { "content-type": "application/json" });
-    response.end(JSON.stringify({ error: "Bad Gateway" }));
-  });
-
-  return async (request: IncomingMessage, response: ServerResponse) => {
+  const handler = async (context: Context) => {
     if (!target) {
-      response.writeHead(502, { "content-type": "application/json" });
-      response.end(
-        JSON.stringify({
-          error: "NOCOBASE_API_PROXY_TARGET is not configured",
-        })
+      return context.json(
+        { error: "NOCOBASE_API_PROXY_TARGET is not configured" },
+        502
       );
-      return;
     }
 
-    request.url = createUpstreamRequestUrl(target, request.url);
-    await new Promise<void>((resolve) => {
-      const done = () => {
-        response.off("finish", done);
-        response.off("close", done);
-        resolve();
-      };
-
-      response.once("finish", done);
-      response.once("close", done);
-
-      proxy.web(request, response, {
-        target: new URL(target).origin,
-      });
+    const upstreamUrl = createUpstreamRequestUrl(target, context.req.url);
+    const response = await proxy(upstreamUrl, {
+      raw: context.req.raw,
+      headers: createProxyHeaders(context.req.raw, upstreamUrl),
     });
+
+    return normalizeProxyResponse(response);
   };
+
+  router.all("/", handler);
+  router.all("/*", handler);
+
+  return router;
 }

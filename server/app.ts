@@ -1,8 +1,10 @@
 import { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { config } from "./config.js";
 import { nocobaseProxyInterceptorRouter } from "./middleware/nocobase-proxy-interceptor.js";
 import { appApiRouter } from "./routes/app-api.js";
 import { healthRouter } from "./routes/health.js";
+import { createNocoBaseProxyRouter } from "./routes/nocobase-proxy.js";
 import { usersRouter } from "./routes/users.js";
 
 const getErrorStatus = (error: unknown) => {
@@ -44,6 +46,7 @@ export function createApp() {
   app.route("/_app/api/users", usersRouter);
   app.route("/_app/api", appApiRouter);
   app.route("/api", nocobaseProxyInterceptorRouter);
+  app.route("/api", createNocoBaseProxyRouter(config.nocobaseApiTarget));
 
   app.notFound((context) => {
     return context.json({ error: "Not Found" }, 404);
