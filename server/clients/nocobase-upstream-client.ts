@@ -1,5 +1,3 @@
-import type Koa from "koa";
-
 export class NocoBaseUpstreamHttpError extends Error {
   constructor(
     message: string,
@@ -13,7 +11,12 @@ export class NocoBaseUpstreamHttpError extends Error {
 
 export interface NocoBaseUpstreamClientOptions {
   target?: string;
-  context: Koa.Context;
+  context: ServerRequestContext;
+}
+
+export interface ServerRequestContext {
+  getHeader(name: string): string | undefined;
+  setHeader(name: string, value: string): void;
 }
 
 export interface NocoBaseUpstreamRequestOptions {
@@ -38,9 +41,6 @@ const FORWARDED_HEADERS = [
   "user-agent",
 ];
 
-const getHeaderValue = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value;
-
 const parseCookies = (cookieHeader?: string) => {
   const cookies: Record<string, string> = {};
   if (!cookieHeader) return cookies;
@@ -60,14 +60,14 @@ const parseCookies = (cookieHeader?: string) => {
   return cookies;
 };
 
-const getCsrfTokenFromCookies = (ctx: Koa.Context) => {
-  const cookies = parseCookies(ctx.get("cookie"));
-  const portalName = ctx.get("x-portal") || "main";
+const getCsrfTokenFromCookies = (context: ServerRequestContext) => {
+  const cookies = parseCookies(context.getHeader("cookie"));
+  const portalName = context.getHeader("x-portal") || "main";
   return cookies[`nb_csrf_token_${portalName}`] ?? cookies.nb_csrf_token_main;
 };
 
-const getRequestOrigin = (ctx: Koa.Context) => {
-  const origin = ctx.get("origin");
+const getRequestOrigin = (context: ServerRequestContext) => {
+  const origin = context.getHeader("origin");
   if (origin) {
     try {
       return new URL(origin);
@@ -76,7 +76,7 @@ const getRequestOrigin = (ctx: Koa.Context) => {
     }
   }
 
-  const referer = ctx.get("referer");
+  const referer = context.getHeader("referer");
   if (referer) {
     try {
       return new URL(referer);
@@ -187,7 +187,7 @@ export class NocoBaseUpstreamClient {
     };
 
     for (const name of FORWARDED_HEADERS) {
-      const value = getHeaderValue(this.options.context.req.headers[name]);
+      const value = this.options.context.getHeader(name);
       if (value) headers[name] = value;
     }
 
@@ -208,7 +208,7 @@ export class NocoBaseUpstreamClient {
   private forwardRenewedToken(response: Response) {
     const renewedToken = response.headers.get("x-new-token");
     if (renewedToken) {
-      this.options.context.set("x-new-token", renewedToken);
+      this.options.context.setHeader("x-new-token", renewedToken);
     }
   }
 }

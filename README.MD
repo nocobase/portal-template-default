@@ -14,7 +14,7 @@ pnpm dev
 ```
 
 The development server starts at `http://localhost:5173` by default.
-`pnpm dev` also starts the Koa BFF at `http://localhost:3000`.
+`pnpm dev` also starts the Hono BFF at `http://localhost:3000`.
 
 ## Configuration
 
@@ -30,7 +30,7 @@ NOCOBASE_PORTAL_BASE=/
   Same-origin deployments normally use `/api`; in this BFF layout the browser
   should keep using `/api`.
 - `NOCOBASE_API_PROXY_TARGET` is the real NocoBase REST API target used by the
-  Koa BFF. Keep service-only URLs and secrets out of browser-exposed variables.
+  Hono BFF. Keep service-only URLs and secrets out of browser-exposed variables.
 - `NOCOBASE_PORTAL_BASE` is the public path where the Portal is mounted. Use
   `/` for root development or set the deployment path before building.
 - `NOCOBASE_API_TOKEN` can provide a temporary development token. Never commit
@@ -43,7 +43,7 @@ server customizes it, keep `API_CLIENT_STORAGE_PREFIX`,
 ## Development
 
 ```bash
-# Start the Vite development server and Koa BFF
+# Start the Vite development server and Hono BFF
 pnpm dev
 
 # Build the production assets
@@ -52,7 +52,7 @@ pnpm build
 # Build the production assets, runtime HTML, and BFF output
 pnpm build:all
 
-# Start the compiled Koa BFF
+# Start the compiled Hono BFF
 pnpm start
 
 # Serve only a production client build with Refine

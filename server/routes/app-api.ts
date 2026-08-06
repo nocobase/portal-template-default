@@ -1,5 +1,4 @@
-import Router from "@koa/router";
-import bodyParser from "koa-bodyparser";
+import { Hono } from "hono";
 import { randomUUID } from "node:crypto";
 import type {
   AppHealthResponse,
@@ -8,48 +7,48 @@ import type {
   BffEchoResponse,
 } from "../../shared/api.js";
 
-const appApi = new Router({ prefix: "/_app/api" });
+export const appApiRouter = new Hono();
 
-appApi.use(bodyParser());
-
-appApi.get("/health", (ctx) => {
-  ctx.body = {
+appApiRouter.get("/health", (context) => {
+  return context.json({
     ok: true,
     service: "bff",
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-  } satisfies AppHealthResponse;
+  } satisfies AppHealthResponse);
 });
 
-appApi.get("/demo", (ctx) => {
-  ctx.body = {
+appApiRouter.get("/demo", (context) => {
+  return context.json({
     ok: true,
-    message: "Hello from the Koa BFF.",
-    method: ctx.method,
-    path: ctx.path,
+    message: "Hello from the Hono BFF.",
+    method: context.req.method,
+    path: new URL(context.req.url).pathname,
     timestamp: new Date().toISOString(),
-    requestId: ctx.get("x-request-id") || randomUUID(),
+    requestId: context.req.header("x-request-id") || randomUUID(),
     server: {
       node: process.version,
       uptime: process.uptime(),
     },
-  } satisfies BffDemoResponse;
+  } satisfies BffDemoResponse);
 });
 
-appApi.post("/demo/echo", (ctx) => {
-  const body = ctx.request.body as Partial<BffEchoRequest> | undefined;
+appApiRouter.post("/demo/echo", async (context) => {
+  const body = (await context.req.json().catch(() => undefined)) as
+    | Partial<BffEchoRequest>
+    | undefined;
   const message =
     typeof body?.message === "string" && body.message.trim()
       ? body.message.trim()
       : "No message provided";
 
-  ctx.body = {
+  return context.json({
     ok: true,
-    message: "The Koa BFF received your message.",
-    method: ctx.method,
-    path: ctx.path,
+    message: "The Hono BFF received your message.",
+    method: context.req.method,
+    path: new URL(context.req.url).pathname,
     timestamp: new Date().toISOString(),
-    requestId: ctx.get("x-request-id") || randomUUID(),
+    requestId: context.req.header("x-request-id") || randomUUID(),
     server: {
       node: process.version,
       uptime: process.uptime(),
@@ -58,12 +57,8 @@ appApi.post("/demo/echo", (ctx) => {
       message,
     },
     receivedHeaders: {
-      userAgent: ctx.get("user-agent") || undefined,
-      referer: ctx.get("referer") || undefined,
+      userAgent: context.req.header("user-agent"),
+      referer: context.req.header("referer"),
     },
-  } satisfies BffEchoResponse;
+  } satisfies BffEchoResponse);
 });
-
-export const appApiRouter = new Router();
-
-appApiRouter.use(appApi.routes(), appApi.allowedMethods());

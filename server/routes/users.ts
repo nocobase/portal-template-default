@@ -1,5 +1,6 @@
-import Router from "@koa/router";
-import bodyParser from "koa-bodyparser";
+import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
+import { createPortalDataClient } from "../middleware/portal-data.js";
 import type {
   PortalUserMetadataResponse,
   PortalUserMutationRequest,
@@ -17,9 +18,7 @@ const USER_FIELDS = [
   "updatedAt",
 ];
 
-const users = new Router({ prefix: "/_app/api/users" });
-
-users.use(bodyParser());
+export const usersRouter = new Hono();
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -100,12 +99,13 @@ const normalizeListResult = (
   };
 };
 
-users.get("/", async (ctx) => {
-  const page = toPositiveInteger(ctx.query.page, 1);
-  const pageSize = Math.min(toPositiveInteger(ctx.query.pageSize, 10), 50);
-  const search = getQueryString(ctx.query.search);
+usersRouter.get("/", async (context) => {
+  const page = toPositiveInteger(context.req.query("page"), 1);
+  const pageSize = Math.min(toPositiveInteger(context.req.query("pageSize"), 10), 50);
+  const search = getQueryString(context.req.query("search"));
+  const portalData = createPortalDataClient(context);
 
-  const result = await ctx.portalData.query<PortalUserRecord>({
+  const result = await portalData.query<PortalUserRecord>({
     collection: "users",
     fields: USER_FIELDS,
     filter: getUsersSearchFilter(search),
@@ -114,66 +114,70 @@ users.get("/", async (ctx) => {
     sort: ["-createdAt"],
   });
 
-  ctx.body = normalizeListResult(result, { page, pageSize });
+  return context.json(normalizeListResult(result, { page, pageSize }));
 });
 
-users.get("/metadata", async (ctx) => {
-  ctx.body = await ctx.portalData.metadata<PortalUserMetadataResponse>({
+usersRouter.get("/metadata", async (context) => {
+  const portalData = createPortalDataClient(context);
+
+  return context.json(await portalData.metadata<PortalUserMetadataResponse>({
     collection: "users",
-  });
+  }));
 });
 
-users.get("/:id", async (ctx) => {
-  const id = getParam(ctx.params, "id");
-  if (!id) ctx.throw(400, "User id is required");
+usersRouter.get("/:id", async (context) => {
+  const id = getParam({ id: context.req.param("id") }, "id");
+  if (!id) throw new HTTPException(400, { message: "User id is required" });
+  const portalData = createPortalDataClient(context);
 
-  ctx.body = await ctx.portalData.get<PortalUserRecord>({
+  return context.json(await portalData.get<PortalUserRecord>({
     collection: "users",
     fields: USER_FIELDS,
     filterByTk: id,
-  });
+  }));
 });
 
-users.post("/", async (ctx) => {
-  const values = readMutationBody(ctx.request.body);
+usersRouter.post("/", async (context) => {
+  const values = readMutationBody(await context.req.json().catch(() => undefined));
   if (!values.username && !values.email && !values.nickname) {
-    ctx.throw(400, "Username, email, or nickname is required");
+    throw new HTTPException(400, {
+      message: "Username, email, or nickname is required",
+    });
   }
+  const portalData = createPortalDataClient(context);
 
-  ctx.body = await ctx.portalData.create<PortalUserRecord>({
+  return context.json(await portalData.create<PortalUserRecord>({
     collection: "users",
     values: toMutationValues(values),
-  });
+  }));
 });
 
-users.put("/:id", async (ctx) => {
-  const id = getParam(ctx.params, "id");
-  if (!id) ctx.throw(400, "User id is required");
+usersRouter.put("/:id", async (context) => {
+  const id = getParam({ id: context.req.param("id") }, "id");
+  if (!id) throw new HTTPException(400, { message: "User id is required" });
 
-  const values = readMutationBody(ctx.request.body);
+  const values = readMutationBody(await context.req.json().catch(() => undefined));
   delete values.password;
 
   if (!values.username && !values.email && !values.nickname) {
-    ctx.throw(400, "Nothing to update");
+    throw new HTTPException(400, { message: "Nothing to update" });
   }
+  const portalData = createPortalDataClient(context);
 
-  ctx.body = await ctx.portalData.update<PortalUserRecord>({
+  return context.json(await portalData.update<PortalUserRecord>({
     collection: "users",
     filterByTk: id,
     values: toMutationValues(values),
-  });
+  }));
 });
 
-users.delete("/:id", async (ctx) => {
-  const id = getParam(ctx.params, "id");
-  if (!id) ctx.throw(400, "User id is required");
+usersRouter.delete("/:id", async (context) => {
+  const id = getParam({ id: context.req.param("id") }, "id");
+  if (!id) throw new HTTPException(400, { message: "User id is required" });
+  const portalData = createPortalDataClient(context);
 
-  ctx.body = await ctx.portalData.destroy({
+  return context.json(await portalData.destroy({
     collection: "users",
     filterByTk: id,
-  });
+  }));
 });
-
-export const usersRouter = new Router();
-
-usersRouter.use(users.routes(), users.allowedMethods());

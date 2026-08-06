@@ -1,36 +1,18 @@
-import bodyParser from "koa-bodyparser";
-import type Koa from "koa";
+import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { NocoBaseUpstreamClient } from "../clients/nocobase-upstream-client.js";
 import { config } from "../config.js";
-
-const parseBody = bodyParser();
-const USERS_CREATE_PATH = "/api/users:create";
+import { createServerRequestContext } from "./portal-data.js";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
-const isUsersCreateRequest = (ctx: Koa.Context) =>
-  ctx.method === "POST" && ctx.path === USERS_CREATE_PATH;
-
-const toSingleQueryValue = (value: unknown) => {
-  if (Array.isArray(value)) return value[0];
-  return value;
-};
-
-const getProxyQuery = (query: Koa.Context["query"]) => {
+const getProxyQuery = (searchParams: URLSearchParams) => {
   const output: Record<string, string | number | boolean | null | undefined> = {};
 
-  for (const [key, value] of Object.entries(query)) {
-    const singleValue = toSingleQueryValue(value);
-    if (
-      typeof singleValue === "string" ||
-      typeof singleValue === "number" ||
-      typeof singleValue === "boolean" ||
-      singleValue === null ||
-      singleValue === undefined
-    ) {
-      output[key] = singleValue;
-    }
+  for (const [key, value] of searchParams.entries()) {
+    if (output[key] !== undefined) continue;
+    output[key] = value;
   }
 
   return output;
@@ -63,36 +45,31 @@ const withUsersCreateDefaults = (body: unknown) => {
   return nextValues;
 };
 
-const assertUsersCreateAllowed = (body: unknown, ctx: Koa.Context) => {
+const assertUsersCreateAllowed = (body: unknown) => {
   const values = getUsersCreateValues(body);
   const email = values.email;
 
   if (typeof email === "string" && email.endsWith("@blocked.example")) {
-    ctx.throw(400, "This email domain is blocked by Portal proxy interceptor");
+    throw new HTTPException(400, {
+      message: "This email domain is blocked by Portal proxy interceptor",
+    });
   }
 };
 
-export const nocobaseProxyInterceptorMiddleware: Koa.Middleware = async (
-  ctx,
-  next
-) => {
-  if (!isUsersCreateRequest(ctx)) {
-    await next();
-    return;
-  }
+export const nocobaseProxyInterceptorRouter = new Hono();
 
-  await parseBody(ctx, async () => {});
-  assertUsersCreateAllowed(ctx.request.body, ctx);
-
+nocobaseProxyInterceptorRouter.post("/users:create", async (context) => {
+  const body = await context.req.json().catch(() => undefined);
+  assertUsersCreateAllowed(body);
   const upstream = new NocoBaseUpstreamClient({
-    context: ctx,
+    context: createServerRequestContext(context),
     target: config.nocobaseApiTarget,
   });
 
-  ctx.set("x-portal-proxy-intercepted", "users:create");
-  ctx.body = await upstream.request("users:create", {
-    body: withUsersCreateDefaults(ctx.request.body),
+  context.header("x-portal-proxy-intercepted", "users:create");
+  return context.json(await upstream.request("users:create", {
+    body: withUsersCreateDefaults(body),
     method: "POST",
-    query: getProxyQuery(ctx.query),
-  });
-};
+    query: getProxyQuery(new URL(context.req.url).searchParams),
+  }));
+});

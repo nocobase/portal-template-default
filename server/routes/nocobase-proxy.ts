@@ -1,9 +1,9 @@
 import httpProxy from "http-proxy";
-import type Koa from "koa";
+import type { IncomingMessage, ServerResponse } from "node:http";
 
 const API_PREFIX = "/api";
 
-const isApiRequest = (path: string) =>
+export const isNocoBaseApiRequest = (path: string) =>
   path === API_PREFIX || path.startsWith(`${API_PREFIX}/`);
 
 const createUpstreamRequestUrl = (target: string, requestUrl = "/") => {
@@ -23,7 +23,7 @@ const createUpstreamRequestUrl = (target: string, requestUrl = "/") => {
 const getHeaderValue = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value;
 
-const getRequestOrigin = (request: Koa.Request["req"]) => {
+const getRequestOrigin = (request: IncomingMessage) => {
   const origin = getHeaderValue(request.headers.origin);
   if (origin) {
     try {
@@ -45,7 +45,7 @@ const getRequestOrigin = (request: Koa.Request["req"]) => {
   return undefined;
 };
 
-export function createNocoBaseProxy(target?: string): Koa.Middleware {
+export function createNocoBaseProxyHandler(target?: string) {
   const proxy = httpProxy.createProxyServer({
     changeOrigin: true,
     secure: false,
@@ -82,32 +82,29 @@ export function createNocoBaseProxy(target?: string): Koa.Middleware {
     response.end(JSON.stringify({ error: "Bad Gateway" }));
   });
 
-  return async (ctx, next) => {
-    if (!isApiRequest(ctx.path)) {
-      return next();
-    }
-
+  return async (request: IncomingMessage, response: ServerResponse) => {
     if (!target) {
-      ctx.status = 502;
-      ctx.body = {
-        error: "NOCOBASE_API_PROXY_TARGET is not configured",
-      };
+      response.writeHead(502, { "content-type": "application/json" });
+      response.end(
+        JSON.stringify({
+          error: "NOCOBASE_API_PROXY_TARGET is not configured",
+        })
+      );
       return;
     }
 
-    ctx.respond = false;
-    ctx.req.url = createUpstreamRequestUrl(target, ctx.req.url);
+    request.url = createUpstreamRequestUrl(target, request.url);
     await new Promise<void>((resolve) => {
       const done = () => {
-        ctx.res.off("finish", done);
-        ctx.res.off("close", done);
+        response.off("finish", done);
+        response.off("close", done);
         resolve();
       };
 
-      ctx.res.once("finish", done);
-      ctx.res.once("close", done);
+      response.once("finish", done);
+      response.once("close", done);
 
-      proxy.web(ctx.req, ctx.res, {
+      proxy.web(request, response, {
         target: new URL(target).origin,
       });
     });
