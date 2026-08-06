@@ -2,7 +2,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "path";
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig, loadEnv, type ProxyOptions } from "vite";
 import {
   portalRawIndexHtmlPlugin,
   portalSdkCompatibilityPlugin,
@@ -65,7 +65,7 @@ export default defineConfig(({ mode }) => {
     ? registrySourceRoot
     : path.resolve(__dirname, "./client/extensions");
   const nocobaseProxyPath = getNocoBaseProxyPath(env.NOCOBASE_API_URL);
-  const legacyNocoBaseProxy =
+  const legacyNocoBaseProxy: Record<string, ProxyOptions> =
     proxyTarget && nocobaseProxyPath !== "/api"
       ? {
           [nocobaseProxyPath]: {
