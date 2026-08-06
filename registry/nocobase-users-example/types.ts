@@ -17,6 +17,7 @@ export type UserFormValues = {
   email: string;
   phone: string;
   password?: string;
+  roles?: Role[];
 };
 
 export type RoleRecord = Role & {

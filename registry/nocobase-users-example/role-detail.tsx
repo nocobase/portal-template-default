@@ -26,7 +26,44 @@ export function RoleDetailRoute({ returnTo }: { returnTo: "list" | "show" }) {
   const closeTarget =
     returnTo === "show" && id ? getUserShowPath(id) : userRoutes.list;
 
-  return <RoleDetailDrawer role={{ name: roleName }} closeTo={closeTarget} />;
+  const role = { name: roleName };
+
+  return (
+    <CanAccess
+      resource="roles"
+      action="show"
+      fallback={<RoleDetailAccessDenied role={role} closeTo={closeTarget} />}
+    >
+      <RoleDetailDrawer role={role} closeTo={closeTarget} />
+    </CanAccess>
+  );
+}
+
+function RoleDetailAccessDenied({
+  role,
+  closeTo,
+}: {
+  role: Role;
+  closeTo: string;
+}) {
+  const translate = useTranslate();
+
+  return (
+    <RouteDrawer
+      title={resolveRoleLabel(role)}
+      description={translate(
+        "roles.drawer.description",
+        { ns: "app" },
+        "Review the role associated with this user."
+      )}
+      closeLabel={translate("buttons.close", "Close")}
+      closeTo={closeTo}
+    >
+      <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <AccessDenied className="min-h-full" />
+      </div>
+    </RouteDrawer>
+  );
 }
 
 export function RoleDetailDrawer({
@@ -263,17 +300,9 @@ function RoleDetailSection({
 }
 
 export function UserRoleDetailRoute() {
-  return (
-    <CanAccess resource="roles" action="show" fallback={<AccessDenied />}>
-      <RoleDetailRoute returnTo="list" />
-    </CanAccess>
-  );
+  return <RoleDetailRoute returnTo="list" />;
 }
 
 export function UserShowRoleDetailRoute() {
-  return (
-    <CanAccess resource="roles" action="show" fallback={<AccessDenied />}>
-      <RoleDetailRoute returnTo="show" />
-    </CanAccess>
-  );
+  return <RoleDetailRoute returnTo="show" />;
 }

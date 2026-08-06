@@ -17,6 +17,8 @@ import {
   applyAIUserFormValues,
   getAIUserFormFields,
   getAIUserFormValues,
+  getUserFormValues,
+  normalizeUserFormValues,
 } from "./form-context";
 import { UserFormFields } from "./form-fields";
 import { userRoutes } from "./routes";
@@ -66,10 +68,7 @@ function UserCreateForm() {
       },
     },
     defaultValues: {
-      nickname: "",
-      username: "",
-      email: "",
-      phone: "",
+      ...getUserFormValues(),
       password: "",
     },
   });
@@ -89,11 +88,18 @@ function UserCreateForm() {
     <Form {...form}>
       <form
         ref={aiFormRef}
-        onSubmit={form.handleSubmit(onFinish)}
+        onSubmit={form.handleSubmit((values) =>
+          onFinish(normalizeUserFormValues(values))
+        )}
         className="flex min-h-0 flex-1 flex-col"
       >
         <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5 [&_[data-slot=input]]:h-10 [&_[data-slot=select-trigger]]:h-10 [&_[data-slot=textarea]]:min-h-56">
-          <UserFormFields form={form} includePassword translate={translate} />
+          <UserFormFields
+            form={form}
+            includePassword
+            roleAction="create"
+            translate={translate}
+          />
         </div>
         <RouteDrawerFooter className="flex-row justify-end">
           <Button type="button" variant="outline" onClick={() => close()}>
@@ -101,8 +107,9 @@ function UserCreateForm() {
           </Button>
           <Button
             type="submit"
-            {...form.saveButtonProps}
-            disabled={form.formState.isSubmitting}
+            disabled={
+              form.saveButtonProps.disabled || form.formState.isSubmitting
+            }
           >
             {form.formState.isSubmitting
               ? translate(

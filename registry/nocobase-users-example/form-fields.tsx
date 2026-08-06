@@ -10,6 +10,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { UserRolesField } from "./role-select-field";
 import type { UserFormValues } from "./types";
 
 type Translate = ReturnType<typeof useTranslate>;
@@ -17,10 +18,12 @@ type Translate = ReturnType<typeof useTranslate>;
 export function UserFormFields({
   form,
   includePassword,
+  roleAction,
   translate,
 }: {
   form: UseFormReturn<UserFormValues>;
   includePassword?: boolean;
+  roleAction: "create" | "edit";
   translate: Translate;
 }) {
   return (
@@ -206,6 +209,8 @@ export function UserFormFields({
           )}
         />
       ) : null}
+
+      <UserRolesField form={form} action={roleAction} translate={translate} />
     </>
   );
 }
