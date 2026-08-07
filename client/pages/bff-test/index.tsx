@@ -20,6 +20,7 @@ import type {
 } from "@shared/users";
 
 import { Breadcrumb } from "@/components/app-shell/breadcrumb";
+import { portalApiPath } from "@/lib/portal-api";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -142,8 +143,10 @@ export default function BffTestPage() {
       if (search.trim()) query.set("search", search.trim());
 
       const [list, usersMetadata] = await Promise.all([
-        requestJson<PortalUsersListResponse>(`/_app/api/users?${query}`),
-        requestJson<PortalUserMetadataResponse>("/_app/api/users/metadata"),
+        requestJson<PortalUsersListResponse>(portalApiPath(`/users?${query}`)),
+        requestJson<PortalUserMetadataResponse>(
+          portalApiPath("/users/metadata")
+        ),
       ]);
       setUsers(list);
       setMetadata(usersMetadata);
@@ -184,7 +187,7 @@ export default function BffTestPage() {
     setError(null);
     try {
       setSelectedUser(
-        await requestJson<PortalUserRecord>(`/_app/api/users/${user.id}`)
+        await requestJson<PortalUserRecord>(portalApiPath(`/users/${user.id}`))
       );
     } catch (requestError) {
       setError(
@@ -218,12 +221,15 @@ export default function BffTestPage() {
       };
 
       if (editingUser) {
-        await requestJson<PortalUserRecord>(`/_app/api/users/${editingUser.id}`, {
-          method: "PUT",
-          body: payload,
-        });
+        await requestJson<PortalUserRecord>(
+          portalApiPath(`/users/${editingUser.id}`),
+          {
+            method: "PUT",
+            body: payload,
+          }
+        );
       } else {
-        await requestJson<PortalUserRecord>("/_app/api/users", {
+        await requestJson<PortalUserRecord>(portalApiPath("/users"), {
           method: "POST",
           body: payload,
         });
@@ -249,7 +255,9 @@ export default function BffTestPage() {
     setError(null);
 
     try {
-      await requestJson(`/_app/api/users/${user.id}`, { method: "DELETE" });
+      await requestJson(portalApiPath(`/users/${user.id}`), {
+        method: "DELETE",
+      });
       if (selectedUser?.id === user.id) setSelectedUser(null);
       if (editingUser?.id === user.id) resetForm();
       await loadUsers();

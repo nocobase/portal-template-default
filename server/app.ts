@@ -43,8 +43,8 @@ export function createApp() {
   });
 
   app.route("/", healthRouter);
-  app.route("/_app/api/users", usersRouter);
-  app.route("/_app/api", appApiRouter);
+  app.route("/api/_portal/:portalName/users", usersRouter);
+  app.route("/api/_portal/:portalName", appApiRouter);
   app.use("/api/*", nocobaseProxyInterceptor);
   app.route("/api", createNocoBaseProxyRouter(config.nocobaseApiTarget));
 

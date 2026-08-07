@@ -10,7 +10,11 @@ export type PortalDataEnv = {
 };
 
 export const createServerRequestContext = (ctx: Context) => ({
-  getHeader: (name: string) => ctx.req.header(name),
+  getHeader: (name: string) => {
+    const value = ctx.req.header(name);
+    if (value || name.toLowerCase() !== "x-portal") return value;
+    return ctx.req.param("portalName");
+  },
   setHeader: (name: string, value: string) => {
     ctx.header(name, value);
   },

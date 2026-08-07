@@ -80,6 +80,7 @@ export const portalSdkCompatibilityPlugin = ({
 
 const defaultRuntimeConfig = `<!-- nocobase-runtime-config:start -->
 <script>
+  window.NOCOBASE_PORTAL_NAME = window.NOCOBASE_PORTAL_NAME ?? "main";
   window.NOCOBASE_PORTAL_BASE = "/";
   window.NOCOBASE_API_URL = "/api";
   window.__nocobase_api_client_storage_prefix__ = window.__nocobase_api_client_storage_prefix__ ?? "NOCOBASE_";

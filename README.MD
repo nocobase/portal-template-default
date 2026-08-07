@@ -23,6 +23,7 @@ The minimum local configuration is:
 ```env
 NOCOBASE_API_URL=/api
 NOCOBASE_API_PROXY_TARGET=https://example.com/api
+NOCOBASE_PORTAL_NAME=main
 NOCOBASE_PORTAL_BASE=/
 ```
 
@@ -31,6 +32,9 @@ NOCOBASE_PORTAL_BASE=/
   should keep using `/api`.
 - `NOCOBASE_API_PROXY_TARGET` is the real NocoBase REST API target used by the
   Hono BFF. Keep service-only URLs and secrets out of browser-exposed variables.
+- `NOCOBASE_PORTAL_NAME` is the Portal runtime name. Portal-owned APIs use the
+  `/api/_portal/<name>/...` prefix, for example
+  `/api/_portal/main/users/metadata`.
 - `NOCOBASE_PORTAL_BASE` is the public path where the Portal is mounted. Use
   `/` for root development or set the deployment path before building.
 - `NOCOBASE_API_TOKEN` can provide a temporary development token. Never commit

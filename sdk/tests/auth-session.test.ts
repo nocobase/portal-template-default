@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { AuthSession, NocoBaseClient } from "../src/client/index.ts";
 import {
   resolveNocoBaseAppName,
+  getNocoBasePortalName,
   resolveNocoBasePortalName,
   resolveNocoBaseSettingsUrl,
   resolvePortalUrl,
@@ -75,6 +76,10 @@ describe("Portal authentication session", () => {
     expect(new NocoBaseClient("/api").getHeaders()["X-Portal"]).toBe(
       "customer"
     );
+
+    window.NOCOBASE_PORTAL_NAME = "ops";
+    expect(getNocoBasePortalName()).toBe("ops");
+    expect(new NocoBaseClient("/api").getHeaders()["X-Portal"]).toBe("ops");
   });
 
   it("uses the SDK storage convention for main and sub-app sessions", () => {

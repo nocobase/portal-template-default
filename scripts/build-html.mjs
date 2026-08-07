@@ -135,6 +135,8 @@ const stripExistingRuntimeConfig = (html) => {
 loadBuildHtmlEnv();
 
 const portalBase = normalizePortalBase(process.env.NOCOBASE_PORTAL_BASE);
+const portalName =
+  String(process.env.NOCOBASE_PORTAL_NAME || "main").trim() || "main";
 const apiUrl = String(process.env.NOCOBASE_API_URL || "/api").trim() || "/api";
 const storagePrefix =
   String(process.env.API_CLIENT_STORAGE_PREFIX || "NOCOBASE_").trim() ||
@@ -154,6 +156,7 @@ if (!fs.existsSync(rawIndexPath)) {
 
 const runtimeConfig = `${startMarker}
 <script>
+  window.NOCOBASE_PORTAL_NAME = ${JSON.stringify(portalName)};
   window.NOCOBASE_PORTAL_BASE = ${JSON.stringify(portalBase)};
   window.NOCOBASE_API_URL = ${JSON.stringify(apiUrl)};
   window.__nocobase_api_client_storage_prefix__ = ${JSON.stringify(storagePrefix)};

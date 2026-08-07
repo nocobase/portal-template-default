@@ -121,10 +121,6 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
-        "/_app/api": {
-          target: appServerTarget,
-          changeOrigin: true,
-        },
         "/api": {
           target: appServerTarget,
           changeOrigin: true,
