@@ -110,6 +110,112 @@
       }
     },
     {
+      "name": "resource-actions",
+      "type": "registry:block",
+      "title": "NocoBase Resource Actions",
+      "description": "Reusable bulk edit, configured bulk update, and duplicate actions using the core NocoBase collection protocol.",
+      "dependencies": [
+        "@nocobase/portal-sdk@^2.0.0",
+        "@refinedev/core@^5.0.8",
+        "lucide-react@^0.487.0",
+        "sonner@^2.0.3"
+      ],
+      "registryDependencies": [
+        "alert",
+        "alert-dialog",
+        "badge",
+        "button",
+        "card",
+        "checkbox",
+        "dialog",
+        "input",
+        "label",
+        "select",
+        "table",
+        "textarea"
+      ],
+      "docs": "Uses core collection get, create, and update actions, so @nocobase/plugin-action-bulk-edit, @nocobase/plugin-action-bulk-update, and @nocobase/plugin-action-duplicate are not required on the server. Collection and field ACL remain authoritative.",
+      "source": {
+        "root": "registry/nocobase-resource-actions",
+        "target": "src/extensions/nocobase-resource-actions",
+        "include": ["."]
+      }
+    },
+    {
+      "name": "data-visualization",
+      "type": "registry:block",
+      "title": "NocoBase Data Visualization",
+      "description": "Reusable chart queries through charts:queryData with application-owned ECharts rendering.",
+      "dependencies": [
+        "@nocobase/portal-sdk@^2.0.0",
+        "@refinedev/core@^5.0.8",
+        "echarts@^5.5.0",
+        "echarts-for-react@3.0.2",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["alert", "badge", "card"],
+      "docs": "Requires @nocobase/plugin-data-visualization on the server. It provides the stable chart query adapter, hook, ECharts component, and development demo without copying the UI Builder chart designer.",
+      "source": {
+        "root": "registry/nocobase-data-visualization",
+        "target": "src/extensions/nocobase-data-visualization",
+        "include": ["."]
+      }
+    },
+    {
+      "name": "record-history",
+      "type": "registry:block",
+      "title": "NocoBase Record History",
+      "description": "Collection and single-record history timeline with field-level before and after values.",
+      "dependencies": [
+        "@nocobase/portal-sdk@^2.0.0",
+        "@refinedev/core@^5.0.8",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["alert", "badge", "button", "card", "collapsible"],
+      "docs": "Requires the commercial @nocobase/plugin-record-history on the server and a configured tracked collection. It reads recordHistories with field changes, users, and optional snapshots.",
+      "source": {
+        "root": "registry/nocobase-record-history",
+        "target": "src/extensions/nocobase-record-history",
+        "include": ["."]
+      }
+    },
+    {
+      "name": "map",
+      "type": "registry:block",
+      "title": "NocoBase Map",
+      "description": "AMap and Google Maps rendering for NocoBase point, line, polygon, and circle values.",
+      "dependencies": [
+        "@nocobase/portal-sdk@^2.0.0",
+        "@refinedev/core@^5.0.8",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["alert", "badge", "button", "card", "label", "select"],
+      "docs": "Requires @nocobase/plugin-map when using server-managed credentials and NocoBase geometry field types. It reads map-configuration:get and does not include the plugin administration page or UI Builder block designer.",
+      "source": {
+        "root": "registry/nocobase-map",
+        "target": "src/extensions/nocobase-map",
+        "include": ["."]
+      }
+    },
+    {
+      "name": "china-region",
+      "type": "registry:block",
+      "title": "NocoBase China Region Field",
+      "description": "Province, city, and area field editor plus read-only rendering backed by chinaRegions:list.",
+      "dependencies": [
+        "@nocobase/portal-sdk@^2.0.0",
+        "@refinedev/core@^5.0.8",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["alert", "badge", "card", "input", "label", "native-select"],
+      "docs": "Requires @nocobase/plugin-field-china-region on the server. It lazily loads chinaRegions and returns values compatible with the plugin's chinaRegion association field without copying its Ant Design or UI Builder implementation.",
+      "source": {
+        "root": "registry/nocobase-china-region",
+        "target": "src/extensions/nocobase-china-region",
+        "include": ["."]
+      }
+    },
+    {
       "name": "i18n",
       "type": "registry:block",
       "title": "NocoBase i18n",
@@ -378,6 +484,87 @@
       }
     },
     {
+      "name": "import",
+      "type": "registry:block",
+      "title": "NocoBase Import",
+      "description": "Reusable XLSX template download and record import action backed by the NocoBase import plugin.",
+      "dependencies": [
+        "@nocobase/portal-sdk@^2.0.0",
+        "@refinedev/core@^5.0.8",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": [
+        "alert",
+        "badge",
+        "button",
+        "card",
+        "dialog",
+        "input",
+        "table"
+      ],
+      "docs": "Requires @nocobase/plugin-action-import on the NocoBase server. Business pages explicitly configure writable import columns; the extension contributes a development-only users integration demo.",
+      "source": {
+        "root": "registry/nocobase-import",
+        "target": "src/extensions/nocobase-import",
+        "include": ["."]
+      }
+    },
+    {
+      "name": "import-pro",
+      "type": "registry:block",
+      "title": "NocoBase Import Pro",
+      "description": "Pro import options and async task progress layered on the base NocoBase import integration.",
+      "dependencies": [
+        "@nocobase/portal-sdk@^2.0.0",
+        "@refinedev/core@^5.0.8",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": [
+        "@nocobase/import",
+        "alert",
+        "button",
+        "checkbox",
+        "label",
+        "progress",
+        "select",
+        "switch"
+      ],
+      "docs": "Requires @nocobase/plugin-action-import, @nocobase/plugin-action-import-pro, and @nocobase/plugin-async-task-manager. Reuses the base import Registry item and adds execution mode, workflow, duplicate handling, task progress, and cancellation.",
+      "source": {
+        "root": "registry/nocobase-import-pro",
+        "target": "src/extensions/nocobase-import-pro",
+        "include": ["."]
+      }
+    },
+    {
+      "name": "template-print",
+      "type": "registry:block",
+      "title": "NocoBase Template Print",
+      "description": "Reusable template selector and print action backed by the NocoBase template-print plugin.",
+      "dependencies": [
+        "@nocobase/portal-sdk@^2.0.0",
+        "@refinedev/core@^5.0.8",
+        "lucide-react@^0.487.0",
+        "sonner@^2.0.3"
+      ],
+      "registryDependencies": [
+        "avatar",
+        "badge",
+        "button",
+        "card",
+        "checkbox",
+        "dropdown-menu",
+        "skeleton",
+        "table"
+      ],
+      "docs": "Requires @nocobase/plugin-action-template-print on the NocoBase server. The extension contributes a development-only integration demo; template management remains in the administration interface.",
+      "source": {
+        "root": "registry/nocobase-template-print",
+        "target": "src/extensions/nocobase-template-print",
+        "include": ["."]
+      }
+    },
+    {
       "name": "mail",
       "type": "registry:block",
       "title": "NocoBase Mail",
@@ -419,6 +606,36 @@
       "source": {
         "root": "registry/nocobase-mail",
         "target": "src/extensions/nocobase-mail",
+        "include": ["."]
+      }
+    },
+    {
+      "name": "in-app-message",
+      "type": "registry:block",
+      "title": "NocoBase In-app Messages",
+      "description": "Portal-native notification bell, unread counts, message inbox, and read-state controls backed by NocoBase notifications.",
+      "dependencies": [
+        "@nocobase/portal-sdk@^2.0.0",
+        "@refinedev/core@^5.0.8",
+        "@tanstack/react-query@^5.81.5",
+        "lucide-react@^0.487.0",
+        "sonner@^2.0.3"
+      ],
+      "registryDependencies": [
+        "badge",
+        "button",
+        "card",
+        "empty",
+        "scroll-area",
+        "sheet",
+        "skeleton",
+        "tabs",
+        "tooltip"
+      ],
+      "docs": "Requires @nocobase/plugin-notification-manager and @nocobase/plugin-notification-in-app-message on the connected NocoBase application. Exports opt-in notification components and contributes only a development showcase at /dev/in-app-message; no production UI or route is added automatically.",
+      "source": {
+        "root": "registry/nocobase-in-app-message",
+        "target": "src/extensions/nocobase-in-app-message",
         "include": ["."]
       }
     },
