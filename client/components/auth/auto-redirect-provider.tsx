@@ -78,7 +78,7 @@ export function AuthAutoRedirectProvider({
   }, [action, redirect, resource, shouldCheck, stableQuery]);
 
   if (isChecking) {
-    return <LoadingState className="min-h-svh" />;
+    return <LoadingState fullscreen />;
   }
 
   return children;

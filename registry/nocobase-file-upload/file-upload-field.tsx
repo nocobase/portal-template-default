@@ -51,6 +51,7 @@ export type FileUploadFieldProps = Omit<ComponentProps<"div">, "onChange"> & {
   maxFiles?: number;
   uploadMode?: FileUploadMode;
   uploadFile?: FileUploadHandler;
+  showRemoveTooltip?: boolean;
   messages?: Partial<FileUploadMessages>;
   previewMessages?: Partial<FilePreviewMessages>;
   onUploadStart?: (file: File) => void;
@@ -147,12 +148,33 @@ function IconButton({
   label,
   onClick,
   disabled,
+  showTooltip = true,
 }: {
   icon: LucideIcon;
   label: string;
   onClick: () => void;
   disabled?: boolean;
+  showTooltip?: boolean;
 }) {
+  if (!showTooltip) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        aria-label={label}
+        disabled={disabled}
+        onClick={(event) => {
+          event.stopPropagation();
+          onClick();
+        }}
+        className="size-6 border border-border/60 bg-background/90 text-foreground shadow-sm backdrop-blur-sm hover:bg-background hover:text-foreground"
+      >
+        <Icon />
+      </Button>
+    );
+  }
+
   return (
     <Tooltip>
       <TooltipTrigger
@@ -187,6 +209,7 @@ export function FileUploadField({
   maxFiles,
   uploadMode,
   uploadFile,
+  showRemoveTooltip = true,
   className,
   messages: messageOverrides,
   previewMessages: previewMessageOverrides,
@@ -382,6 +405,7 @@ export function FileUploadField({
                           icon={Trash2}
                           label={messages.remove}
                           disabled={disabled}
+                          showTooltip={showRemoveTooltip}
                           onClick={() => removeItem(item.key)}
                         />
                       )}

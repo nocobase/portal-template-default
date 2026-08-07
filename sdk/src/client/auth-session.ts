@@ -10,14 +10,23 @@ type AuthSessionRuntime = Window & {
 };
 
 type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+export type AuthSessionListener = (
+  field: AuthSessionField,
+  value?: string
+) => void;
 
-type AuthSessionOptions = {
+export type AuthSessionOptions = {
   appName?: string;
   storagePrefix?: string;
   storageType?: AuthStorageType;
   shareToken?: boolean;
   storage?: StorageLike;
 };
+
+export type AuthSessionStorageKeyOptions = Pick<
+  AuthSessionOptions,
+  "appName" | "shareToken" | "storagePrefix"
+>;
 
 const DEFAULT_STORAGE_PREFIX = "NOCOBASE_";
 const DEFAULT_STORAGE_TYPE: AuthStorageType = "localStorage";
@@ -63,12 +72,30 @@ const getCookie = (name: string) => {
   }
 };
 
+export const resolveAuthSessionStorageKey = (
+  {
+    appName = "main",
+    shareToken = false,
+    storagePrefix = DEFAULT_STORAGE_PREFIX,
+  }: AuthSessionStorageKeyOptions,
+  field: AuthSessionField
+) => {
+  const sharedSubAppToken =
+    field === "token" && appName !== "main" && shareToken;
+  const appPrefix =
+    appName === "main" || sharedSubAppToken
+      ? storagePrefix
+      : `${storagePrefix}${appName.toUpperCase()}_`;
+  return `${appPrefix}${field}`.toUpperCase();
+};
+
 export class AuthSession {
   readonly appName: string;
   readonly storagePrefix: string;
   readonly storageType: AuthStorageType;
   readonly shareToken: boolean;
   private readonly storage: StorageLike;
+  private readonly listeners = new Set<AuthSessionListener>();
 
   constructor(options: AuthSessionOptions = {}) {
     const runtime = getRuntimeWindow();
@@ -94,13 +121,7 @@ export class AuthSession {
   }
 
   getStorageKey(field: AuthSessionField) {
-    const isSharedSubAppToken =
-      field === "token" && this.appName !== "main" && this.shareToken;
-    const appPrefix =
-      this.appName === "main" || isSharedSubAppToken
-        ? this.storagePrefix
-        : `${this.storagePrefix}${this.appName.toUpperCase()}_`;
-    return `${appPrefix}${field}`.toUpperCase();
+    return resolveAuthSessionStorageKey(this, field);
   }
 
   get(field: AuthSessionField) {
@@ -109,8 +130,18 @@ export class AuthSession {
 
   set(field: AuthSessionField, value?: string | null) {
     const key = this.getStorageKey(field);
+    const previous = this.get(field);
     if (value) this.storage.setItem(key, value);
     else this.storage.removeItem(key);
+    const next = this.get(field);
+    if (next !== previous) {
+      this.listeners.forEach((listener) => listener(field, next));
+    }
+  }
+
+  subscribe(listener: AuthSessionListener) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
   }
 
   clearAuthentication() {

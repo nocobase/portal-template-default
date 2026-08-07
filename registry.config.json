@@ -6,7 +6,7 @@
       "name": "error-boundary",
       "type": "registry:lib",
       "title": "NocoBase Error Boundary",
-      "description": "Reusable root, page, and region error boundaries with copyable redacted diagnostics and recovery actions.",
+      "description": "Reusable render boundaries and NocoBase runtime status views with copyable redacted diagnostics and recovery actions.",
       "dependencies": [
         "@nocobase/portal-sdk@^2.0.0",
         "lucide-react@^0.487.0",
@@ -14,7 +14,7 @@
         "react-router@^7.0.2"
       ],
       "registryDependencies": ["badge", "button", "card"],
-      "docs": "Uses react-error-boundary for error containment and provides the default NocoBase diagnostic UI. It contributes only a development showcase at /dev/error-boundary, with no production routes, providers, or menu entries.",
+      "docs": "Uses react-error-boundary for render containment and provides runtime status UI for original NocoBase gateway and account error codes. It contributes only a development showcase at /dev/error-boundary, with no production routes, providers, or menu entries.",
       "source": {
         "root": "registry/nocobase-error-boundary",
         "target": "client/extensions/nocobase-error-boundary",
@@ -27,7 +27,7 @@
       "title": "NocoBase Route Surfaces",
       "description": "URL-backed drawer, dialog, and page containers with nested drawer stacking and a shared close lifecycle.",
       "dependencies": [
-        "@nocobase/portal-sdk@^2.0.0",
+        "@nocobase/portal-sdk@^2.1.0",
         "@base-ui/react@^1.6.0",
         "@refinedev/core@^5.0.8",
         "lucide-react@^0.487.0",
@@ -51,6 +51,32 @@
       }
     },
     {
+      "name": "client",
+      "type": "registry:lib",
+      "title": "NocoBase Client Components",
+      "description": "Small reusable Portal client components with transport-agnostic APIs and shadcn UI composition.",
+      "dependencies": [
+        "@nocobase/portal-sdk@^2.0.0",
+        "@tanstack/react-query@^5.81.5",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": ["badge", "button", "card", "command", "popover"],
+      "docs": "Provides dependency-light client components without NocoBase resource or Refine coupling. RemoteSelect delegates data access to a caller-provided loadOptions function and contributes only a development showcase under /dev/client/remote-select.",
+      "source": {
+        "root": "registry/nocobase-client",
+        "target": "src/extensions/nocobase-client",
+        "include": [
+          "README.md",
+          "demo",
+          "extension.tsx",
+          "index.ts",
+          "remote-select.tsx",
+          "types.ts",
+          "use-remote-options.ts"
+        ]
+      }
+    },
+    {
       "name": "users-example",
       "type": "registry:block",
       "title": "NocoBase Users Example",
@@ -66,7 +92,7 @@
         "react-router@^7.0.2"
       ],
       "registryDependencies": [
-        "@nocobase/file-upload",
+        "@nocobase/client",
         "@nocobase/route-surfaces",
         "alert",
         "badge",
@@ -300,7 +326,7 @@
       "title": "NocoBase AI Components and Demo",
       "description": "Complete NocoBase AI component runtime with application resources, routes, and component showcase pages.",
       "dependencies": [
-        "@nocobase/portal-sdk@^2.0.0",
+        "@nocobase/portal-sdk@^2.1.0",
         "@refinedev/core@^5.0.8",
         "react-router@^7.0.2"
       ],
@@ -332,15 +358,19 @@
       "dependencies": [
         "@nocobase/portal-sdk@^2.0.0",
         "@tanstack/react-query@^5.81.5",
-        "lucide-react@^0.487.0"
+        "lucide-react@^0.487.0",
+        "react-markdown@^10.1.0",
+        "remark-gfm@^4.0.1"
       ],
       "registryDependencies": [
         "alert",
         "button",
+        "card",
         "dialog",
+        "input",
         "tooltip"
       ],
-      "docs": "Requires a compatible Portal SDK client and a field targeting a file-template collection.",
+      "docs": "Requires a compatible Portal SDK client and a field targeting a file-template collection. The extension contributes a development-only file manager at /dev/files; its public-URL preview gallery does not require attachments:list.",
       "source": {
         "root": "registry/nocobase-file-upload",
         "target": "client/extensions/nocobase-file-upload",

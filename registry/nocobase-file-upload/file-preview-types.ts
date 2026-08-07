@@ -1,6 +1,7 @@
 import type { ComponentProps, ComponentType } from "react";
 
-import { AudioPreviewer, IframePreviewer, VideoPreviewer } from "./previewers/iframe";
+import { AudioPreviewer, VideoPreviewer } from "./previewers/iframe";
+import { MarkdownPreviewer, TextPreviewer } from "./previewers/text";
 import { ImagePreviewer } from "./previewers/image";
 import { OfficePreviewer } from "./previewers/office";
 import { PdfPreviewer } from "./previewers/pdf";
@@ -140,6 +141,12 @@ export function isTextFile(file: NocoBaseFileRecord) {
   );
 }
 
+export function isMarkdownFile(file: NocoBaseFileRecord) {
+  const mimetype = getFileMimeType(file);
+  const extension = getFileExtension(file);
+  return mimetype === "text/markdown" || extension === ".md";
+}
+
 export function isAudioFile(file: NocoBaseFileRecord) {
   return getFileMimeType(file).startsWith("audio/");
 }
@@ -182,9 +189,14 @@ export const defaultPreviewTypes: FilePreviewType[] = [
     Previewer: VideoPreviewer,
   },
   {
+    key: "markdown",
+    match: (file) => isMarkdownFile(file) && !isActiveContentFile(file),
+    Previewer: MarkdownPreviewer,
+  },
+  {
     key: "text",
     match: (file) => isTextFile(file) && !isActiveContentFile(file),
-    Previewer: IframePreviewer,
+    Previewer: TextPreviewer,
   },
   {
     key: "active-content",

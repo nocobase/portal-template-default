@@ -37,7 +37,7 @@ export function NocoBaseI18nBootstrap({ children }: PropsWithChildren) {
   }, [settings]);
 
   if (!ready) {
-    return <LoadingState className="min-h-80" />;
+    return <LoadingState fullscreen />;
   }
 
   return children;

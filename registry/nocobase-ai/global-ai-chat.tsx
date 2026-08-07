@@ -7,6 +7,7 @@ import {
   type PropsWithChildren,
   type SetStateAction,
 } from "react";
+import { RouteOverlayViewportContext } from "@nocobase/portal-sdk/routing";
 import {
   AIChatFloatingTrigger,
   NocoBaseAIRootProvider,
@@ -52,6 +53,13 @@ function NocoBaseAIGlobalEntry({ children }: PropsWithChildren) {
   const ready =
     ai.configurationStatus === "ready" &&
     ai.employees.length > 0;
+  const routeOverlayViewport = useMemo(
+    () =>
+      ready && open && !expanded
+        ? { inlineEnd: DEFAULT_SIDE_PANEL_WIDTH }
+        : null,
+    [expanded, open, ready]
+  );
 
   return (
     <div
@@ -64,7 +72,11 @@ function NocoBaseAIGlobalEntry({ children }: PropsWithChildren) {
         } as CSSProperties
       }
     >
-      <div className="min-w-0">{children}</div>
+      <RouteOverlayViewportContext.Provider
+        value={routeOverlayViewport}
+      >
+        <div className="min-w-0">{children}</div>
+      </RouteOverlayViewportContext.Provider>
       {ready ? (
         <AIChatProvider
           id="starter-global-ai"

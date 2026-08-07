@@ -4,8 +4,14 @@ import {
   NOCOBASE_AUTHENTICATOR,
 } from "../runtime/constants.ts";
 import { getNocoBasePortalName } from "../runtime/config.ts";
+import { portalRuntimeStore } from "../runtime/store.ts";
 import { authSession } from "./auth-session.ts";
-import { getNocoBaseErrorMessage, NocoBaseHttpError } from "./error.ts";
+import {
+  getNocoBaseErrorMessage,
+  isNocoBaseLifecycleError,
+  NocoBaseHttpError,
+  normalizeNocoBaseRuntimeError,
+} from "./error.ts";
 
 type QueryValue =
   | string
@@ -34,6 +40,28 @@ const getBrowserLocale = () =>
   typeof navigator === "undefined" ? undefined : navigator.language;
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+const readResponsePayload = async (response: Response) => {
+  const text = await response.text();
+  if (!text) return undefined;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
+};
+
+const createResponseError = (
+  response: Response,
+  payload: unknown,
+  fallback: string
+) =>
+  new NocoBaseHttpError({
+    status: response.status,
+    payload,
+    requestId: response.headers.get("x-request-id") ?? undefined,
+    message: getNocoBaseErrorMessage(payload, fallback),
+  });
 
 const getClientTimezone = () => {
   const offsetMinutes = -new Date().getTimezoneOffset();
@@ -239,16 +267,15 @@ export class NocoBaseClient {
       signal: options.signal,
     });
     this.captureRenewedToken(response);
-    const payload = await response.json().catch(() => undefined);
+    const payload = await readResponsePayload(response);
     if (!response.ok) {
-      throw new NocoBaseHttpError({
-        status: response.status,
+      const error = createResponseError(
+        response,
         payload,
-        message: getNocoBaseErrorMessage(
-          payload,
-          `NocoBase request failed (${response.status})`
-        ),
-      });
+        `NocoBase request failed (${response.status})`
+      );
+      this.reportRuntimeResponseError(error);
+      throw error;
     }
     return unwrapPayload(payload, options.unwrap ?? "data") as T;
   }
@@ -284,17 +311,22 @@ export class NocoBaseClient {
     });
     this.captureRenewedToken(response);
     if (!response.ok || !response.body) {
-      const payload = await response.json().catch(() => undefined);
-      throw new NocoBaseHttpError({
-        status: response.status,
+      const payload = await readResponsePayload(response);
+      const error = createResponseError(
+        response,
         payload,
-        message: getNocoBaseErrorMessage(
-          payload,
-          `NocoBase stream failed (${response.status})`
-        ),
-      });
+        `NocoBase stream failed (${response.status})`
+      );
+      this.reportRuntimeResponseError(error);
+      throw error;
     }
     return response.body;
+  }
+
+  private reportRuntimeResponseError(error: NocoBaseHttpError) {
+    const runtimeError = normalizeNocoBaseRuntimeError(error, "http");
+    if (!isNocoBaseLifecycleError(runtimeError)) return;
+    portalRuntimeStore.setError(runtimeError);
   }
 
   private captureRenewedToken(response: Response) {
@@ -316,3 +348,4 @@ export const nocobaseClient = new NocoBaseClient();
 
 export * from "./auth-session.ts";
 export * from "./error.ts";
+export * from "./websocket.ts";

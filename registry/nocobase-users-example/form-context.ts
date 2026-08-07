@@ -1,11 +1,42 @@
 import type { useTranslate } from "@refinedev/core";
 import type { Path, PathValue, UseFormReturn } from "react-hook-form";
 
-import type { UserFormValues } from "./types";
+import type { UserFormValues, UserRecord } from "./types";
 
 type Translate = ReturnType<typeof useTranslate>;
 
 const AI_EDITABLE_FIELDS = ["nickname", "username", "email", "phone"] as const;
+
+export function getUserFormValues(record?: UserRecord): UserFormValues {
+  const values: UserFormValues = {
+    nickname: record?.nickname ?? "",
+    username: record?.username ?? "",
+    email: record?.email ?? "",
+    phone: record?.phone ?? "",
+  };
+
+  if (record && Object.prototype.hasOwnProperty.call(record, "roles")) {
+    values.roles = record.roles ?? [];
+  }
+
+  return values;
+}
+
+export function normalizeUserFormValues(values: UserFormValues): UserFormValues {
+  if (!Object.prototype.hasOwnProperty.call(values, "roles")) return values;
+  if (!Array.isArray(values.roles)) {
+    const { roles: _roles, ...valuesWithoutRoles } = values;
+    return valuesWithoutRoles;
+  }
+
+  return {
+    ...values,
+    roles: values.roles
+      .map((role) => role.name)
+      .filter(Boolean)
+      .map((name) => ({ name })),
+  };
+}
 
 export function getAIUserFormValues(values: UserFormValues) {
   return Object.fromEntries(

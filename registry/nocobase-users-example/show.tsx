@@ -12,20 +12,6 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RouteDrawer } from "@/extensions/nocobase-route-surfaces";
 import { useAIPageElementHandle } from "./optional-ai";
-import {
-  FilePreviewField,
-  getFileFieldAppends,
-} from "@/extensions/nocobase-file-upload";
-import {
-  userAvatarDescriptor,
-  userFileDescriptors,
-  userFilesDescriptor,
-} from "./file-descriptors";
-import {
-  getAvatarPreviewMessages,
-  getFilesPreviewMessages,
-} from "./file-messages";
-import { mockUserAvatar, mockUserFiles } from "./mock-files";
 import { RoleBadges } from "./role-badges";
 import { resolveRoleLabel } from "./role-utils";
 import { getUserRolePath, userRoutes } from "./routes";
@@ -42,7 +28,7 @@ export const UserShow = () => {
     resource: "users",
     id,
     meta: {
-      appends: ["roles", ...getFileFieldAppends(userFileDescriptors)],
+      appends: ["roles"],
     },
   });
 
@@ -52,12 +38,6 @@ export const UserShow = () => {
     record?.email ||
     translate("users.detail.unnamed", { ns: "app" }, "Unnamed user");
   const roles = record?.roles ?? [];
-  const avatarValue = hasFileValue(record?.avatar)
-    ? record?.avatar ?? null
-    : mockUserAvatar;
-  const filesValue = hasFileValue(record?.files)
-    ? record?.files ?? []
-    : mockUserFiles;
   const detailContext = useAIPageElementHandle({
     id: `users-detail-${id ?? "current"}`,
     title: `${translate(
@@ -74,8 +54,6 @@ export const UserShow = () => {
         username: record?.username,
         email: record?.email,
         phone: record?.phone,
-        avatar: record?.avatar,
-        files: record?.files,
         roles: roles.map((role) => ({
           name: role.name,
           title: resolveRoleLabel(role),
@@ -172,44 +150,6 @@ export const UserShow = () => {
           </Alert>
         ) : (
           <div className="space-y-5">
-            <section className="space-y-3">
-              <h3 className="text-sm font-medium">
-                {translate("users.detail.files", { ns: "app" }, "Files")}
-              </h3>
-              <dl className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <dt className="text-xs text-muted-foreground">
-                    {translate("users.fields.avatar", { ns: "app" }, "Avatar")}
-                  </dt>
-                  <dd>
-                    <FilePreviewField
-                      value={avatarValue}
-                      descriptor={userAvatarDescriptor}
-                      size={96}
-                      showFileName
-                      messages={getAvatarPreviewMessages(translate)}
-                    />
-                  </dd>
-                </div>
-                <div className="space-y-1">
-                  <dt className="text-xs text-muted-foreground">
-                    {translate("users.fields.files", { ns: "app" }, "Files")}
-                  </dt>
-                  <dd>
-                    <FilePreviewField
-                      value={filesValue}
-                      descriptor={userFilesDescriptor}
-                      size={80}
-                      showFileName
-                      messages={getFilesPreviewMessages(translate)}
-                    />
-                  </dd>
-                </div>
-              </dl>
-            </section>
-
-            <Separator />
-
             <DetailSection
               title={translate(
                 "users.detail.identity",
@@ -304,10 +244,6 @@ export const UserShow = () => {
     </RouteDrawer>
   );
 };
-
-function hasFileValue(value: UserRecord["avatar"] | undefined) {
-  return Array.isArray(value) ? value.length > 0 : Boolean(value);
-}
 
 function DetailSection({
   title,

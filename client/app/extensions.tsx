@@ -64,7 +64,7 @@ export function AppAuthRuntimeProviders({ children }: PropsWithChildren) {
     (content, extension) => {
       const Provider = extension.AuthRuntimeProvider!;
       return (
-        <Suspense fallback={<LoadingState className="min-h-svh" />}>
+        <Suspense fallback={<LoadingState fullscreen />}>
           <Provider>{content}</Provider>
         </Suspense>
       );

@@ -58,7 +58,7 @@ export function SystemSettingsProvider({ children }: PropsWithChildren) {
     [error, load, loading, settings]
   );
 
-  if (!ready) return <LoadingState className="min-h-svh" />;
+  if (!ready) return <LoadingState fullscreen />;
 
   return (
     <SystemSettingsContext.Provider value={value}>

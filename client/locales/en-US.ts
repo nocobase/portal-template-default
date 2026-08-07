@@ -5,6 +5,19 @@ export const starter = {
   "shell.footer.reliabilitySuffix": "keeps it reliable.",
   "auth.signOut": "Sign out",
   "auth.signingOut": "Signing out...",
+  "acl.portalAccessDenied.title": "You do not have access to this Portal",
+  "acl.portalAccessDenied.description":
+    "Your current role cannot access this Portal. Select another role to try again.",
+  "acl.roleSwitcher.switchRole": "Switch role",
+  "acl.roleSwitcher.currentRole": "Current role",
+  "acl.roleSwitcher.selectRole": "Select role",
+  "acl.roleSwitcher.recheckPortalAccess":
+    "Portal access will be checked again after switching.",
+  "acl.roleSwitcher.switchFailed": "Unable to switch role",
+  "acl.permissionsLoad.title": "Unable to load permissions",
+  "acl.permissionsLoad.description":
+    "Permissions for the current role could not be loaded.",
+  "acl.permissionsLoad.retry": "Retry",
   "buttons.apply": "Apply",
   "buttons.clear": "Clear",
   "buttons.undo": "Undo",

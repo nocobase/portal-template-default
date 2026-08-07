@@ -12,7 +12,7 @@ const errorBoundaryExtension: AppExtension = {
         meta: {
           label: "Error boundaries",
           icon: <ShieldAlert />,
-          description: "Root, page, and region error-containment patterns.",
+          description: "Render boundaries and NocoBase runtime status patterns.",
           acl: { type: "authenticated" },
         },
       },

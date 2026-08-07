@@ -1,5 +1,11 @@
-import { nocobaseClient, NocoBaseHttpError } from "../client/index.ts";
+import {
+  getNocoBaseErrorCode,
+  nocobaseClient,
+  normalizeNocoBaseRuntimeError,
+} from "../client/index.ts";
+import { portalRuntimeStore } from "../runtime/store.ts";
 import type { AclStore } from "./context.ts";
+import { getPortalAccessDeniedData } from "./portal-access.ts";
 import {
   clearRecordPermissions,
   getRecordActionPermission,
@@ -43,21 +49,9 @@ const requestAcl = async (role?: string) =>
   });
 
 const isStaleRoleError = (error: unknown) => {
-  if (!(error instanceof NocoBaseHttpError)) return false;
-  const payload = error.payload as
-    | {
-        code?: string;
-        error?: { code?: string };
-        errors?: Array<{ code?: string }>;
-      }
-    | undefined;
-  const codes = [
-    payload?.code,
-    payload?.error?.code,
-    ...(payload?.errors?.map((item) => item.code) ?? []),
-  ];
-  return codes.some((code) =>
-    ["ROLE_NOT_FOUND_ERR", "ROLE_NOT_FOUND_FOR_USER"].includes(code ?? "")
+  const code = getNocoBaseErrorCode(error);
+  return ["ROLE_NOT_FOUND_ERR", "ROLE_NOT_FOUND_FOR_USER"].includes(
+    code ?? ""
   );
 };
 
@@ -122,13 +116,22 @@ const load = async ({ force = false } = {}) => {
       loadedSessionKey = getSessionKey();
       return setState({ status: "ready", permissions });
     } catch (error) {
+      if (getNocoBaseErrorCode(error) === "USER_HAS_NO_ROLES_ERR") {
+        portalRuntimeStore.setError(
+          normalizeNocoBaseRuntimeError(error, "http")
+        );
+      }
       const normalizedError =
         error instanceof Error
           ? error
           : new Error("Unable to load permissions");
       if (currentRequestId !== requestId) return state;
       loadedSessionKey = undefined;
-      return setState({ status: "error", error: normalizedError });
+      return setState({
+        status: "error",
+        error: normalizedError,
+        portalAccessDenied: getPortalAccessDeniedData(error),
+      });
     } finally {
       if (activeRequest?.id === currentRequestId) activeRequest = undefined;
     }
@@ -170,7 +173,6 @@ export const switchRole = async (roleName: string) => {
   }
 
   clearAcl();
-  await loadAcl();
 };
 
 export const aclStore: AclStore = {

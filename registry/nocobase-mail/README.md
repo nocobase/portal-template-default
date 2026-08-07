@@ -13,7 +13,8 @@ After installation, import the components from `@/extensions/nocobase-mail`.
   with retry, removal, and the backend's 25 MB limit.
 - `MailFilters` folder, read-state, label, and todo-message filters.
 - `MailUnreadProvider` / `MailUnreadIndicator` / `MailUnreadIcon` reusable unread-count
-  display with interval, window-focus, and visibility refresh.
+  display with interval, window-focus, and visibility refresh. Polling stays idle until at least
+  one unread indicator is mounted, and multiple indicators share the same polling lifecycle.
 - `MailDetail` threaded message detail with per-message Reply, conditional Reply all,
   and Forward actions.
 - `MailSettingsDrawer` personal mailbox settings with Mailbox, Labels, Templates,

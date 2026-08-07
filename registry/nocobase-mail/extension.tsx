@@ -20,7 +20,7 @@ const nocobaseMailExtension: AppExtension = {
         name: "mail",
         list: "mail",
         meta: {
-          label: "Mail",
+          label: "Mail manager",
           icon: <Mail />,
           description: "Read, send, and manage mailbox messages.",
         },

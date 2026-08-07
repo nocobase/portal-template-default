@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import semver from "semver";
-import type { Plugin } from "vite";
+import type { Plugin, RenderBuiltAssetUrl } from "vite";
 
 import { formatPortalTemplateCompatibilityError } from "../compat/index.ts";
 
@@ -91,6 +91,25 @@ const defaultRuntimeConfig = `<!-- nocobase-runtime-config:start -->
 
 const getBasePrefix = (base: string) => base.replace(/\/$/, "");
 
+const renderPortalBuiltUrl: RenderBuiltAssetUrl = (
+  filename,
+  { hostType, ssr }
+) => {
+  if (ssr) return undefined;
+
+  if (hostType === "js") {
+    return {
+      runtime: `new URL(${JSON.stringify(filename)}, new URL(window.NOCOBASE_PORTAL_BASE || "/", window.location.origin)).href`,
+    };
+  }
+
+  if (hostType === "css") {
+    return { relative: true };
+  }
+
+  return undefined;
+};
+
 const stripBaseFromIndexHtml = (html: string, base: string) => {
   const basePrefix = getBasePrefix(base);
   if (!basePrefix) return html;
@@ -112,6 +131,13 @@ export const portalRawIndexHtmlPlugin = ({
   base: string;
 }): Plugin => ({
   name: "nocobase-copy-raw-index-html",
+  config() {
+    return {
+      experimental: {
+        renderBuiltUrl: renderPortalBuiltUrl,
+      },
+    };
+  },
   closeBundle() {
     const distDir = path.resolve(root, "dist");
     const indexHtml = path.join(distDir, "index.html");

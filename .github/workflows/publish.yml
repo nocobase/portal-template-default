@@ -257,31 +257,35 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Test SDK and integrations
-        run: |
-          pnpm --dir sdk test
-          node tests/auth-session-regression.mjs
-          node tests/error-boundary-regression.mjs
-          node registry/nocobase-acl/tests/acl-regression.mjs
-          node registry/nocobase-ai/tests/i18n-regression.mjs
-          node registry/nocobase-i18n/tests/i18n-regression.mjs
-          node --experimental-strip-types --test tests/file-upload-regression.test.ts
-          node registry/nocobase-mail/tests/mail-regression.mjs
-          node registry/nocobase-route-surfaces/tests/route-surfaces-regression.mjs
-
       - name: Pack SDK
         if: steps.release.outputs.release_sdk == 'true' || steps.release.outputs.verify_sdk == 'true'
         run: |
           mkdir -p "$RUNNER_TEMP/portal-sdk-local" "$RUNNER_TEMP/portal-sdk-local-unpacked"
           pnpm --dir sdk pack --pack-destination "$RUNNER_TEMP/portal-sdk-local"
           tar -xzf "$RUNNER_TEMP/portal-sdk-local/"*.tgz -C "$RUNNER_TEMP/portal-sdk-local-unpacked"
-          node sdk/tests/verify-packed-package.mjs "$RUNNER_TEMP/portal-sdk-local-unpacked/package"
+          node sdk/verify-packed-package.mjs "$RUNNER_TEMP/portal-sdk-local-unpacked/package"
 
       - name: Pack template
         if: steps.release.outputs.release_template == 'true'
         run: |
           mkdir -p "$RUNNER_TEMP/portal-template-local"
           pnpm pack --pack-destination "$RUNNER_TEMP/portal-template-local"
+          tar -tzf "$RUNNER_TEMP/portal-template-local/"*.tgz > "$RUNNER_TEMP/portal-template-files.txt"
+          for required_file in \
+            package/.env.e2e.example \
+            package/vitest.config.ts \
+            package/tests/setup/vitest.ts \
+            package/playwright.config.ts \
+            package/e2e/login.spec.ts; do
+            if ! grep -Fxq "$required_file" "$RUNNER_TEMP/portal-template-files.txt"; then
+              echo "Packed template is missing $required_file."
+              exit 1
+            fi
+          done
+          if grep -Eq '^package/(coverage|playwright-report|test-results)/' "$RUNNER_TEMP/portal-template-files.txt"; then
+            echo "Packed template contains generated test artifacts."
+            exit 1
+          fi
 
       - name: Verify existing SDK package
         if: steps.release.outputs.verify_sdk == 'true'

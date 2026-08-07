@@ -179,7 +179,7 @@ export default function DingtalkAutoLoginProvider({
   }, [redirect, shouldCheck]);
 
   if (isChecking) {
-    return <LoadingState className="min-h-svh" />;
+    return <LoadingState fullscreen />;
   }
   return children;
 }
