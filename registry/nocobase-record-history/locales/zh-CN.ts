@@ -12,6 +12,7 @@ export const recordHistoryMessages = {
   "actor.system": "系统",
   "state.loading": "正在加载历史记录……",
   "state.empty": "暂无历史记录。",
+  "state.sample": "连接的服务端尚未为此数据表生成历史记录，当前展示示例数据。",
   "error.load": "历史记录加载失败。",
   "error.pluginUnavailable": "历史记录服务不可用，请在服务端安装并启用 @nocobase/plugin-record-history。",
   "error.forbidden": "当前用户没有查看历史记录的权限。",

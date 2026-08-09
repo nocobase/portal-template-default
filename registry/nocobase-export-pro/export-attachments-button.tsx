@@ -1,0 +1,20 @@
+import { Archive, LoaderCircle } from "lucide-react";
+import { useState } from "react";
+import { CanAccess } from "@/components/access-control/can-access";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { downloadExportResult } from "@/extensions/nocobase-export/export-api";
+import { exportAttachments } from "./export-attachments-api";
+import type { ExportAttachmentsButtonProps } from "./types";
+
+export function ExportAttachmentsButton(props: ExportAttachmentsButtonProps) {
+  const [open, setOpen] = useState(false); const [running, setRunning] = useState(false); const [error, setError] = useState<Error>(); const [taskId, setTaskId] = useState<string>();
+  const [fields, setFields] = useState(props.fields); const [mode, setMode] = useState(props.mode ?? "auto"); const [folders, setFolders] = useState(props.singleFolderPerRecord ?? true);
+  const run = async () => { setRunning(true); setError(undefined); try { const result = await exportAttachments({ ...props, fields, mode, singleFolderPerRecord: folders }); if (result.type === "download") { downloadExportResult(result); setOpen(false); } else { setTaskId(result.taskId); props.onQueued?.(result.taskId); } } catch (reason) { const next = reason instanceof Error ? reason : new Error(String(reason)); setError(next); props.onError?.(next); } finally { setRunning(false); } };
+  const trigger = <Button variant={props.variant} disabled={props.disabled}><Archive />{props.label ?? "Export attachments"}</Button>;
+  return <CanAccess resource={props.collectionName} action="exportAttachments" dataSourceKey={props.dataSourceKey}><Dialog open={open} onOpenChange={(v) => !running && setOpen(v)}><DialogTrigger render={trigger} /><DialogContent className="sm:max-w-[620px]"><DialogHeader><DialogTitle>Export attachments</DialogTitle><DialogDescription>Select attachment fields and processing mode. Synchronous exports download a ZIP; asynchronous exports create a task.</DialogDescription></DialogHeader><div className="space-y-5 py-2"><div className="grid gap-2"><Label htmlFor="export-mode">Processing mode</Label><NativeSelect id="export-mode" value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}><NativeSelectOption value="auto">Auto</NativeSelectOption><NativeSelectOption value="sync">Sync</NativeSelectOption><NativeSelectOption value="async">Async</NativeSelectOption></NativeSelect></div><fieldset className="grid gap-3 rounded-lg border p-4"><legend className="px-1 text-sm font-medium">Attachment fields</legend>{props.availableFields.map((field) => <Label key={field.name} className="flex items-center gap-3 font-normal"><Checkbox checked={fields.includes(field.name)} onCheckedChange={(checked) => setFields((value) => checked ? [...value, field.name] : value.filter((item) => item !== field.name))} />{field.title}</Label>)}</fieldset><Label className="flex items-center gap-3 font-normal"><Checkbox checked={folders} onCheckedChange={(checked) => setFolders(checked === true)} />Generate one folder per record</Label>{taskId ? <Alert><AlertTitle>Export queued</AlertTitle><AlertDescription>Task {taskId} is processing in the background.</AlertDescription></Alert> : null}{error ? <Alert variant="destructive"><AlertTitle>Attachment export failed</AlertTitle><AlertDescription>{error.message}</AlertDescription></Alert> : null}</div><DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={run} disabled={running || !fields.length}>{running ? <LoaderCircle className="animate-spin" /> : <Archive />}{running ? "Exporting..." : "Start export"}</Button></DialogFooter></DialogContent></Dialog></CanAccess>;
+}

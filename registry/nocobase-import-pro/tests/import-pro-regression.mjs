@@ -30,8 +30,7 @@ try {
   );
 
   assert.equal(extension.id, "nocobase-import-pro");
-  assert.equal(extension.dev.resources[0].list, "import-pro");
-  assert.equal(extension.dev.routes[0].path, "import-pro");
+  assert.equal(extension.dev, undefined);
 
   assert.deepEqual(createImportProOptions(), {
     mode: "auto",

@@ -6,7 +6,12 @@ import { createServer } from "vite";
 const server = await createServer({ appType: "custom", logLevel: "silent", server: { middlewareMode: true } });
 
 try {
-  const { getRecordHistoryErrorCode, listRecordHistory, normalizeRecordHistoryList } = await server.ssrLoadModule(
+  const {
+    getRecordHistoryErrorCode,
+    listRecordHistory,
+    normalizeRecordHistoryList,
+    resolveRecordHistoryResult,
+  } = await server.ssrLoadModule(
     fileURLToPath(new URL("../record-history-api.ts", import.meta.url))
   );
   const { NocoBaseHttpError } = await server.ssrLoadModule("@nocobase/portal-sdk/client");
@@ -33,6 +38,17 @@ try {
   assert.equal(normalized.count, 21);
   assert.equal(normalized.rows[0].recordId, "7");
   assert.equal(normalized.rows[0].recordFieldHistory[0].after, "B");
+
+  const fallback = resolveRecordHistoryResult(
+    { rows: [], count: 0 },
+    normalized.rows
+  );
+  assert.equal(fallback.usingFallback, true);
+  assert.equal(fallback.rows[0].uuid, "history-1");
+  assert.equal(
+    resolveRecordHistoryResult(normalized, []).usingFallback,
+    false
+  );
 
   const originalAction = nocobaseClient.action;
   let call;

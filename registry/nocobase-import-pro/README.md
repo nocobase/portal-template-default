@@ -42,3 +42,4 @@ Requirements:
 - `@nocobase/plugin-async-task-manager`
 
 Install the base `@nocobase/import` Registry item together with this extension.
+The Pro action is added to the shared `/dev/import` scenario instead of creating a second navigation entry.

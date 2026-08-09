@@ -50,6 +50,8 @@ export type ListRecordHistoryOptions = {
 
 export type RecordHistoryTimelineProps = Omit<ListRecordHistoryOptions, "signal"> & {
   fieldLabels?: Record<string, string>;
+  fallbackRows?: RecordHistory[];
+  fallbackNotice?: ReactNode;
   defaultExpanded?: boolean;
   className?: string;
   renderSummary?: (history: RecordHistory) => ReactNode;

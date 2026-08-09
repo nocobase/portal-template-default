@@ -1,0 +1,3 @@
+export type PasswordComplexity = "alpha_numeric" | "alpha_numeric_special" | "numbers_upper_lower" | "numbers_upper_lower_special" | "3_of_4" | "none";
+export type PasswordPolicy = { id?: number; minLength: number; complexity: PasswordComplexity; cantIncludeUsername: boolean; historyCount: number; validityPeriod: number; expirationNotificationChannel: string[]; maxSignInAttempts: number; maxSignInAttemptsInterval: number; lockoutDuration: number };
+export type LockedUser = { id: string | number; userId: string | number; user?: { id: string | number; nickname?: string; username?: string }; lockedTs?: string; unlockTs?: string | null; lockReason?: string };

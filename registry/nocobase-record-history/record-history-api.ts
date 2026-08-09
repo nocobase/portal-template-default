@@ -112,6 +112,20 @@ export function normalizeRecordHistoryList(value: unknown): RecordHistoryListRes
   return { rows, count: normalizedCount ?? rows.length };
 }
 
+export function resolveRecordHistoryResult(
+  result: RecordHistoryListResult,
+  fallbackRows: RecordHistory[] = []
+): RecordHistoryListResult & { usingFallback: boolean } {
+  if (result.rows.length || !fallbackRows.length) {
+    return { ...result, usingFallback: false };
+  }
+  return {
+    rows: fallbackRows,
+    count: fallbackRows.length,
+    usingFallback: true,
+  };
+}
+
 export async function listRecordHistory({
   collectionName,
   dataSourceKey = "main",

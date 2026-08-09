@@ -12,6 +12,7 @@ export const recordHistoryMessages = {
   "actor.system": "System",
   "state.loading": "Loading history...",
   "state.empty": "No history records.",
+  "state.sample": "Showing illustrative history because the connected server has no tracked records for this collection.",
   "error.load": "Unable to load record history.",
   "error.pluginUnavailable":
     "Record history is unavailable. Install and enable @nocobase/plugin-record-history on the server.",

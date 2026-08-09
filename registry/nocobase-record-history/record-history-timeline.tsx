@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import { useRecordHistoryTranslation } from "./i18n";
-import { getRecordHistoryErrorCode, listRecordHistory } from "./record-history-api";
+import {
+  getRecordHistoryErrorCode,
+  listRecordHistory,
+  resolveRecordHistoryResult,
+} from "./record-history-api";
 import type { RecordFieldChange, RecordHistory, RecordHistoryTimelineProps } from "./types";
 
 function toError(reason: unknown) {
@@ -31,6 +35,8 @@ function RecordHistoryTimelineContent({
   sort = "-createdAt",
   appendSnapshots = true,
   fieldLabels,
+  fallbackRows,
+  fallbackNotice,
   defaultExpanded = false,
   className,
   renderSummary,
@@ -45,10 +51,14 @@ function RecordHistoryTimelineContent({
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error>();
+  const [usingFallback, setUsingFallback] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const serializedFilter = JSON.stringify(filter);
+  const serializedFallbackRows = JSON.stringify(fallbackRows);
   const onErrorRef = useRef(onError);
+  const fallbackRowsRef = useRef(fallbackRows);
   onErrorRef.current = onError;
+  fallbackRowsRef.current = fallbackRows;
 
   useEffect(() => {
     if (controlledPage === undefined) setUncontrolledPage(1);
@@ -72,9 +82,14 @@ function RecordHistoryTimelineContent({
     })
       .then((result) => {
         if (canceled) return;
-        setRows(result.rows);
-        setCount(result.count);
-        setExpanded(defaultExpanded ? new Set(result.rows.map((row) => row.uuid)) : new Set());
+        const resolved = resolveRecordHistoryResult(
+          result,
+          fallbackRowsRef.current
+        );
+        setRows(resolved.rows);
+        setCount(resolved.count);
+        setUsingFallback(resolved.usingFallback);
+        setExpanded(defaultExpanded ? new Set(resolved.rows.map((row) => row.uuid)) : new Set());
       })
       .catch((reason: unknown) => {
         if (canceled) return;
@@ -91,7 +106,7 @@ function RecordHistoryTimelineContent({
     };
     // serializedFilter intentionally makes filter comparison value-based.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appendSnapshots, collectionName, dataSourceKey, defaultExpanded, page, pageSize, recordId, serializedFilter, sort]);
+  }, [appendSnapshots, collectionName, dataSourceKey, defaultExpanded, page, pageSize, recordId, serializedFallbackRows, serializedFilter, sort]);
 
   const actionLabels = useMemo(
     () => ({
@@ -134,6 +149,18 @@ function RecordHistoryTimelineContent({
           </Alert>
         ) : rows.length ? (
           <>
+            {usingFallback ? (
+              <Alert className="mb-6">
+                <History />
+                <AlertDescription>
+                  {fallbackNotice ??
+                    t(
+                      "state.sample",
+                      "Showing illustrative history because the connected server has no tracked records for this collection."
+                    )}
+                </AlertDescription>
+              </Alert>
+            ) : null}
             <ol className="relative space-y-5 border-s ps-6">
               {rows.map((history) => {
                 const isExpanded = expanded.has(history.uuid);

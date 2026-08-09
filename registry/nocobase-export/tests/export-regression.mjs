@@ -1,0 +1,10 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+const api = fs.readFileSync(new URL("../export-api.ts", import.meta.url), "utf8");
+const button = fs.readFileSync(new URL("../export-records-button.tsx", import.meta.url), "utf8");
+assert.match(api, /collectionName}:export/);
+assert.match(api, /Content-Disposition|content-disposition/);
+assert.match(api, /taskId/);
+assert.match(button, /action="export"/);
+assert.match(button, /selectedFilter/);
+console.log("export regression checks passed");

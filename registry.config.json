@@ -529,7 +529,7 @@
         "select",
         "switch"
       ],
-      "docs": "Requires @nocobase/plugin-action-import, @nocobase/plugin-action-import-pro, and @nocobase/plugin-async-task-manager. Reuses the base import Registry item and adds execution mode, workflow, duplicate handling, task progress, and cancellation.",
+      "docs": "Requires @nocobase/plugin-action-import, @nocobase/plugin-action-import-pro, and @nocobase/plugin-async-task-manager. Reuses the base import Registry item, adds execution mode, workflow, duplicate handling, task progress, and cancellation, and augments the shared /dev/import scenario instead of adding another navigation entry.",
       "source": {
         "root": "registry/nocobase-import-pro",
         "target": "src/extensions/nocobase-import-pro",
@@ -638,6 +638,86 @@
         "target": "src/extensions/nocobase-in-app-message",
         "include": ["."]
       }
+    },
+    {
+      "name": "export",
+      "type": "registry:block",
+      "title": "NocoBase Export",
+      "description": "Portal-native selected and filtered record export with application-owned XLSX columns.",
+      "dependencies": ["@nocobase/portal-sdk@^2.1.0", "@refinedev/core@^5.0.8", "lucide-react@^0.487.0"],
+      "registryDependencies": ["alert", "badge", "button", "card", "checkbox", "dialog", "label"],
+      "docs": "Requires @nocobase/plugin-action-export. Provides column selection, filters, relation paths, download handling, and a users demo.",
+      "source": { "root": "registry/nocobase-export", "target": "src/extensions/nocobase-export", "include": ["."] }
+    },
+    {
+      "name": "export-pro",
+      "type": "registry:block",
+      "title": "NocoBase Export Pro",
+      "description": "Advanced sync, async, and attachment export layered on the base export integration.",
+      "dependencies": ["@nocobase/portal-sdk@^2.1.0", "lucide-react@^0.487.0"],
+      "registryDependencies": ["@nocobase/export", "alert", "button", "checkbox", "dialog", "input", "label", "native-select"],
+      "docs": "Requires action-export, action-export-pro, and async-task-manager. Adds processing modes, queued task results, and ZIP attachment export to the shared /dev/export scenario instead of adding another navigation entry.",
+      "source": { "root": "registry/nocobase-export-pro", "target": "src/extensions/nocobase-export-pro", "include": ["."] }
+    },
+    {
+      "name": "collection-tree",
+      "type": "registry:block",
+      "title": "NocoBase Collection Tree",
+      "description": "Server-backed collection-tree queries, ancestor-aware filtering, root pagination, and hierarchy mutations for Portal pages.",
+      "dependencies": ["@nocobase/portal-sdk@^2.1.0", "lucide-react@^0.487.0"],
+      "registryDependencies": ["alert", "badge", "button", "card", "dialog", "input"],
+      "docs": "Requires @nocobase/plugin-collection-tree and an existing collection created from the tree template. Uses the plugin-specific tree=true list mode; standard mutations rely on server path maintenance and cycle validation. The development demo lets the user select the collection and title field instead of assuming a fixed collection name.",
+      "source": { "root": "registry/nocobase-collection-tree", "target": "src/extensions/nocobase-collection-tree", "include": ["."] }
+    },
+    {
+      "name": "markdown-vditor",
+      "type": "registry:block",
+      "title": "NocoBase Markdown Vditor",
+      "description": "Controlled Vditor Markdown editing, safe display, and optional NocoBase file upload integration.",
+      "dependencies": ["@nocobase/portal-sdk@^2.1.0", "react-markdown@^10.1.0", "remark-gfm@^4.0.1", "vditor@^3.11.2", "lucide-react@^0.487.0"],
+      "registryDependencies": ["@nocobase/file-upload", "badge", "card", "tabs"],
+      "docs": "Requires @nocobase/plugin-field-markdown-vditor for vditor:check and storage-backed uploads. Editing without upload remains controlled and local.",
+      "source": { "root": "registry/nocobase-markdown-vditor", "target": "src/extensions/nocobase-markdown-vditor", "include": ["."] }
+    },
+    {
+      "name": "password-policy",
+      "type": "registry:block",
+      "title": "NocoBase Password Policy",
+      "description": "Password rules, expiration, lockout security, and locked-user administration.",
+      "dependencies": ["@nocobase/portal-sdk@^2.1.0", "lucide-react@^0.487.0"],
+      "registryDependencies": ["alert", "badge", "button", "card", "checkbox", "dialog", "input", "label", "native-select", "table", "tabs"],
+      "docs": "Requires @nocobase/plugin-password-policy. Expiration notifications also depend on configured notification channels.",
+      "source": { "root": "registry/nocobase-password-policy", "target": "src/extensions/nocobase-password-policy", "include": ["."] }
+    },
+    {
+      "name": "multi-space",
+      "type": "registry:block",
+      "title": "NocoBase Multi-space",
+      "description": "Space context provider, user-menu switcher, space CRUD, and membership management.",
+      "dependencies": ["@nocobase/portal-sdk@^2.1.0", "lucide-react@^0.487.0"],
+      "registryDependencies": ["alert", "button", "card", "dialog", "dropdown-menu", "input", "label", "native-select", "table"],
+      "docs": "Requires @nocobase/plugin-multi-space. Installs global x-spaces/x-spaces-view request headers and reloads after switching context.",
+      "source": { "root": "registry/nocobase-multi-space", "target": "src/extensions/nocobase-multi-space", "include": ["."] }
+    },
+    {
+      "name": "departments",
+      "type": "registry:block",
+      "title": "NocoBase Departments",
+      "description": "Organization hierarchy, members, owners, main departments, and role assignment adapters.",
+      "dependencies": ["@nocobase/portal-sdk@^2.1.0", "lucide-react@^0.487.0"],
+      "registryDependencies": ["@nocobase/collection-tree", "alert", "badge", "button", "card", "dialog", "input", "label", "table"],
+      "docs": "Requires @nocobase/plugin-departments. The UI covers hierarchy, members, and owners; exported APIs also cover main-department and role assignments.",
+      "source": { "root": "registry/nocobase-departments", "target": "src/extensions/nocobase-departments", "include": ["."] }
+    },
+    {
+      "name": "request-encryption",
+      "type": "registry:lib",
+      "title": "NocoBase Request Encryption",
+      "description": "Global Portal SDK query encoding compatible with the request-encryption server middleware.",
+      "dependencies": ["@nocobase/portal-sdk@^2.1.0", "lucide-react@^0.487.0"],
+      "registryDependencies": ["badge", "card", "label", "textarea"],
+      "docs": "Requires @nocobase/plugin-request-encryption. The upstream protocol Base64-encodes query JSON; it is obfuscation, not cryptographic confidentiality.",
+      "source": { "root": "registry/nocobase-request-encryption", "target": "src/extensions/nocobase-request-encryption", "include": ["."] }
     },
     {
       "name": "acl-ui",

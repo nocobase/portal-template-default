@@ -25,6 +25,8 @@ export async function queryChartData(
     method: "POST",
     body: {
       mode: query.mode ?? "builder",
+      variableResolution:
+        query.mode === "sql" ? undefined : "legacy-schema",
       dataSource: query.dataSource ?? "main",
       collection: query.collection,
       measures: query.measures,

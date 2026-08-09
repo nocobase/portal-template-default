@@ -39,6 +39,7 @@ try {
   assert.equal(call.action, "queryData");
   assert.equal(call.options.method, "POST");
   assert.equal(call.options.body.mode, "builder");
+  assert.equal(call.options.body.variableResolution, "legacy-schema");
   assert.equal(call.options.body.dataSource, "main");
 
   const chart = await readFile(new URL("../nocobase-chart.tsx", import.meta.url), "utf8");
