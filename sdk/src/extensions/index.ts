@@ -9,6 +9,7 @@ export type AppExtension = {
   resources?: ResourceProps[];
   routes?: AppRouteDefinition[];
   dev?: {
+    order?: number;
     resources?: ResourceProps[];
     routes?: AppRouteDefinition[];
   };

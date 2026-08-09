@@ -1,0 +1,2 @@
+import ReactMarkdown from "react-markdown"; import remarkGfm from "remark-gfm"; import { stripMarkdownIframes } from "./sanitize";
+export function MarkdownDisplay({ value, className }: { value?: string; className?: string }) { return <div className={className ?? "prose prose-sm max-w-none dark:prose-invert"}><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml>{stripMarkdownIframes(value ?? "")}</ReactMarkdown></div>; }

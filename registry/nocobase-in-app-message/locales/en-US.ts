@@ -1,0 +1,37 @@
+export const inAppMessage = {
+  "inbox.title": "Messages",
+  "inbox.description": "Notifications sent to you in this application.",
+  "inbox.open": "Open messages",
+  "inbox.openWithCount": "Open messages, {{count}} unread",
+  "inbox.filter.all": "All",
+  "inbox.filter.unread": "Unread",
+  "inbox.filter.read": "Read",
+  "inbox.markAllRead": "Mark all as read",
+  "inbox.markRead": "Mark as read",
+  "inbox.markUnread": "Mark as unread",
+  "inbox.view": "View",
+  "inbox.empty.title": "No messages",
+  "inbox.empty.description": "New notifications will appear here.",
+  "inbox.emptyContent": "No content",
+  "inbox.error.title": "Unable to load messages",
+  "inbox.error.description": "Check the notification plugins and try again.",
+  "inbox.retry": "Try again",
+  "inbox.loading": "Loading messages",
+  "inbox.realtime.title": "New message",
+  "inbox.status.read": "Read",
+  "inbox.status.unread": "Unread",
+  "demo.badge": "Component example",
+  "demo.title": "In-app message widget",
+  "demo.description":
+    "Place the notification bell wherever the application needs it. The Registry item does not modify the application header automatically.",
+  "demo.preview.title": "Live preview",
+  "demo.preview.description":
+    "This preview uses the connected NocoBase application's current-user notification resources.",
+  "demo.preview.toolbar": "Application toolbar",
+  "demo.preview.hint": "Open the bell to inspect channels and messages.",
+  "demo.usage.title": "Compose it explicitly",
+  "demo.usage.description":
+    "Import the widget from the installed extension and render it in an application-owned surface.",
+  "demo.requirements":
+    "Requires the notification manager and in-app message plugins on the connected NocoBase application.",
+} as const;

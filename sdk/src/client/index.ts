@@ -36,6 +36,10 @@ export type NocoBaseRequestOptions = {
   unwrap?: "data" | "deep-data" | "none";
 };
 
+export type NocoBaseQuery = Record<string, QueryValue>;
+export type NocoBaseQueryTransformer = (query: NocoBaseQuery) => NocoBaseQuery;
+export type NocoBaseHeaderProvider = () => Record<string, string | undefined>;
+
 const getBrowserLocale = () =>
   typeof navigator === "undefined" ? undefined : navigator.language;
 
@@ -88,6 +92,8 @@ const unwrapPayload = (
 export class NocoBaseClient {
   private readonly apiOrigin?: string;
   private runtimeLocale?: string;
+  private readonly queryTransformers = new Set<NocoBaseQueryTransformer>();
+  private readonly headerProviders = new Set<NocoBaseHeaderProvider>();
 
   constructor(
     private readonly apiUrl = API_URL,
@@ -165,6 +171,20 @@ export class NocoBaseClient {
     this.runtimeLocale = locale || undefined;
   }
 
+  addQueryTransformer(transformer: NocoBaseQueryTransformer) {
+    this.queryTransformers.add(transformer);
+    return () => {
+      this.queryTransformers.delete(transformer);
+    };
+  }
+
+  addHeaderProvider(provider: NocoBaseHeaderProvider) {
+    this.headerProviders.add(provider);
+    return () => {
+      this.headerProviders.delete(provider);
+    };
+  }
+
   buildUrl(endpoint: string, query?: Record<string, QueryValue>) {
     const base = `${this.apiUrl.replace(/\/$/, "")}/${endpoint.replace(
       /^\//,
@@ -174,7 +194,11 @@ export class NocoBaseClient {
       ? new URL(base)
       : new URL(base, window.location.origin);
 
-    for (const [key, value] of Object.entries(query ?? {})) {
+    const transformedQuery = Array.from(this.queryTransformers).reduce(
+      (current, transform) => transform(current),
+      query ?? {}
+    );
+    for (const [key, value] of Object.entries(transformedQuery)) {
       if (value === undefined) continue;
       if (Array.isArray(value)) {
         value.forEach((item) => url.searchParams.append(key, String(item)));
@@ -232,8 +256,12 @@ export class NocoBaseClient {
       ...(portalName ? { "X-Portal": portalName } : {}),
       "X-Timezone": getClientTimezone(),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...Object.assign({}, ...Array.from(this.headerProviders).map((provider) => provider())),
       ...headers,
     };
+    Object.keys(requestHeaders).forEach((key) => {
+      if (requestHeaders[key] === undefined) delete requestHeaders[key];
+    });
     const csrfToken = authSession.getCookie("csrfToken");
     if (
       !SAFE_METHODS.has(method) &&

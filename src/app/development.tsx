@@ -13,6 +13,7 @@ import { PageErrorBoundary } from "@/components/app-shell/page-error-boundary";
 import { SidebarNavigation } from "@/components/app-shell/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { sortDevelopmentExtensions } from "./development-order";
 import { RouteAccessGuard } from "./route-access-guard";
 
 const coreDevelopmentResources: ResourceProps[] = [
@@ -126,12 +127,15 @@ function findSelectedKey(items: TreeMenuItem[], pathname: string) {
 export function createDevelopmentRoute(
   extensions: AppExtension[]
 ): ReactElement {
-  const menuItems = collectDevelopmentMenu(extensions);
+  const developmentExtensions = sortDevelopmentExtensions(extensions);
+  const menuItems = collectDevelopmentMenu(developmentExtensions);
   const firstRoute = findFirstRoute(menuItems) ?? "/";
   const routes = renderAppRoutes(
     [
       ...coreDevelopmentRoutes,
-      ...extensions.flatMap((extension) => extension.dev?.routes ?? []),
+      ...developmentExtensions.flatMap(
+        (extension) => extension.dev?.routes ?? []
+      ),
     ],
     {
       AccessGuard: RouteAccessGuard,

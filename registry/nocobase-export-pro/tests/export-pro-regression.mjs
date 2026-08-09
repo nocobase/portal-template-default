@@ -1,0 +1,10 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+const api = fs.readFileSync(new URL("../export-attachments-api.ts", import.meta.url), "utf8");
+const ui = fs.readFileSync(new URL("../export-attachments-button.tsx", import.meta.url), "utf8");
+const extension = fs.readFileSync(new URL("../extension.tsx", import.meta.url), "utf8");
+assert.match(api, /exportAttachments/); assert.match(api, /singleFolderPerRecord/); assert.match(api, /taskId/);
+assert.match(ui, /value="auto"/); assert.match(ui, /value="sync"/); assert.match(ui, /value="async"/);
+assert.match(extension, /registerExportProDemoSection/);
+assert.doesNotMatch(extension, /development\.export-pro|path:\s*["']export-pro/);
+console.log("export pro regression checks passed");

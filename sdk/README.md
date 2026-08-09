@@ -9,7 +9,7 @@ Use documented package exports only. Imports from `src/` are not public API.
 ## Public entry points
 
 - `@nocobase/portal-sdk/runtime` — Portal base, API URL, callback, and settings URL resolution.
-- `@nocobase/portal-sdk/client` — authenticated NocoBase client, session storage, and HTTP errors.
+- `@nocobase/portal-sdk/client` — authenticated NocoBase HTTP and WebSocket clients, session storage, and HTTP errors.
 - `@nocobase/portal-sdk/auth` — Refine authentication provider, callback capture, authenticator types, and headless hooks.
 - `@nocobase/portal-sdk/data` — NocoBase Refine data provider.
 - `@nocobase/portal-sdk/acl` — ACL store, evaluator, record permissions, hooks, and access-control provider.

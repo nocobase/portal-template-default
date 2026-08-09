@@ -16,6 +16,7 @@ import {
   translate,
 } from "../dist/i18n/index.js";
 import { loadSystemSettings } from "../dist/system-settings/index.js";
+import { NocoBaseClient } from "../dist/client/index.js";
 
 it("published ACL and routing entry points are executable in Node", () => {
   expect(
@@ -72,6 +73,26 @@ it("published i18n and System Settings entry points are executable", async () =>
 
   expect(translate("greeting", { ns: "test" })).toBe("Hello");
   expect(loadSystemSettings).toBeTypeOf("function");
+});
+
+it("client request extensions compose and can be removed", () => {
+  const client = new NocoBaseClient("http://localhost/api");
+  const removeQuery = client.addQueryTransformer((query) => ({
+    wrapped: JSON.stringify(query),
+  }));
+  const removeHeaders = client.addHeaderProvider(() => ({
+    "X-Workspace": "sales",
+  }));
+
+  expect(client.buildUrl("users:list", { page: 2 }).searchParams.get("wrapped"))
+    .toBe('{"page":2}');
+  expect(client.getHeaders()["X-Workspace"]).toBe("sales");
+
+  removeQuery();
+  removeHeaders();
+  expect(client.buildUrl("users:list", { page: 2 }).searchParams.get("page"))
+    .toBe("2");
+  expect(client.getHeaders()["X-Workspace"]).toBeUndefined();
 });
 
 it("application routes defer lazy page modules until they render", () => {
