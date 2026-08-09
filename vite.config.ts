@@ -159,6 +159,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     base: portalBase,
+    build: {
+      outDir: "dist/client",
+      emptyOutDir: true,
+    },
     define: {
       __PORTAL_TEMPLATE_NAME__: JSON.stringify(portalTemplate.displayName),
       __PORTAL_TEMPLATE_VERSION__: JSON.stringify(portalTemplate.version),

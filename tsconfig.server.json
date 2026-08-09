@@ -16,7 +16,7 @@
       "@server/*": ["./server/*"],
       "@shared/*": ["./shared/*"]
     },
-    "outDir": "server-dist"
+    "outDir": "dist"
   },
   "include": ["server", "shared"]
 }

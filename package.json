@@ -9,7 +9,7 @@
   "portal": {
     "appName": "main",
     "portalName": "main",
-    "entrypoint": "server-dist/server/embedded.js"
+    "entrypoint": "dist/server/embedded.js"
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",
@@ -115,9 +115,12 @@
     "dev:server": "tsx watch server/standalone.ts",
     "build:client": "tsc && refine build",
     "build:html": "node ./scripts/build-html.mjs",
-    "build:server": "tsc -p tsconfig.server.json",
-    "build": "pnpm build:client && pnpm build:html && pnpm build:server",
-    "start": "node server-dist/server/standalone.js",
+    "build:server": "tsc -p tsconfig.server.json && node ./scripts/build-server-dist-package.mjs && npm install --omit=dev --package-lock=false --prefix ./dist",
+    "build:server:package": "node ./scripts/build-server-dist-package.mjs",
+    "build:server:deps": "npm install --omit=dev --package-lock=false --prefix ./dist",
+    "clean:dist": "node ./scripts/clean-dist.mjs",
+    "build": "pnpm clean:dist && pnpm build:client && pnpm build:html && pnpm build:server",
+    "start": "node dist/server/standalone.js",
     "start:client": "refine start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

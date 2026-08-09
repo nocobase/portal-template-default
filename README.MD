@@ -66,8 +66,9 @@ pnpm start:client
 pnpm build:html
 ```
 
-`pnpm build:server` emits the default ESM server build to `server-dist` and a
-CommonJS-compatible build to `server-dist-cjs`.
+`pnpm build:client` emits browser assets to `dist/client`. `pnpm build:server`
+emits the ESM server build, production package manifest, and server runtime
+dependencies to the `dist` package root.
 
 Server logs are written as JSON lines under `logs/<standalone|embedded>/` with
 dated `system-YYYY-MM-DD.log` and `request-YYYY-MM-DD.log` files. Set
