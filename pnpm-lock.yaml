@@ -14,9 +14,6 @@ importers:
       '@base-ui/react':
         specifier: ^1.6.0
         version: 1.6.0(@date-fns/tz@1.5.0)(@types/react@19.2.17)(date-fns@4.4.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@cacheable/utils':
-        specifier: 2.5.0
-        version: 2.5.0
       '@dicebear/core':
         specifier: ^9.4.3
         version: 9.4.3
@@ -32,9 +29,6 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.0.1
         version: 5.4.0(react-hook-form@7.82.0(react@19.1.0))
-      '@keyv/serialize':
-        specifier: 1.1.1
-        version: 1.1.1
       '@nocobase/ai-employee-avatars':
         specifier: ^1.0.2
         version: 1.0.2(@dicebear/core@9.4.3)
@@ -194,9 +188,6 @@ importers:
       hono:
         specifier: ^4.13.0
         version: 4.13.0
-      hookified:
-        specifier: 1.15.1
-        version: 1.15.1
       ignore:
         specifier: ^7.0.6
         version: 7.0.6
@@ -206,9 +197,6 @@ importers:
       jsdom:
         specifier: ^30.0.1
         version: 30.0.1
-      keyv:
-        specifier: 5.6.0
-        version: 5.6.0
       kysely:
         specifier: ^0.29.4
         version: 0.29.4
