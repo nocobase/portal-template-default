@@ -257,8 +257,8 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Test React Grab picker
-        run: node tests/react-grab-picker-regression.mjs
+      - name: Test
+        run: pnpm test
 
       - name: Pack SDK
         if: steps.release.outputs.release_sdk == 'true' || steps.release.outputs.verify_sdk == 'true'
