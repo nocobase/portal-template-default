@@ -84,6 +84,19 @@ const normalizePortalBase = (base) => {
   return `/${normalized.replace(/^\/+|\/+$/g, "")}/`;
 };
 
+const resolveDefaultWebSocketPath = (apiUrl) => {
+  try {
+    const { pathname } = new URL(apiUrl || "/api", "http://localhost");
+    const apiPathMatch = pathname.match(/\/api(?:\/|$)/);
+    const serverBasePath = apiPathMatch
+      ? pathname.slice(0, apiPathMatch.index)
+      : "";
+    return `${serverBasePath}/ws`.replace(/\/+/g, "/");
+  } catch {
+    return "/ws";
+  }
+};
+
 const getBasePrefix = (base) => base.replace(/\/$/, "");
 
 const getRawPortalBase = (html) => {
@@ -136,7 +149,10 @@ const portalBase = normalizePortalBase(process.env.NOCOBASE_PORTAL_BASE);
 const portalName =
   String(process.env.NOCOBASE_PORTAL_NAME || "main").trim() || "main";
 const apiUrl = String(process.env.NOCOBASE_API_URL || "/api").trim() || "/api";
-const wsPath = String(process.env.NOCOBASE_WS_PATH || "/ws").trim() || "/ws";
+const wsPath =
+  String(
+    process.env.NOCOBASE_WS_PATH || resolveDefaultWebSocketPath(apiUrl)
+  ).trim() || "/ws";
 const wsUrl = String(process.env.NOCOBASE_WS_URL || "").trim();
 const storagePrefix =
   String(process.env.API_CLIENT_STORAGE_PREFIX || "NOCOBASE_").trim() ||

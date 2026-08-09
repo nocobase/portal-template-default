@@ -159,6 +159,22 @@ it("the WebSocket URL honors an explicit runtime path", () => {
   }
 });
 
+it("the WebSocket URL preserves a Portal-prefixed runtime path", () => {
+  const originalWindow = globalThis.window;
+  try {
+    globalThis.window = {
+      location: { origin: "https://example.com" },
+      NOCOBASE_API_URL: "/portals/main/api",
+      NOCOBASE_WS_PATH: "http://127.0.0.1:64074/portals/main/ws",
+    };
+    expect(resolveNocoBaseWebSocketUrl()).toBe(
+      "ws://127.0.0.1:64074/portals/main/ws"
+    );
+  } finally {
+    globalThis.window = originalWindow;
+  }
+});
+
 it("a stale WebSocket cannot disrupt its replacement", () => {
   const originalWebSocket = globalThis.WebSocket;
   const originalWindow = globalThis.window;
