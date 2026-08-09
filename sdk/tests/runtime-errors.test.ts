@@ -145,30 +145,30 @@ it("the WebSocket URL preserves the server prefix and selects a sub-application"
   }
 });
 
-it("the WebSocket URL honors an explicit runtime path", () => {
+it("the WebSocket URL derives its Portal path from the runtime API URL", () => {
   const originalWindow = globalThis.window;
   try {
     globalThis.window = {
       location: { origin: "https://example.com" },
       NOCOBASE_API_URL: "/portals/main/api",
-      NOCOBASE_WS_PATH: "/ws",
     };
-    expect(resolveNocoBaseWebSocketUrl()).toBe("wss://example.com/ws");
+    expect(resolveNocoBaseWebSocketUrl()).toBe(
+      "wss://example.com/portals/main/ws"
+    );
   } finally {
     globalThis.window = originalWindow;
   }
 });
 
-it("the WebSocket URL preserves a Portal-prefixed runtime path", () => {
+it("the WebSocket URL resolves an explicit client option path under the API URL prefix", () => {
   const originalWindow = globalThis.window;
   try {
     globalThis.window = {
       location: { origin: "https://example.com" },
       NOCOBASE_API_URL: "/portals/main/api",
-      NOCOBASE_WS_PATH: "http://127.0.0.1:64074/portals/main/ws",
     };
-    expect(resolveNocoBaseWebSocketUrl()).toBe(
-      "ws://127.0.0.1:64074/portals/main/ws"
+    expect(resolveNocoBaseWebSocketUrl({ wsPath: "/ws" })).toBe(
+      "wss://example.com/portals/main/ws"
     );
   } finally {
     globalThis.window = originalWindow;

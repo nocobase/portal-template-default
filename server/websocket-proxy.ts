@@ -24,7 +24,9 @@ const getAcceptedPaths = (runtime: ServerRuntimeContext | undefined, wsPath: str
   const paths = new Set([normalizedWsPath]);
 
   if (basePath !== "/") {
-    paths.add(`${basePath}${normalizedWsPath}`);
+    if (!normalizedWsPath.startsWith(`${basePath}/`)) {
+      paths.add(`${basePath}${normalizedWsPath}`);
+    }
   }
 
   return paths;

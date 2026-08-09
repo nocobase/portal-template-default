@@ -84,19 +84,6 @@ const normalizePortalBase = (base) => {
   return `/${normalized.replace(/^\/+|\/+$/g, "")}/`;
 };
 
-const resolveDefaultWebSocketPath = (apiUrl) => {
-  try {
-    const { pathname } = new URL(apiUrl || "/api", "http://localhost");
-    const apiPathMatch = pathname.match(/\/api(?:\/|$)/);
-    const serverBasePath = apiPathMatch
-      ? pathname.slice(0, apiPathMatch.index)
-      : "";
-    return `${serverBasePath}/ws`.replace(/\/+/g, "/");
-  } catch {
-    return "/ws";
-  }
-};
-
 const getBasePrefix = (base) => base.replace(/\/$/, "");
 
 const getRawPortalBase = (html) => {
@@ -149,10 +136,6 @@ const portalBase = normalizePortalBase(process.env.NOCOBASE_PORTAL_BASE);
 const portalName =
   String(process.env.NOCOBASE_PORTAL_NAME || "main").trim() || "main";
 const apiUrl = String(process.env.NOCOBASE_API_URL || "/api").trim() || "/api";
-const wsPath =
-  String(
-    process.env.NOCOBASE_WS_PATH || resolveDefaultWebSocketPath(apiUrl)
-  ).trim() || "/ws";
 const wsUrl = String(process.env.NOCOBASE_WS_URL || "").trim();
 const storagePrefix =
   String(process.env.API_CLIENT_STORAGE_PREFIX || "NOCOBASE_").trim() ||
@@ -175,8 +158,7 @@ const runtimeConfig = `${startMarker}
   window.NOCOBASE_PORTAL_NAME = ${JSON.stringify(portalName)};
   window.NOCOBASE_PORTAL_BASE = ${JSON.stringify(portalBase)};
   window.NOCOBASE_API_URL = ${JSON.stringify(apiUrl)};
-  window.NOCOBASE_WS_PATH = ${JSON.stringify(wsPath)};
-  ${wsUrl ? `window.NOCOBASE_WS_URL = ${JSON.stringify(wsUrl)};\n  ` : ""}window.__nocobase_ws_path__ = ${JSON.stringify(wsPath)};
+  ${wsUrl ? `window.NOCOBASE_WS_URL = ${JSON.stringify(wsUrl)};\n  ` : ""}
   window.__nocobase_api_client_storage_prefix__ = ${JSON.stringify(storagePrefix)};
   window.__nocobase_api_client_storage_type__ = ${JSON.stringify(storageType)};
   window.__nocobase_api_client_share_token__ = ${JSON.stringify(shareToken)};

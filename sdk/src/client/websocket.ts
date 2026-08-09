@@ -21,9 +21,7 @@ type MessageListener = (message: NocoBaseWebSocketMessage) => void;
 type OpenListener = () => void;
 
 type WebSocketRuntime = Window & {
-  NOCOBASE_WS_PATH?: string;
   NOCOBASE_WS_URL?: string;
-  __nocobase_ws_path__?: string;
   __nocobase_ws_url__?: string;
 };
 
@@ -39,25 +37,15 @@ const getRuntimeWebSocketUrl = () => {
   );
 };
 
-const getRuntimeWebSocketPath = () => {
-  const runtime = getRuntimeWindow();
-  return (
-    runtime?.NOCOBASE_WS_PATH ??
-    runtime?.__nocobase_ws_path__ ??
-    import.meta.env?.NOCOBASE_WS_PATH
-  );
-};
-
 export function resolveNocoBaseWebSocketUrl(
   options: NocoBaseWebSocketOptions = {}
 ) {
   if (typeof window === "undefined") return undefined;
 
   const configuredUrl = options.url ?? getRuntimeWebSocketUrl();
-  const configuredPath = options.wsPath ?? getRuntimeWebSocketPath();
+  const configuredPath = options.wsPath;
   const wsPath = configuredPath ?? "/ws";
-  const value =
-    configuredUrl || (configuredPath ? wsPath : resolveNocoBaseServerUrl(wsPath));
+  const value = configuredUrl || resolveNocoBaseServerUrl(wsPath);
   const url = new URL(value, window.location.origin);
   if (url.protocol === "http:") url.protocol = "ws:";
   if (url.protocol === "https:") url.protocol = "wss:";

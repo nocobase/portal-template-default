@@ -72,12 +72,20 @@ const normalizeApiTarget = (target?: string) => {
   return target.replace(/\/+$/, "");
 };
 
-const normalizeWebSocketPath = (path?: string) => {
-  const normalized = `/${String(path || "/ws").replace(/^\/+|\/+$/g, "")}`;
-  return normalized === "/" ? "/ws" : normalized;
+const deriveWebSocketPathFromApiUrl = (apiUrl?: string) => {
+  try {
+    const { pathname } = new URL(apiUrl || "/api", "http://localhost");
+    const apiPathMatch = pathname.match(/\/api(?:\/|$)/);
+    const serverBasePath = apiPathMatch
+      ? pathname.slice(0, apiPathMatch.index)
+      : "";
+    return `${serverBasePath}/ws`.replace(/\/+/g, "/");
+  } catch {
+    return "/ws";
+  }
 };
 
-const normalizeWebSocketTarget = (target?: string) => {
+const normalizeWebSocketTarget = (target?: string, wsPath = "/ws") => {
   if (!target) return undefined;
 
   try {
@@ -85,7 +93,7 @@ const normalizeWebSocketTarget = (target?: string) => {
     if (url.protocol === "http:") url.protocol = "ws:";
     if (url.protocol === "https:") url.protocol = "wss:";
     if (!url.pathname || url.pathname === "/") {
-      url.pathname = normalizeWebSocketPath(readEnv("NOCOBASE_WS_PATH"));
+      url.pathname = wsPath;
     }
     return url.toString();
   } catch {
@@ -108,8 +116,10 @@ const deriveProxyTarget = () => {
 };
 
 const deriveWebSocketProxyTarget = () => {
+  const wsPath = deriveWebSocketPathFromApiUrl(readEnv("NOCOBASE_API_URL"));
   const explicitTarget = normalizeWebSocketTarget(
-    readEnv("NOCOBASE_WS_PROXY_TARGET") ?? readEnv("NOCOBASE_WS_URL")
+    readEnv("NOCOBASE_WS_PROXY_TARGET") ?? readEnv("NOCOBASE_WS_URL"),
+    wsPath
   );
   if (explicitTarget) return explicitTarget;
 
@@ -117,22 +127,33 @@ const deriveWebSocketProxyTarget = () => {
   if (apiProxyTarget) {
     try {
       const target = new URL(apiProxyTarget);
-      target.pathname = normalizeWebSocketPath(readEnv("NOCOBASE_WS_PATH"));
+      target.pathname = wsPath;
       target.search = "";
       target.hash = "";
-      return normalizeWebSocketTarget(target.toString());
+      return normalizeWebSocketTarget(target.toString(), wsPath);
     } catch {
       return undefined;
     }
   }
 
-  return normalizeWebSocketTarget(readEnv("NOCOBASE_API_URL"));
+  const apiUrl = readEnv("NOCOBASE_API_URL");
+  if (!apiUrl || apiUrl.startsWith("/")) return undefined;
+
+  try {
+    const target = new URL(apiUrl);
+    target.pathname = wsPath;
+    target.search = "";
+    target.hash = "";
+    return normalizeWebSocketTarget(target.toString(), wsPath);
+  } catch {
+    return undefined;
+  }
 };
 
 export const config = {
   host: readEnv("APP_SERVER_HOST") ?? "0.0.0.0",
   port: Number(readEnv("APP_SERVER_PORT") ?? readEnv("NOCOBASE_PORTAL_PORT") ?? 3000),
   nocobaseApiTarget: deriveProxyTarget(),
-  nocobaseWebSocketPath: normalizeWebSocketPath(readEnv("NOCOBASE_WS_PATH")),
+  nocobaseWebSocketPath: deriveWebSocketPathFromApiUrl(readEnv("NOCOBASE_API_URL")),
   nocobaseWebSocketTarget: deriveWebSocketProxyTarget(),
 };
