@@ -1,4 +1,4 @@
-import { useGetIdentity } from "@refinedev/core";
+import { useGetIdentity, useTranslate } from "@refinedev/core";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 
@@ -17,8 +17,10 @@ import {
   type AclIdentity,
   type Role,
 } from "@nocobase/portal-sdk/acl";
+import { nocobaseClient } from "@nocobase/portal-sdk/client";
 import { cn } from "@/lib/utils";
 import { getRoleOptions, resolveRoleTitle, UNION_ROLE } from "./role-options";
+import { resolveRoleSwitcherContext } from "./role-switcher-context";
 
 export type RoleSwitcherProps = {
   className?: string;
@@ -30,28 +32,32 @@ export type RoleSwitcherProps = {
 export function RoleSwitcher({
   className,
   triggerClassName,
-  label = "Switch role",
+  label,
   showWhenUnavailable = false,
 }: RoleSwitcherProps) {
+  const translate = useTranslate();
   const { data: identity, isLoading } = useGetIdentity<AclIdentity>();
   const acl = useAclState();
   const [switching, setSwitching] = useState(false);
   const [error, setError] = useState<string>();
-  const permissions = acl.status === "ready" ? acl.permissions : undefined;
+  const context = resolveRoleSwitcherContext(acl, nocobaseClient.getRole());
 
   const roles = useMemo(
     () =>
       getRoleOptions({
         roles: identity?.roles ?? [],
-        roleMode: permissions?.roleMode,
-        allowAnonymous: permissions?.allowAnonymous,
+        roleMode: context.roleMode,
+        allowAnonymous: context.allowAnonymous,
       }),
-    [identity?.roles, permissions?.allowAnonymous, permissions?.roleMode]
+    [context.allowAnonymous, context.roleMode, identity?.roles]
   );
 
-  const currentRole = permissions?.currentRole ?? roles[0]?.name;
+  const currentRole =
+    context.roleMode === "only-use-union"
+      ? UNION_ROLE
+      : context.currentRole ?? roles[0]?.name;
   const canSwitch =
-    roles.length > 1 && permissions?.roleMode !== "only-use-union";
+    roles.length > 1 && context.roleMode !== "only-use-union";
 
   const handleRoleChange = async (value: string | null) => {
     if (!value || value === currentRole) return;
@@ -60,9 +66,12 @@ export function RoleSwitcher({
     try {
       await switchRole(value);
       window.location.reload();
-    } catch (reason) {
+    } catch {
       setError(
-        reason instanceof Error ? reason.message : "Unable to switch role"
+        translate(
+          "acl.roleSwitcher.switchFailed",
+          "Unable to switch role"
+        )
       );
       setSwitching(false);
     }
@@ -77,7 +86,9 @@ export function RoleSwitcher({
     return (
       <div className={cn("flex items-center gap-2 text-sm", className)}>
         <ShieldCheck className="size-4 text-muted-foreground" />
-        <span className="text-muted-foreground">Current role</span>
+        <span className="text-muted-foreground">
+          {translate("acl.roleSwitcher.currentRole", "Current role")}
+        </span>
         <Badge variant="secondary">{getRoleTitle(roles, currentRole)}</Badge>
       </div>
     );
@@ -86,7 +97,9 @@ export function RoleSwitcher({
   return (
     <div className={cn("space-y-2", className)}>
       {label === false ? null : (
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <p className="text-xs font-medium text-muted-foreground">
+          {label ?? translate("acl.roleSwitcher.switchRole", "Switch role")}
+        </p>
       )}
       <Select
         value={currentRole}
@@ -95,7 +108,10 @@ export function RoleSwitcher({
       >
         <SelectTrigger
           className={cn("w-full min-w-52", triggerClassName)}
-          aria-label="Switch role"
+          aria-label={translate(
+            "acl.roleSwitcher.switchRole",
+            "Switch role"
+          )}
         >
           {switching ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
           <SelectValue>{getRoleTitle(roles, currentRole)}</SelectValue>

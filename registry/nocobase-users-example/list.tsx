@@ -1,8 +1,12 @@
 import { useGetLocale, useList, useTranslate } from "@refinedev/core";
 import { useTable } from "@refinedev/react-table";
-import { createColumnHelper, type Column } from "@tanstack/react-table";
+import {
+  createColumnHelper,
+  type Column,
+  type Table as ReactTable,
+} from "@tanstack/react-table";
 import { Eye, Pencil, Trash2 } from "lucide-react";
-import { useCallback, useMemo, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 
 import { AccessDenied } from "@/components/access-control/access-denied";
@@ -26,6 +30,61 @@ import type { RoleRecord, UserRecord } from "./types";
 
 const isRootUser = (record: UserRecord) =>
   record.roles?.some((role) => role.name === "root") ?? false;
+
+function RoleFilter({
+  column,
+  table,
+}: {
+  column: Column<UserRecord>;
+  table: ReactTable<UserRecord>;
+}) {
+  const translate = useTranslate();
+  const getLocale = useGetLocale();
+  const locale = getLocale();
+  const [shouldLoadRoles, setShouldLoadRoles] = useState(false);
+  const { result: rolesResult, query: rolesQuery } = useList<RoleRecord>({
+    resource: "roles",
+    pagination: { mode: "server", currentPage: 1, pageSize: 200 },
+    errorNotification: false,
+    queryOptions: { enabled: shouldLoadRoles, retry: false },
+  });
+  const roleOptions = useMemo(
+    () =>
+      rolesResult.data
+        .filter((role) => role.name)
+        .map((role) => ({
+          value: role.name,
+          label: resolveRoleLabel(role),
+        }))
+        .sort((left, right) => left.label.localeCompare(right.label, locale)),
+    [locale, rolesResult.data]
+  );
+
+  return (
+    <DataTableFilterCombobox
+      column={column}
+      table={table}
+      options={roleOptions}
+      defaultOperator="in"
+      operators={["in", "nin"]}
+      placeholder={translate(
+        "users.filters.roles.placeholder",
+        { ns: "app" },
+        "Select roles..."
+      )}
+      noResultsText={translate(
+        "users.filters.roles.noResults",
+        { ns: "app" },
+        "No roles found."
+      )}
+      loading={rolesQuery.isFetching && rolesResult.data.length === 0}
+      onOpenChange={(open) => {
+        if (open) setShouldLoadRoles(true);
+      }}
+      multiple
+    />
+  );
+}
 
 function UserColumnHeader<TValue>({
   children,
@@ -56,24 +115,6 @@ export const UserList = () => {
     (role: Role) => navigate(getRolePath(role.name)),
     [navigate]
   );
-  const { result: rolesResult } = useList<RoleRecord>({
-    resource: "roles",
-    pagination: { mode: "server", currentPage: 1, pageSize: 200 },
-    errorNotification: false,
-    queryOptions: { retry: false },
-  });
-  const roleOptions = useMemo(
-    () =>
-      rolesResult.data
-        .filter((role) => role.name)
-        .map((role) => ({
-          value: role.name,
-          label: resolveRoleLabel(role),
-        }))
-        .sort((left, right) => left.label.localeCompare(right.label, locale)),
-    [locale, rolesResult.data]
-  );
-
   const columns = useMemo(() => {
     const columnHelper = createColumnHelper<UserRecord>();
 
@@ -167,24 +208,7 @@ export const UserList = () => {
             label={translate("users.fields.roles", { ns: "app" }, "Roles")}
             sortable={false}
           >
-            <DataTableFilterCombobox
-              column={column}
-              table={table}
-              options={roleOptions}
-              defaultOperator="in"
-              operators={["in", "nin"]}
-              placeholder={translate(
-                "users.filters.roles.placeholder",
-                { ns: "app" },
-                "Select roles..."
-              )}
-              noResultsText={translate(
-                "users.filters.roles.noResults",
-                { ns: "app" },
-                "No roles found."
-              )}
-              multiple
-            />
+            <RoleFilter column={column} table={table} />
           </UserColumnHeader>
         ),
         enableSorting: false,
@@ -283,7 +307,7 @@ export const UserList = () => {
         size: 144,
       }),
     ];
-  }, [locale, roleOptions, showRole, translate]);
+  }, [locale, showRole, translate]);
 
   const table = useTable<UserRecord>({
     columns,

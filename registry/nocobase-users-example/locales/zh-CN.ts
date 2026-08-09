@@ -32,6 +32,12 @@ export const usersExample = {
   "users.form.email.placeholder": "输入邮箱地址",
   "users.form.phone.placeholder": "输入手机号",
   "users.form.password.placeholder": "设置初始密码",
+  "users.form.roles.placeholder": "选择角色…",
+  "users.form.roles.search": "搜索角色…",
+  "users.form.roles.loading": "正在加载角色…",
+  "users.form.roles.loadMore": "加载更多",
+  "users.form.roles.loadingMore": "正在加载更多…",
+  "users.form.roles.loadError": "无法加载角色选项，将保留已有的角色分配。",
   "users.form.password.aiNotice":
     "密码不会包含在 AI 页面上下文中，Form filler 也无法填写密码。",
   "users.validation.username": "请输入用户名",

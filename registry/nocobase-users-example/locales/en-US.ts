@@ -36,6 +36,13 @@ export const usersExample = {
   "users.form.email.placeholder": "Enter an email address",
   "users.form.phone.placeholder": "Enter a phone number",
   "users.form.password.placeholder": "Set an initial password",
+  "users.form.roles.placeholder": "Select roles...",
+  "users.form.roles.search": "Search roles...",
+  "users.form.roles.loading": "Loading roles...",
+  "users.form.roles.loadMore": "Load more",
+  "users.form.roles.loadingMore": "Loading more...",
+  "users.form.roles.loadError":
+    "Role options could not be loaded. Existing assignments will be preserved.",
   "users.form.password.aiNotice":
     "Passwords are never included in AI page context or Form filler.",
   "users.validation.username": "Username is required",

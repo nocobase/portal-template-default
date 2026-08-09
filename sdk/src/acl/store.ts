@@ -5,6 +5,7 @@ import {
 } from "../client/index.ts";
 import { portalRuntimeStore } from "../runtime/store.ts";
 import type { AclStore } from "./context.ts";
+import { getPortalAccessDeniedData } from "./portal-access.ts";
 import {
   clearRecordPermissions,
   getRecordActionPermission,
@@ -126,7 +127,11 @@ const load = async ({ force = false } = {}) => {
           : new Error("Unable to load permissions");
       if (currentRequestId !== requestId) return state;
       loadedSessionKey = undefined;
-      return setState({ status: "error", error: normalizedError });
+      return setState({
+        status: "error",
+        error: normalizedError,
+        portalAccessDenied: getPortalAccessDeniedData(error),
+      });
     } finally {
       if (activeRequest?.id === currentRequestId) activeRequest = undefined;
     }
@@ -168,7 +173,6 @@ export const switchRole = async (roleName: string) => {
   }
 
   clearAcl();
-  await loadAcl();
 };
 
 export const aclStore: AclStore = {

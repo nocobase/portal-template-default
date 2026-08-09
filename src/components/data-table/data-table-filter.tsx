@@ -255,6 +255,8 @@ export type DataTableFilterComboboxProps<TData> = {
   placeholder?: string;
   noResultsText?: string;
   multiple?: boolean;
+  loading?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
 export function DataTableFilterCombobox<TData>({
@@ -266,6 +268,8 @@ export function DataTableFilterCombobox<TData>({
   placeholder,
   noResultsText,
   multiple = false,
+  loading = false,
+  onOpenChange,
 }: DataTableFilterComboboxProps<TData>) {
   const t = useTranslate();
   const [isOpen, setIsOpen] = useState(false);
@@ -322,7 +326,13 @@ export function DataTableFilterCombobox<TData>({
         };
 
         return (
-          <Popover open={isOpen} onOpenChange={setIsOpen}>
+          <Popover
+            open={isOpen}
+            onOpenChange={(open) => {
+              setIsOpen(open);
+              onOpenChange?.(open);
+            }}
+          >
             <PopoverTrigger
               render={
                 <Button
@@ -365,25 +375,31 @@ export function DataTableFilterCombobox<TData>({
                 <CommandInput
                   placeholder={t("table.filter.combobox.search", "Search...")}
                 />
-                <CommandEmpty>
-                  {noResultsText ??
-                    t(
-                      "table.filter.combobox.noResults",
-                      "Results not found."
-                    )}
-                </CommandEmpty>
-                <CommandList>
-                  {options.map((option) => (
-                    <CommandItem
-                      key={option.value}
-                      value={`${option.label} ${option.value}`}
-                      data-checked={currentValues.includes(option.value)}
-                      onSelect={() => handleSelect(option.value)}
-                    >
-                      {option.label}
-                    </CommandItem>
-                  ))}
-                </CommandList>
+                {loading ? (
+                  <LoadingState className="min-h-24" />
+                ) : (
+                  <>
+                    <CommandEmpty>
+                      {noResultsText ??
+                        t(
+                          "table.filter.combobox.noResults",
+                          "Results not found."
+                        )}
+                    </CommandEmpty>
+                    <CommandList>
+                      {options.map((option) => (
+                        <CommandItem
+                          key={option.value}
+                          value={`${option.label} ${option.value}`}
+                          data-checked={currentValues.includes(option.value)}
+                          onSelect={() => handleSelect(option.value)}
+                        >
+                          {option.label}
+                        </CommandItem>
+                      ))}
+                    </CommandList>
+                  </>
+                )}
               </Command>
             </PopoverContent>
           </Popover>
