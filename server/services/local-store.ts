@@ -9,6 +9,10 @@ import type {
   LocalNoteDeleteResponse,
 } from "../../shared/local-data.js";
 import type { ServerRuntimeContext } from "../runtime.js";
+import {
+  registerLoggedDisposer,
+  type PortalLoggers,
+} from "./logger.js";
 
 interface LocalDatabase {
   notes: LocalNoteTable;
@@ -23,6 +27,7 @@ interface LocalNoteTable {
 }
 
 interface LocalRuntimeStoreOptions {
+  loggers?: PortalLoggers;
   runtime?: ServerRuntimeContext;
 }
 
@@ -82,7 +87,9 @@ export class LocalRuntimeStore {
     });
     this.ready = this.bootstrapDatabase();
 
-    options.runtime?.scope?.registerDisposer(
+    registerLoggedDisposer(
+      options.runtime?.scope,
+      options.loggers,
       "local cache-manager and kysely sqlite store",
       async () => {
         await this.dispose();
@@ -223,6 +230,7 @@ export class LocalRuntimeStore {
     if (this.disposed) return;
 
     this.disposed = true;
+    await this.ready.catch(() => undefined);
     await this.db.destroy();
     await this.cache.clear();
     await this.cache.disconnect();

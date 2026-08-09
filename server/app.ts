@@ -8,9 +8,15 @@ import { createLocalDataRouter } from "./routes/local-data.js";
 import { createNocoBaseProxyRouter } from "./routes/nocobase-proxy.js";
 import { usersRouter } from "./routes/users.js";
 import type { ServerRuntimeContext } from "./runtime.js";
+import {
+  createPortalLoggers,
+  registerLoggedDisposer,
+  type PortalLoggers,
+} from "./services/logger.js";
 import { LocalRuntimeStore } from "./services/local-store.js";
 
 export interface CreateAppOptions {
+  loggers?: PortalLoggers;
   runtime?: ServerRuntimeContext;
 }
 
@@ -34,9 +40,46 @@ const getErrorMessage = (error: unknown, status: number) => {
 const getIncomingBasePath = (runtime?: ServerRuntimeContext) =>
   runtime?.scope ? "/" : runtime?.basePath ?? "/";
 
+const useRequestLogging = (app: Hono<ServerAppEnv>, loggers: PortalLoggers) => {
+  app.use(async (ctx, next) => {
+    const startedAt = Date.now();
+    let requestError: unknown;
+
+    try {
+      await next();
+    } catch (error) {
+      requestError = error;
+      throw error;
+    } finally {
+      const elapsedMs = Date.now() - startedAt;
+      const url = new URL(ctx.req.url);
+      const status = requestError
+        ? getErrorStatus(requestError)
+        : ctx.res.status;
+      const payload = {
+        elapsedMs,
+        err: requestError,
+        method: ctx.req.method,
+        path: url.pathname,
+        requestId: ctx.req.header("x-request-id"),
+        status,
+      };
+
+      if (status >= 500 || requestError) {
+        loggers.request.error(payload, "Portal request failed");
+      } else if (status >= 400) {
+        loggers.request.warn(payload, "Portal request completed");
+      } else {
+        loggers.request.info(payload, "Portal request completed");
+      }
+    }
+  });
+};
+
 const createRuntimeApp = (
   runtime: ServerRuntimeContext | undefined,
-  localStore: LocalRuntimeStore
+  localStore: LocalRuntimeStore,
+  loggers: PortalLoggers
 ) => {
   const app = new Hono<ServerAppEnv>();
 
@@ -49,23 +92,21 @@ const createRuntimeApp = (
 
   app.onError((error, ctx) => {
     const status = getErrorStatus(error);
-    console.error(error);
+    loggers.system.error(
+      {
+        err: error,
+        method: ctx.req.method,
+        path: new URL(ctx.req.url).pathname,
+        requestId: ctx.req.header("x-request-id"),
+        status,
+      },
+      "Portal request failed"
+    );
 
     return ctx.json(
       { error: getErrorMessage(error, status) },
       status as ContentfulStatusCode
     );
-  });
-
-  app.use(async (ctx, next) => {
-    const startedAt = Date.now();
-    await next();
-    if (!ctx.error) {
-      const elapsedMs = Date.now() - startedAt;
-      console.info(
-        `${ctx.req.method} ${new URL(ctx.req.url).pathname} ${ctx.res.status} ${elapsedMs}ms`
-      );
-    }
   });
 
   app.route("/", healthRouter);
@@ -84,9 +125,18 @@ const createRuntimeApp = (
 
 export function createApp(options: CreateAppOptions = {}) {
   const runtime = options.runtime;
-  const localStore = new LocalRuntimeStore({ runtime });
-  const app = createRuntimeApp(runtime, localStore);
+  const loggers = options.loggers ?? createPortalLoggers(runtime);
+  const localStore = new LocalRuntimeStore({ loggers, runtime });
+  const app = createRuntimeApp(runtime, localStore, loggers);
   const mounted = new Hono<ServerAppEnv>();
+
+  useRequestLogging(mounted, loggers);
+
+  if (!options.loggers) {
+    registerLoggedDisposer(runtime?.scope, loggers, "portal pino loggers", () =>
+      loggers.close()
+    );
+  }
 
   mounted.route(getIncomingBasePath(runtime), app);
   mounted.notFound((ctx) => {

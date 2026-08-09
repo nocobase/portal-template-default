@@ -69,6 +69,10 @@ pnpm build:html
 `pnpm build:server` emits the default ESM server build to `server-dist` and a
 CommonJS-compatible build to `server-dist-cjs`.
 
+Server logs are written as JSON lines under `logs/<standalone|embedded>/` with
+dated `system-YYYY-MM-DD.log` and `request-YYYY-MM-DD.log` files. Set
+`PORTAL_LOG_LEVEL` to adjust the Pino log level.
+
 Application pages and resources live under `client`. The included Users page is a
 working example based on the standard NocoBase `users` collection.
 
