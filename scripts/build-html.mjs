@@ -149,7 +149,7 @@ const shareToken = /^true$/i.test(
 
 if (!fs.existsSync(rawIndexPath)) {
   throw new Error(
-    `Missing ${path.relative(rootDir, rawIndexPath)}. Run pnpm build first.`
+    `Missing ${path.relative(rootDir, rawIndexPath)}. Run pnpm build:client first.`
   );
 }
 

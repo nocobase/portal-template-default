@@ -50,11 +50,11 @@ server customizes it, keep `API_CLIENT_STORAGE_PREFIX`,
 # Start the Vite development server and Hono BFF
 pnpm dev
 
-# Build the production assets
-pnpm build
+# Build the production client assets
+pnpm build:client
 
 # Build the production assets, runtime HTML, and BFF output
-pnpm build:all
+pnpm build
 
 # Start the compiled Hono BFF
 pnpm start

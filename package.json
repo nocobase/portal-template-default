@@ -9,7 +9,7 @@
   "portal": {
     "appName": "main",
     "portalName": "main",
-    "entrypoint": "server-dist/server/portal.js"
+    "entrypoint": "server-dist/server/embedded.js"
   },
   "devDependencies": {
     "@ai-sdk/react": "2.0.0",
@@ -115,12 +115,12 @@
   "scripts": {
     "dev": "concurrently -k \"pnpm dev:client\" \"pnpm dev:server\"",
     "dev:client": "vite --host 0.0.0.0",
-    "dev:server": "tsx watch server/index.ts",
-    "build": "tsc && refine build",
+    "dev:server": "tsx watch server/standalone.ts",
+    "build:client": "tsc && refine build",
     "build:html": "node ./scripts/build-html.mjs",
     "build:server": "tsc -p tsconfig.server.json",
-    "build:all": "pnpm build && pnpm build:html && pnpm build:server",
-    "start": "node server-dist/server/index.js",
+    "build": "pnpm build:client && pnpm build:html && pnpm build:server",
+    "start": "node server-dist/server/standalone.js",
     "start:client": "refine start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
