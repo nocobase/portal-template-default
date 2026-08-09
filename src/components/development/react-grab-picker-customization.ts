@@ -2244,6 +2244,19 @@ async function transformReactGrabCopyContent(
   }
 }
 
+function rewriteReactGrabClipboardAsPlainText(content: string) {
+  if (typeof navigator === "undefined") return;
+
+  const clipboard = navigator.clipboard;
+  if (!clipboard || typeof clipboard.writeText !== "function") return;
+
+  try {
+    void clipboard.writeText(content).catch(() => {});
+  } catch {
+    // Keep React Grab's successful original copy as the fallback.
+  }
+}
+
 // React Grab 0.1.50 keeps disabled toolbar buttons and the post-copy menu in
 // its Shadow DOM, so hide those controls separately and restore them on cleanup.
 export function hideDisabledReactGrabToolbarActions(root: ParentNode) {
@@ -2383,6 +2396,8 @@ export function configureReactGrabPicker(api: ReactGrabAPI) {
     name: PORTAL_COPY_PLUGIN,
     hooks: {
       onStateChange: ({ isActive }) => cursor.setActive(isActive),
+      onCopySuccess: (_elements, content) =>
+        rewriteReactGrabClipboardAsPlainText(content),
       transformCopyContent: transformReactGrabCopyContent,
     },
   });

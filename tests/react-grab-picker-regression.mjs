@@ -3676,8 +3676,13 @@ try {
   const activeCursorAttributes = new Set();
   let cursorStyle = null;
   let cursorStyleRemoved = false;
+  const plainTextClipboardWrites = [];
   const previousDocument = globalThis.document;
   const previousMutationObserver = globalThis.MutationObserver;
+  const previousNavigatorDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "navigator"
+  );
 
   globalThis.document = {
     createElement(tagName) {
@@ -3711,6 +3716,16 @@ try {
     disconnect() {}
     observe() {}
   };
+  Object.defineProperty(globalThis, "navigator", {
+    configurable: true,
+    value: {
+      clipboard: {
+        async writeText(content) {
+          plainTextClipboardWrites.push(content);
+        },
+      },
+    },
+  });
 
   try {
     let pickerPlugin = null;
@@ -3732,6 +3747,12 @@ try {
     pickerPlugin.hooks.onStateChange({ isActive: false });
     assert.equal(activeCursorAttributes.size, 0);
 
+    const copiedContent =
+      '[<div class="font-semibold t...">AI 自由构建。</div> in SidebarFooter]\n';
+    await pickerPlugin.hooks.onCopySuccess([], copiedContent);
+    assert.deepEqual(plainTextClipboardWrites, [copiedContent]);
+    assert.doesNotMatch(plainTextClipboardWrites[0], /<pre><code>/);
+
     removePickerCustomizations();
     assert.equal(cursorStyleRemoved, true);
     assert.equal(activeCursorAttributes.size, 0);
@@ -3747,6 +3768,16 @@ try {
       delete globalThis.MutationObserver;
     } else {
       globalThis.MutationObserver = previousMutationObserver;
+    }
+
+    if (previousNavigatorDescriptor === undefined) {
+      delete globalThis.navigator;
+    } else {
+      Object.defineProperty(
+        globalThis,
+        "navigator",
+        previousNavigatorDescriptor
+      );
     }
   }
 
