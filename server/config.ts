@@ -88,6 +88,6 @@ const deriveProxyTarget = () => {
 
 export const config = {
   host: readEnv("APP_SERVER_HOST") ?? "0.0.0.0",
-  port: Number(readEnv("APP_SERVER_PORT") ?? readEnv("PORT") ?? 3000),
+  port: Number(readEnv("APP_SERVER_PORT") ?? readEnv("NOCOBASE_PORTAL_PORT") ?? 3000),
   nocobaseApiTarget: deriveProxyTarget(),
 };

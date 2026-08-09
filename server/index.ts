@@ -1,8 +1,11 @@
 import { serve } from "@hono/node-server";
 import { createApp } from "./app.js";
 import { config } from "./config.js";
+import { createStandaloneRuntimeContext } from "./runtime.js";
 
-const app = createApp();
+const app = createApp({
+  runtime: createStandaloneRuntimeContext(),
+});
 
 serve({
   fetch: app.fetch,

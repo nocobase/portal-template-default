@@ -33,8 +33,9 @@ const getNocoBaseProxyPath = (apiUrl?: string) => {
   }
 };
 
-const getAppServerTarget = (url?: string) => {
-  const normalized = String(url || "http://localhost:3000").trim();
+const getAppServerTarget = (url?: string, port?: string) => {
+  const normalizedPort = String(port || "3000").trim() || "3000";
+  const normalized = String(url || `http://localhost:${normalizedPort}`).trim();
   return normalized || "http://localhost:3000";
 };
 
@@ -44,10 +45,52 @@ const normalizeBase = (base?: string) => {
   return `/${normalized.replace(/^\/+|\/+$/g, "")}/`;
 };
 
+const normalizeProxyPath = (value: string) => {
+  const normalized = `/${value.replace(/^\/+|\/+$/g, "")}`;
+  return normalized === "/" ? "/api" : normalized;
+};
+
+const createRelativeNocoBaseApiProxy = (
+  apiUrl: string | undefined,
+  appServerTarget: string
+): Record<string, ProxyOptions> => {
+  if (!apiUrl?.startsWith("/")) return {};
+
+  const proxyPath = normalizeProxyPath(getNocoBaseProxyPath(apiUrl));
+  if (proxyPath === "/api") return {};
+
+  return {
+    [proxyPath]: {
+      target: appServerTarget,
+      changeOrigin: true,
+      rewrite: (requestPath) =>
+        `/api${requestPath.slice(proxyPath.length) || ""}`,
+    },
+  };
+};
+
+const createPortalApiProxy = (
+  apiUrl: string | undefined,
+  appServerTarget: string
+): Record<string, ProxyOptions> => {
+  const proxyPath = `${normalizeProxyPath(getNocoBaseProxyPath(apiUrl))}/_portal`;
+  return {
+    [proxyPath]: {
+      target: appServerTarget,
+      changeOrigin: true,
+      rewrite: (requestPath) =>
+        `/api/_portal${requestPath.slice(proxyPath.length) || ""}`,
+    },
+  };
+};
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const appServerTarget = getAppServerTarget(env.APP_SERVER_URL);
+  const appServerTarget = getAppServerTarget(
+    env.APP_SERVER_URL,
+    env.APP_SERVER_PORT ?? env.NOCOBASE_PORTAL_PORT
+  );
   const proxyTarget = getDefaultProxyTarget(env.NOCOBASE_API_URL);
   const proxyOrigin = proxyTarget
     ? (() => {
@@ -65,6 +108,14 @@ export default defineConfig(({ mode }) => {
     ? registrySourceRoot
     : path.resolve(__dirname, "./client/extensions");
   const nocobaseProxyPath = getNocoBaseProxyPath(env.NOCOBASE_API_URL);
+  const relativeNocoBaseApiProxy = createRelativeNocoBaseApiProxy(
+    env.NOCOBASE_API_URL,
+    appServerTarget
+  );
+  const portalApiProxy = createPortalApiProxy(
+    env.NOCOBASE_API_URL,
+    appServerTarget
+  );
   const legacyNocoBaseProxy: Record<string, ProxyOptions> =
     proxyTarget && nocobaseProxyPath !== "/api"
       ? {
@@ -125,6 +176,8 @@ export default defineConfig(({ mode }) => {
           target: appServerTarget,
           changeOrigin: true,
         },
+        ...portalApiProxy,
+        ...relativeNocoBaseApiProxy,
         ...legacyNocoBaseProxy,
       },
     },

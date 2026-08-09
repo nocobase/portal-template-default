@@ -16,26 +16,49 @@ afterEach(() => {
 });
 
 describe("Portal API paths", () => {
-  it("uses the configured Portal name under the reserved API namespace", () => {
+  it("uses the reserved Portal API namespace under the runtime API URL", () => {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
       value: {
-        NOCOBASE_PORTAL_NAME: "sales portal",
+        location: {
+          origin: "http://localhost:5173",
+        },
+        NOCOBASE_API_URL: "/portals/main/api",
       },
     });
 
     expect(portalApiPath("/users/metadata")).toBe(
-      "/api/_portal/sales%20portal/users/metadata"
+      "/portals/main/api/_portal/users/metadata"
     );
-    expect(portalApiPath("users")).toBe("/api/_portal/sales%20portal/users");
+    expect(portalApiPath("users")).toBe("/portals/main/api/_portal/users");
   });
 
-  it("falls back to main when no Portal name is configured", () => {
+  it("keeps absolute runtime API URLs on the dev proxy path", () => {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
-      value: {},
+      value: {
+        location: {
+          origin: "http://localhost:5173",
+        },
+        NOCOBASE_API_URL: "http://127.0.0.1:64074/portals/main/api",
+      },
     });
 
-    expect(portalApiPath()).toBe("/api/_portal/main");
+    expect(portalApiPath("/users/metadata")).toBe(
+      "/portals/main/api/_portal/users/metadata"
+    );
+  });
+
+  it("returns the namespace root under /api when no runtime API URL is configured", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        location: {
+          origin: "http://localhost:5173",
+        },
+      },
+    });
+
+    expect(portalApiPath()).toBe("/api/_portal");
   });
 });

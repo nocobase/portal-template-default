@@ -54,9 +54,7 @@ const getEnvFilesForMode = (mode) => {
     );
   }
 
-  return [".env", ".env.local", `.env.${mode}`, `.env.${mode}.local`].map(
-    (file) => path.join(rootDir, file)
-  );
+  return [".env"].map((file) => path.join(rootDir, file));
 };
 
 const loadBuildHtmlEnv = () => {

@@ -1,5 +1,6 @@
 import { Hono, type Context } from "hono";
 import { proxy } from "hono/proxy";
+import type { ServerRuntimeContext } from "../runtime.js";
 
 const createUpstreamRequestUrl = (target: string, requestUrl: string) => {
   const targetUrl = new URL(target);
@@ -74,18 +75,41 @@ const normalizeProxyResponse = (response: Response) => {
   });
 };
 
-export function createNocoBaseProxyRouter(target?: string) {
+const deriveEmbeddedTarget = (
+  ctx: Context,
+  runtime?: ServerRuntimeContext
+) => {
+  if (runtime?.mode !== "embedded") return undefined;
+
+  const forwardedHost = ctx.req.header("x-forwarded-host");
+  if (!forwardedHost) return undefined;
+
+  const forwardedProto = ctx.req.header("x-forwarded-proto") || "http";
+  return `${forwardedProto.replace(/:$/, "")}://${forwardedHost}/api`;
+};
+
+const resolveProxyTarget = (
+  ctx: Context,
+  target?: string,
+  runtime?: ServerRuntimeContext
+) => target ?? deriveEmbeddedTarget(ctx, runtime);
+
+export function createNocoBaseProxyRouter(
+  target?: string,
+  runtime?: ServerRuntimeContext
+) {
   const router = new Hono();
 
   const handler = async (ctx: Context) => {
-    if (!target) {
+    const proxyTarget = resolveProxyTarget(ctx, target, runtime);
+    if (!proxyTarget) {
       return ctx.json(
         { error: "NOCOBASE_API_PROXY_TARGET is not configured" },
         502
       );
     }
 
-    const upstreamUrl = createUpstreamRequestUrl(target, ctx.req.url);
+    const upstreamUrl = createUpstreamRequestUrl(proxyTarget, ctx.req.url);
     const response = await proxy(upstreamUrl, {
       raw: ctx.req.raw,
       headers: createProxyHeaders(ctx.req.raw, upstreamUrl),

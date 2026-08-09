@@ -6,6 +6,17 @@ import { appApiRouter } from "./routes/app-api.js";
 import { healthRouter } from "./routes/health.js";
 import { createNocoBaseProxyRouter } from "./routes/nocobase-proxy.js";
 import { usersRouter } from "./routes/users.js";
+import type { ServerRuntimeContext } from "./runtime.js";
+
+export interface CreateAppOptions {
+  runtime?: ServerRuntimeContext;
+}
+
+type ServerAppEnv = {
+  Variables: {
+    runtime: ServerRuntimeContext;
+  };
+};
 
 const getErrorStatus = (error: unknown) => {
   if (!error || typeof error !== "object") return 500;
@@ -18,8 +29,16 @@ const getErrorMessage = (error: unknown, status: number) => {
   return error.message || "Request failed";
 };
 
-export function createApp() {
-  const app = new Hono();
+export function createApp(options: CreateAppOptions = {}) {
+  const app = new Hono<ServerAppEnv>();
+  const runtime = options.runtime;
+
+  if (runtime) {
+    app.use(async (ctx, next) => {
+      ctx.set("runtime", runtime);
+      await next();
+    });
+  }
 
   app.onError((error, ctx) => {
     const status = getErrorStatus(error);
@@ -43,10 +62,10 @@ export function createApp() {
   });
 
   app.route("/", healthRouter);
-  app.route("/api/_portal/:portalName/users", usersRouter);
-  app.route("/api/_portal/:portalName", appApiRouter);
+  app.route("/api/_portal/users", usersRouter);
+  app.route("/api/_portal", appApiRouter);
   app.use("/api/*", nocobaseProxyInterceptor);
-  app.route("/api", createNocoBaseProxyRouter(config.nocobaseApiTarget));
+  app.route("/api", createNocoBaseProxyRouter(config.nocobaseApiTarget, runtime));
 
   app.notFound((ctx) => {
     return ctx.json({ error: "Not Found" }, 404);
