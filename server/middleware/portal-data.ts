@@ -24,10 +24,24 @@ export const createServerRequestContext = (ctx: Context) => ({
   },
 });
 
+const deriveEmbeddedTarget = (ctx: Context, runtime?: ServerRuntimeContext) => {
+  if (runtime?.mode !== "embedded") return undefined;
+
+  const appPort = process.env.APP_PORT;
+  const forwardedHost =
+    ctx.req.header("x-forwarded-host") ||
+    (appPort && Number.isInteger(Number(appPort)) ? `127.0.0.1:${appPort}` : undefined);
+  if (!forwardedHost) return undefined;
+
+  const forwardedProto = ctx.req.header("x-forwarded-proto") || "http";
+  return `${forwardedProto.replace(/:$/, "")}://${forwardedHost}/api`;
+};
+
 export const createPortalDataClient = (ctx: Context) => {
+  const runtime = getRuntime(ctx);
   const upstream = new NocoBaseUpstreamClient({
     context: createServerRequestContext(ctx),
-    target: config.nocobaseApiTarget,
+    target: config.nocobaseApiTarget ?? deriveEmbeddedTarget(ctx, runtime),
   });
 
   return new PortalDataCapabilityClient(upstream);

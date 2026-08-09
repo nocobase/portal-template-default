@@ -50,6 +50,30 @@ const normalizeProxyPath = (value: string) => {
   return normalized === "/" ? "/api" : normalized;
 };
 
+const getWebSocketProxyTarget = (env: Record<string, string>) => {
+  const target =
+    env.NOCOBASE_WS_PROXY_TARGET ??
+    env.NOCOBASE_WS_URL ??
+    env.NOCOBASE_API_PROXY_TARGET ??
+    getDefaultProxyTarget(env.NOCOBASE_API_URL);
+
+  if (!target || target.startsWith("/")) return undefined;
+
+  try {
+    return new URL(target).origin;
+  } catch {
+    return undefined;
+  }
+};
+
+const getPortalScopedWebSocketProxyPath = (apiUrl?: string) => {
+  const apiPath = normalizeProxyPath(getNocoBaseProxyPath(apiUrl));
+  const apiIndex = apiPath.lastIndexOf("/api");
+  const basePath = apiIndex >= 0 ? apiPath.slice(0, apiIndex) : "";
+
+  return normalizeProxyPath(`${basePath}/ws`);
+};
+
 const createRelativeNocoBaseApiProxy = (
   apiUrl: string | undefined,
   appServerTarget: string
@@ -63,8 +87,6 @@ const createRelativeNocoBaseApiProxy = (
     [proxyPath]: {
       target: appServerTarget,
       changeOrigin: true,
-      rewrite: (requestPath) =>
-        `/api${requestPath.slice(proxyPath.length) || ""}`,
     },
   };
 };
@@ -78,8 +100,6 @@ const createPortalApiProxy = (
     [proxyPath]: {
       target: appServerTarget,
       changeOrigin: true,
-      rewrite: (requestPath) =>
-        `/api/_portal${requestPath.slice(proxyPath.length) || ""}`,
     },
   };
 };
@@ -116,6 +136,11 @@ export default defineConfig(({ mode }) => {
     env.NOCOBASE_API_URL,
     appServerTarget
   );
+  const webSocketProxyPath = normalizeProxyPath(env.NOCOBASE_WS_PATH || "/ws");
+  const portalScopedWebSocketProxyPath = getPortalScopedWebSocketProxyPath(
+    env.NOCOBASE_API_URL
+  );
+  const webSocketProxyTarget = getWebSocketProxyTarget(env) ?? appServerTarget;
   const legacyNocoBaseProxy: Record<string, ProxyOptions> =
     proxyTarget && nocobaseProxyPath !== "/api"
       ? {
@@ -175,6 +200,18 @@ export default defineConfig(({ mode }) => {
         "/api": {
           target: appServerTarget,
           changeOrigin: true,
+        },
+        [webSocketProxyPath]: {
+          target: webSocketProxyTarget,
+          changeOrigin: true,
+          secure: false,
+          ws: true,
+        },
+        [portalScopedWebSocketProxyPath]: {
+          target: appServerTarget,
+          changeOrigin: true,
+          secure: false,
+          ws: true,
         },
         ...portalApiProxy,
         ...relativeNocoBaseApiProxy,

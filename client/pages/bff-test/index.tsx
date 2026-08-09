@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Database,
   Edit3,
   Eye,
+  HardDrive,
   Loader2,
   Plus,
   RefreshCw,
   Save,
   Search,
+  Send,
   Trash2,
   Users,
   X,
@@ -18,6 +21,15 @@ import type {
   PortalUserRecord,
   PortalUsersListResponse,
 } from "@shared/users";
+import type {
+  LocalCacheReadResponse,
+  LocalCacheWriteResponse,
+  LocalCachedNotesResponse,
+  LocalNoteMutationRequest,
+  LocalNoteRecord,
+  LocalNoteResponse,
+  LocalNotesListResponse,
+} from "@shared/local-data";
 
 import { Breadcrumb } from "@/components/app-shell/breadcrumb";
 import { portalApiPath } from "@/lib/portal-api";
@@ -33,6 +45,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -43,12 +56,19 @@ import {
 } from "@/components/ui/table";
 
 type UserFormValues = Required<PortalUserMutationRequest>;
+type NoteFormValues = Required<Pick<LocalNoteMutationRequest, "title">> &
+  Pick<LocalNoteMutationRequest, "body">;
 
 const emptyForm: UserFormValues = {
   username: "",
   nickname: "",
   email: "",
   password: "",
+};
+
+const emptyNoteForm: NoteFormValues = {
+  title: "",
+  body: "",
 };
 
 const getApiError = async (response: Response) => {
@@ -118,9 +138,32 @@ export default function BffTestPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
+  const [localLoading, setLocalLoading] = useState(false);
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [deletingNoteId, setDeletingNoteId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [cacheKey, setCacheKey] = useState("demo");
+  const [cacheValue, setCacheValue] = useState(
+    JSON.stringify({ ok: true }, null, 2)
+  );
+  const [cacheTtlMs, setCacheTtlMs] = useState("10000");
+  const [cacheResult, setCacheResult] = useState<
+    LocalCacheReadResponse | LocalCacheWriteResponse | null
+  >(null);
+  const [notes, setNotes] = useState<LocalNoteRecord[]>([]);
+  const [cachedNotes, setCachedNotes] = useState<LocalCachedNotesResponse | null>(
+    null
+  );
+  const [selectedNote, setSelectedNote] = useState<LocalNoteRecord | null>(null);
+  const [noteForm, setNoteForm] = useState<NoteFormValues>({
+    ...emptyNoteForm,
+    title: "Portal local note",
+    body: "Created from the BFF test page.",
+  });
 
   const userRows = Array.isArray(users.rows) ? users.rows : [];
+  const noteRows = Array.isArray(notes) ? notes : [];
   const pageSize = users.pageSize || 10;
   const pageCount =
     (users.totalPage ?? Math.ceil((users.count ?? 0) / pageSize)) || 1;
@@ -161,9 +204,36 @@ export default function BffTestPage() {
     }
   }, [page, search]);
 
+  const loadLocalData = useCallback(async () => {
+    setLocalLoading(true);
+    setLocalError(null);
+
+    try {
+      const [notesList, cachedList] = await Promise.all([
+        requestJson<LocalNotesListResponse>(portalApiPath("/notes")),
+        requestJson<LocalCachedNotesResponse>(portalApiPath("/notes/cached")),
+      ]);
+
+      setNotes(notesList.notes);
+      setCachedNotes(cachedList);
+    } catch (requestError) {
+      setLocalError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to load local BFF data"
+      );
+    } finally {
+      setLocalLoading(false);
+    }
+  }, []);
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([loadUsers(), loadLocalData()]);
+  }, [loadLocalData, loadUsers]);
+
   useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
+    refreshAll();
+  }, [refreshAll]);
 
   const resetForm = useCallback(() => {
     setEditingUser(null);
@@ -269,6 +339,166 @@ export default function BffTestPage() {
       );
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const getTrimmedCacheKey = () => cacheKey.trim() || "demo";
+
+  const parseCacheValue = () => {
+    const value = cacheValue.trim();
+    if (!value) return null;
+
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  };
+
+  const readCacheEntry = async () => {
+    setLocalLoading(true);
+    setLocalError(null);
+
+    try {
+      setCacheResult(
+        await requestJson<LocalCacheReadResponse>(
+          portalApiPath(`/cache-manager/${encodeURIComponent(getTrimmedCacheKey())}`)
+        )
+      );
+    } catch (requestError) {
+      setLocalError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to read cache entry"
+      );
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  const writeCacheEntry = async () => {
+    setLocalLoading(true);
+    setLocalError(null);
+
+    try {
+      const query = new URLSearchParams();
+      if (cacheTtlMs.trim()) query.set("ttlMs", cacheTtlMs.trim());
+      const suffix = query.toString() ? `?${query}` : "";
+
+      setCacheResult(
+        await requestJson<LocalCacheWriteResponse>(
+          portalApiPath(
+            `/cache-manager/${encodeURIComponent(getTrimmedCacheKey())}${suffix}`
+          ),
+          {
+            method: "PUT",
+            body: {
+              value: parseCacheValue(),
+            },
+          }
+        )
+      );
+    } catch (requestError) {
+      setLocalError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to write cache entry"
+      );
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  const clearCacheEntries = async () => {
+    setLocalLoading(true);
+    setLocalError(null);
+
+    try {
+      await requestJson(portalApiPath("/cache-manager/clear"), {
+        method: "POST",
+      });
+      setCacheResult(null);
+      await loadLocalData();
+    } catch (requestError) {
+      setLocalError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to clear cache"
+      );
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  const createNote = async () => {
+    setNoteSaving(true);
+    setLocalError(null);
+
+    try {
+      const title = noteForm.title.trim();
+      if (!title) throw new Error("Note title is required");
+
+      const response = await requestJson<LocalNoteResponse>(
+        portalApiPath("/notes"),
+        {
+          body: {
+            title,
+            body: noteForm.body?.trim() || null,
+          } satisfies LocalNoteMutationRequest,
+        }
+      );
+
+      setSelectedNote(response.note);
+      setNoteForm({ ...emptyNoteForm, title: "", body: "" });
+      await loadLocalData();
+    } catch (requestError) {
+      setLocalError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to create note"
+      );
+    } finally {
+      setNoteSaving(false);
+    }
+  };
+
+  const selectNote = async (note: LocalNoteRecord) => {
+    setLocalError(null);
+
+    try {
+      const response = await requestJson<LocalNoteResponse>(
+        portalApiPath(`/notes/${note.id}`)
+      );
+      setSelectedNote(response.note);
+    } catch (requestError) {
+      setLocalError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to load note"
+      );
+    }
+  };
+
+  const deleteNote = async (note: LocalNoteRecord) => {
+    if (!window.confirm(`Delete note "${note.title}"?`)) return;
+
+    setDeletingNoteId(note.id);
+    setLocalError(null);
+
+    try {
+      await requestJson(portalApiPath(`/notes/${note.id}`), {
+        method: "DELETE",
+      });
+      if (selectedNote?.id === note.id) setSelectedNote(null);
+      await loadLocalData();
+    } catch (requestError) {
+      setLocalError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to delete note"
+      );
+    } finally {
+      setDeletingNoteId(null);
     }
   };
 
@@ -512,6 +742,234 @@ export default function BffTestPage() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {localError && (
+        <Alert variant="destructive">
+          <AlertTitle>Local BFF request failed</AlertTitle>
+          <AlertDescription>{localError}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <HardDrive className="size-5 text-primary" />
+              <CardTitle>cache-manager</CardTitle>
+            </div>
+            <CardDescription>
+              Namespaced memory cache using the active Portal runtime scope.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="cache-key">Key</Label>
+              <Input
+                id="cache-key"
+                value={cacheKey}
+                onChange={(event) => setCacheKey(event.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="cache-value">Value</Label>
+              <Textarea
+                id="cache-value"
+                className="min-h-28 font-mono text-xs"
+                value={cacheValue}
+                onChange={(event) => setCacheValue(event.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="cache-ttl">TTL milliseconds</Label>
+              <Input
+                id="cache-ttl"
+                inputMode="numeric"
+                value={cacheTtlMs}
+                onChange={(event) => setCacheTtlMs(event.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <Button onClick={writeCacheEntry} disabled={localLoading}>
+                {localLoading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
+                Write
+              </Button>
+              <Button
+                variant="outline"
+                onClick={readCacheEntry}
+                disabled={localLoading}
+              >
+                <Eye className="size-4" />
+                Read
+              </Button>
+              <Button
+                variant="outline"
+                onClick={clearCacheEntries}
+                disabled={localLoading}
+              >
+                <Trash2 className="size-4" />
+                Clear
+              </Button>
+            </div>
+            <pre className="max-h-64 overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-5">
+              {JSON.stringify(cacheResult ?? { waiting: true }, null, 2)}
+            </pre>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Database className="size-5 text-primary" />
+                  <CardTitle>Kysely notes</CardTitle>
+                </div>
+                <CardDescription>
+                  SQLite records queried through Kysely, with cached list timing.
+                </CardDescription>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {cachedNotes?.cache && (
+                  <Badge variant="secondary">
+                    {cachedNotes.cache.source} · {cachedNotes.cache.durationMs}ms
+                  </Badge>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={loadLocalData}
+                  disabled={localLoading}
+                >
+                  {localLoading ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="size-4" />
+                  )}
+                  Refresh
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="min-w-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-20">ID</TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="w-28 text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {noteRows.map((note) => (
+                    <TableRow key={note.id}>
+                      <TableCell>{note.id}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium">{note.title}</span>
+                          {note.body && (
+                            <span className="line-clamp-1 text-xs text-muted-foreground">
+                              {note.body}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{formatDate(note.createdAt)}</TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            aria-label="View note"
+                            size="icon-sm"
+                            variant="ghost"
+                            onClick={() => selectNote(note)}
+                          >
+                            <Eye className="size-4" />
+                          </Button>
+                          <Button
+                            aria-label="Delete note"
+                            size="icon-sm"
+                            variant="destructive"
+                            disabled={deletingNoteId === note.id}
+                            onClick={() => deleteNote(note)}
+                          >
+                            {deletingNoteId === note.id ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="size-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {!noteRows.length && (
+                    <TableRow>
+                      <TableCell
+                        className="h-32 text-center text-muted-foreground"
+                        colSpan={4}
+                      >
+                        {localLoading ? "Loading notes..." : "No notes found"}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="note-title">Title</Label>
+                <Input
+                  id="note-title"
+                  value={noteForm.title}
+                  onChange={(event) =>
+                    setNoteForm((current) => ({
+                      ...current,
+                      title: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="note-body">Body</Label>
+                <Textarea
+                  id="note-body"
+                  className="min-h-24"
+                  value={noteForm.body ?? ""}
+                  onChange={(event) =>
+                    setNoteForm((current) => ({
+                      ...current,
+                      body: event.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <Button onClick={createNote} disabled={noteSaving}>
+                {noteSaving ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
+                Create note
+              </Button>
+              <pre className="max-h-64 overflow-auto rounded-md border bg-muted/40 p-3 text-xs leading-5">
+                {JSON.stringify(
+                  selectedNote ??
+                    cachedNotes ?? {
+                      waiting: true,
+                    },
+                  null,
+                  2
+                )}
+              </pre>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -2,12 +2,33 @@ import { Hono, type Context } from "hono";
 import { proxy } from "hono/proxy";
 import type { ServerRuntimeContext } from "../runtime.js";
 
-const createUpstreamRequestUrl = (target: string, requestUrl: string) => {
+const stripRuntimeBasePath = (
+  pathname: string,
+  runtime?: ServerRuntimeContext
+) => {
+  const basePath = runtime?.basePath.replace(/\/+$/, "");
+  if (!basePath || basePath === "/") return pathname;
+
+  return pathname === basePath
+    ? "/"
+    : pathname.startsWith(`${basePath}/`)
+      ? pathname.slice(basePath.length)
+      : pathname;
+};
+
+const createUpstreamRequestUrl = (
+  target: string,
+  requestUrl: string,
+  runtime?: ServerRuntimeContext
+) => {
   const targetUrl = new URL(target);
   const targetPath = targetUrl.pathname.replace(/\/+$/, "");
   const parsedRequestUrl = new URL(requestUrl);
-  const strippedPathname =
-    parsedRequestUrl.pathname.replace(/^\/api(?=\/|$)/, "") || "/";
+  const requestPathname = stripRuntimeBasePath(
+    parsedRequestUrl.pathname,
+    runtime
+  );
+  const strippedPathname = requestPathname.replace(/^\/api(?=\/|$)/, "") || "/";
   const requestPath = strippedPathname.startsWith("/")
     ? strippedPathname
     : `/${strippedPathname}`;
@@ -109,7 +130,11 @@ export function createNocoBaseProxyRouter(
       );
     }
 
-    const upstreamUrl = createUpstreamRequestUrl(proxyTarget, ctx.req.url);
+    const upstreamUrl = createUpstreamRequestUrl(
+      proxyTarget,
+      ctx.req.url,
+      runtime
+    );
     const response = await proxy(upstreamUrl, {
       raw: ctx.req.raw,
       headers: createProxyHeaders(ctx.req.raw, upstreamUrl),

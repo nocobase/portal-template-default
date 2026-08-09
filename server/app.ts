@@ -4,9 +4,11 @@ import { config } from "./config.js";
 import { nocobaseProxyInterceptor } from "./middleware/nocobase-proxy-interceptor.js";
 import { appApiRouter } from "./routes/app-api.js";
 import { healthRouter } from "./routes/health.js";
+import { createLocalDataRouter } from "./routes/local-data.js";
 import { createNocoBaseProxyRouter } from "./routes/nocobase-proxy.js";
 import { usersRouter } from "./routes/users.js";
 import type { ServerRuntimeContext } from "./runtime.js";
+import { LocalRuntimeStore } from "./services/local-store.js";
 
 export interface CreateAppOptions {
   runtime?: ServerRuntimeContext;
@@ -29,9 +31,14 @@ const getErrorMessage = (error: unknown, status: number) => {
   return error.message || "Request failed";
 };
 
-export function createApp(options: CreateAppOptions = {}) {
+const getIncomingBasePath = (runtime?: ServerRuntimeContext) =>
+  runtime?.scope ? "/" : runtime?.basePath ?? "/";
+
+const createRuntimeApp = (
+  runtime: ServerRuntimeContext | undefined,
+  localStore: LocalRuntimeStore
+) => {
   const app = new Hono<ServerAppEnv>();
-  const runtime = options.runtime;
 
   if (runtime) {
     app.use(async (ctx, next) => {
@@ -63,6 +70,7 @@ export function createApp(options: CreateAppOptions = {}) {
 
   app.route("/", healthRouter);
   app.route("/api/_portal/users", usersRouter);
+  app.route("/api/_portal", createLocalDataRouter(localStore));
   app.route("/api/_portal", appApiRouter);
   app.use("/api/*", nocobaseProxyInterceptor);
   app.route("/api", createNocoBaseProxyRouter(config.nocobaseApiTarget, runtime));
@@ -72,4 +80,18 @@ export function createApp(options: CreateAppOptions = {}) {
   });
 
   return app;
+};
+
+export function createApp(options: CreateAppOptions = {}) {
+  const runtime = options.runtime;
+  const localStore = new LocalRuntimeStore({ runtime });
+  const app = createRuntimeApp(runtime, localStore);
+  const mounted = new Hono<ServerAppEnv>();
+
+  mounted.route(getIncomingBasePath(runtime), app);
+  mounted.notFound((ctx) => {
+    return ctx.json({ error: "Not Found" }, 404);
+  });
+
+  return mounted;
 }

@@ -30,6 +30,24 @@ const readEnv = (name: string) => {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 };
 
+const normalizeBasePath = (value?: string) => {
+  if (!value) return undefined;
+  const normalized = `/${value.replace(/^\/+|\/+$/g, "")}`;
+  return normalized === "/" ? "/" : normalized;
+};
+
+const deriveBasePathFromApiUrl = (apiUrl?: string) => {
+  if (!apiUrl) return undefined;
+
+  try {
+    const pathname = new URL(apiUrl, "http://localhost").pathname;
+    const match = pathname.match(/^(.*)\/api(?:\/)?$/);
+    return normalizeBasePath(match?.[1] || "/");
+  } catch {
+    return undefined;
+  }
+};
+
 const parseScopeId = (id: string) => {
   const [appName, portalName] = id.split(":");
   if (appName && portalName) {
@@ -45,8 +63,12 @@ const parseScopeId = (id: string) => {
 export const createStandaloneRuntimeContext = (): ServerRuntimeContext => ({
   mode: "standalone",
   appName: readEnv("NOCOBASE_APP_NAME") ?? readEnv("APP_NAME") ?? "main",
-  portalName: readEnv("PORTAL_NAME") ?? readEnv("APP_NAME") ?? "main",
-  basePath: readEnv("PORTAL_BASE_PATH") ?? "/",
+  portalName:
+    readEnv("NOCOBASE_PORTAL_NAME") ?? readEnv("PORTAL_NAME") ?? readEnv("APP_NAME") ?? "main",
+  basePath:
+    normalizeBasePath(readEnv("PORTAL_BASE_PATH")) ??
+    deriveBasePathFromApiUrl(readEnv("NOCOBASE_API_URL")) ??
+    "/",
 });
 
 export const createEmbeddedRuntimeContext = (

@@ -33,6 +33,7 @@ server-dist
 .vscode/_
 !.vscode/extensions.json
 .idea
+/data
 .DS_Store
 _.suo
 _.ntvs_

@@ -145,6 +145,20 @@ it("the WebSocket URL preserves the server prefix and selects a sub-application"
   }
 });
 
+it("the WebSocket URL honors an explicit runtime path", () => {
+  const originalWindow = globalThis.window;
+  try {
+    globalThis.window = {
+      location: { origin: "https://example.com" },
+      NOCOBASE_API_URL: "/portals/main/api",
+      NOCOBASE_WS_PATH: "/ws",
+    };
+    expect(resolveNocoBaseWebSocketUrl()).toBe("wss://example.com/ws");
+  } finally {
+    globalThis.window = originalWindow;
+  }
+});
+
 it("a stale WebSocket cannot disrupt its replacement", () => {
   const originalWebSocket = globalThis.WebSocket;
   const originalWindow = globalThis.window;

@@ -54,8 +54,10 @@ export function resolveNocoBaseWebSocketUrl(
   if (typeof window === "undefined") return undefined;
 
   const configuredUrl = options.url ?? getRuntimeWebSocketUrl();
-  const wsPath = options.wsPath ?? getRuntimeWebSocketPath() ?? "/ws";
-  const value = configuredUrl || resolveNocoBaseServerUrl(wsPath);
+  const configuredPath = options.wsPath ?? getRuntimeWebSocketPath();
+  const wsPath = configuredPath ?? "/ws";
+  const value =
+    configuredUrl || (configuredPath ? wsPath : resolveNocoBaseServerUrl(wsPath));
   const url = new URL(value, window.location.origin);
   if (url.protocol === "http:") url.protocol = "ws:";
   if (url.protocol === "https:") url.protocol = "wss:";
