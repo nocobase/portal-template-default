@@ -49,10 +49,9 @@ NOCOBASE_PORTAL_NAME=main
   generated into `window.__NOCOBASE_PORTAL_ENV__` during dev/build.
 - `.env.server.*` is read only by the Portal server and is not registered onto
   `process.env`.
-- `NOCOBASE_APP_NAME` is optional in server env. When omitted, it can be
-  derived from `NOCOBASE_API_PROXY_TARGET`, where `/api` means `main`, and
-  `/api/__app/<appName>` means `<appName>`. The derived value is added to
-  `window.__NOCOBASE_PORTAL_ENV__` automatically.
+- `NOCOBASE_APP_NAME` is derived from `NOCOBASE_API_PROXY_TARGET`, where `/api`
+  means `main`, and `/api/__app/<appName>` means `<appName>`. The derived value
+  is added to `window.__NOCOBASE_PORTAL_ENV__` automatically.
 - `NOCOBASE_PORTAL_NAME` is the Portal runtime name.
 - `NOCOBASE_API_URL` is derived as `/portals/<NOCOBASE_PORTAL_NAME>/api` for
   the `main` app, or
@@ -66,6 +65,10 @@ NOCOBASE_PORTAL_NAME=main
 - `NOCOBASE_PORTAL_BASE` is derived as `/x/<NOCOBASE_PORTAL_NAME>` for the
   `main` app, or `/x/apps/<NOCOBASE_APP_NAME>/<NOCOBASE_PORTAL_NAME>` for other
   apps.
+- `NOCOBASE_WS_PROXY_TARGET` and `PORTAL_BASE_PATH` are derived automatically
+  from `NOCOBASE_API_PROXY_TARGET`, `NOCOBASE_PORTAL_NAME`, and the generated
+  browser API URL.
+
 The Portal uses the same authentication storage convention as NocoBase. If the
 server customizes it, keep `API_CLIENT_STORAGE_PREFIX`,
 `API_CLIENT_STORAGE_TYPE`, and `API_CLIENT_SHARE_TOKEN` aligned with the server.

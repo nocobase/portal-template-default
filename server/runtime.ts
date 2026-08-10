@@ -41,7 +41,6 @@ const getAppNameFromApiProxyTarget = () => {
 };
 
 const getAppName = () =>
-  readServerEnv("NOCOBASE_APP_NAME") ??
   getAppNameFromApiProxyTarget() ??
   "main";
 
@@ -97,7 +96,6 @@ export const createStandaloneRuntimeContext = (): ServerRuntimeContext => {
     appName: getAppName(),
     portalName: getPortalName(),
     basePath:
-      normalizeBasePath(readServerEnv("PORTAL_BASE_PATH")) ??
       deriveBasePathFromApiUrl(portalApiUrl) ??
       "/",
   };

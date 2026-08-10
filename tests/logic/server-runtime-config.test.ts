@@ -199,6 +199,40 @@ describe("server runtime config", () => {
     });
   });
 
+  it("derives app name, websocket proxy target, and base path without server env overrides", async () => {
+    delete process.env.NOCOBASE_APP_NAME;
+    delete process.env.NOCOBASE_PORTAL_NAME;
+    delete process.env.NOCOBASE_API_URL;
+    useEnvFiles({
+      [path.join(portalRoot, ".env.server.test")]: [
+        "NOCOBASE_API_PROXY_TARGET=http://127.0.0.1:64074/api/__app/sales",
+        "NOCOBASE_PORTAL_NAME=ops",
+        "NOCOBASE_APP_NAME=ignored",
+        "NOCOBASE_WS_PROXY_TARGET=ws://127.0.0.1:64074/ignored-ws",
+        "PORTAL_BASE_PATH=/ignored",
+      ].join("\n"),
+    });
+
+    expect(createStandaloneRuntimeContext()).toMatchObject({
+      mode: "standalone",
+      appName: "sales",
+      portalName: "ops",
+      basePath: "/apps/sales/portals/ops",
+    });
+    expect(readServerEnv("NOCOBASE_APP_NAME")).toBe("sales");
+    expect(readServerEnv("NOCOBASE_WS_PROXY_TARGET")).toBeUndefined();
+    expect(readServerEnv("PORTAL_BASE_PATH")).toBeUndefined();
+
+    vi.resetModules();
+    const { config } = await import("../../server/config");
+
+    expect(config).toMatchObject({
+      portalApiUrl: "/apps/sales/portals/ops/api",
+      nocobaseWebSocketPath: "/apps/sales/portals/ops/ws",
+      nocobaseWebSocketTarget: "ws://127.0.0.1:64074/ws?__appName=sales",
+    });
+  });
+
   it("keeps embedded runtime context based on the portal scope", () => {
     expect(createEmbeddedRuntimeContext(createPortalScope())).toMatchObject({
       mode: "embedded",

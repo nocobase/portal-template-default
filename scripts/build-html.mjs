@@ -103,6 +103,18 @@ const getAppNameFromApiProxyTarget = (target) => {
   }
 };
 
+const omitGeneratedServerEnv = (env) => {
+  const fileEnv = { ...env };
+  delete fileEnv.NOCOBASE_APP_NAME;
+  delete fileEnv.NOCOBASE_API_URL;
+  delete fileEnv.NOCOBASE_PORTAL_BASE;
+  delete fileEnv.NOCOBASE_WS_URL;
+  delete fileEnv.NOCOBASE_AUTHENTICATOR;
+  delete fileEnv.NOCOBASE_WS_PROXY_TARGET;
+  delete fileEnv.PORTAL_BASE_PATH;
+  return fileEnv;
+};
+
 const deriveWebSocketUrlFromApiUrl = (apiUrl) => {
   try {
     const url = new URL(apiUrl || "/api", "http://localhost");
@@ -130,7 +142,6 @@ const readServerEnv = (name) => {
   const mode = process.env.MODE || "production";
   const env = readEnvFiles("server", mode);
   const appName =
-    normalizeName(env.NOCOBASE_APP_NAME) ??
     normalizeName(getAppNameFromApiProxyTarget(env.NOCOBASE_API_PROXY_TARGET)) ??
     "main";
   const portalName = normalizeName(env.NOCOBASE_PORTAL_NAME) ?? "main";
@@ -143,11 +154,11 @@ const readServerEnv = (name) => {
       ? `/x/${portalName}`
       : `/x/apps/${appName}/${portalName}`;
   const serverEnv = {
-    ...env,
+    ...omitGeneratedServerEnv(env),
     NOCOBASE_APP_NAME: appName,
     NOCOBASE_PORTAL_NAME: portalName,
-    NOCOBASE_API_URL: env.NOCOBASE_API_URL || `${portalPublicPath}/api`,
-    NOCOBASE_PORTAL_BASE: env.NOCOBASE_PORTAL_BASE || portalBase,
+    NOCOBASE_API_URL: `${portalPublicPath}/api`,
+    NOCOBASE_PORTAL_BASE: portalBase,
   };
 
   return name ? serverEnv[name] : serverEnv;
@@ -162,11 +173,8 @@ const readClientEnv = (name) => {
     NOCOBASE_PORTAL_NAME: serverEnv.NOCOBASE_PORTAL_NAME,
     NOCOBASE_API_URL: serverEnv.NOCOBASE_API_URL,
     NOCOBASE_PORTAL_BASE: serverEnv.NOCOBASE_PORTAL_BASE,
-    NOCOBASE_WS_URL:
-      serverEnv.NOCOBASE_WS_URL ||
-      deriveWebSocketUrlFromApiUrl(serverEnv.NOCOBASE_API_URL),
-    NOCOBASE_AUTHENTICATOR:
-      serverEnv.NOCOBASE_AUTHENTICATOR || "basic",
+    NOCOBASE_WS_URL: deriveWebSocketUrlFromApiUrl(serverEnv.NOCOBASE_API_URL),
+    NOCOBASE_AUTHENTICATOR: "basic",
     ...clientConfig,
   };
   const clientEnv = {

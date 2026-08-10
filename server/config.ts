@@ -109,9 +109,20 @@ const getAppNameFromApiProxyTarget = (target?: string) => {
   }
 };
 
+const omitGeneratedServerEnv = (env: EnvValues): EnvValues => {
+  const fileEnv = { ...env };
+  delete fileEnv.NOCOBASE_APP_NAME;
+  delete fileEnv.NOCOBASE_API_URL;
+  delete fileEnv.NOCOBASE_PORTAL_BASE;
+  delete fileEnv.NOCOBASE_WS_URL;
+  delete fileEnv.NOCOBASE_AUTHENTICATOR;
+  delete fileEnv.NOCOBASE_WS_PROXY_TARGET;
+  delete fileEnv.PORTAL_BASE_PATH;
+  return fileEnv;
+};
+
 const normalizeServerEnv = (env: EnvValues): EnvValues => {
   const appName =
-    readValue(env, "NOCOBASE_APP_NAME") ??
     getAppNameFromApiProxyTarget(readValue(env, "NOCOBASE_API_PROXY_TARGET")) ??
     "main";
   const portalName = readValue(env, "NOCOBASE_PORTAL_NAME") ?? "main";
@@ -121,11 +132,10 @@ const normalizeServerEnv = (env: EnvValues): EnvValues => {
       : `/apps/${appName}/portals/${portalName}`;
 
   return {
-    ...env,
+    ...omitGeneratedServerEnv(env),
     NOCOBASE_APP_NAME: appName,
     NOCOBASE_PORTAL_NAME: portalName,
-    NOCOBASE_API_URL:
-      readValue(env, "NOCOBASE_API_URL") ?? `${portalPublicPath}/api`,
+    NOCOBASE_API_URL: `${portalPublicPath}/api`,
   };
 };
 
@@ -203,13 +213,6 @@ const deriveProxyTarget = () => {
 
 const deriveWebSocketProxyTarget = () => {
   const wsPath = deriveWebSocketPathFromApiUrl(getPortalApiUrl());
-  const explicitTarget = normalizeWebSocketTarget(
-    readServerEnv("NOCOBASE_WS_PROXY_TARGET") ??
-      readServerEnv("NOCOBASE_WS_URL"),
-    wsPath
-  );
-  if (explicitTarget) return explicitTarget;
-
   const apiProxyTarget = readServerEnv("NOCOBASE_API_PROXY_TARGET");
   if (apiProxyTarget) {
     try {
@@ -219,7 +222,6 @@ const deriveWebSocketProxyTarget = () => {
         ? target.pathname.slice(0, apiPathMatch.index)
         : "";
       const appName =
-        readServerEnv("NOCOBASE_APP_NAME") ??
         (apiPathMatch?.[1] ? decodeURIComponent(apiPathMatch[1]) : undefined);
       target.pathname = `${serverBasePath}/ws`.replace(/\/+/g, "/");
       target.search = "";
