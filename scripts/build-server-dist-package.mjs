@@ -118,14 +118,7 @@ const dependencies = Object.fromEntries(
     })
 );
 
-const portalName =
-  String(rootPackage.portal?.portalName || rootPackage.portal?.appName || "main")
-    .trim()
-    .replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "main";
-
 const serverDistPackage = {
-  name: `@nocobase/portal-${portalName}-dist`,
   version: rootPackage.version ?? "1.0.0",
   private: true,
   type: "module",
