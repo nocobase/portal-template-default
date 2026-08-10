@@ -71,11 +71,23 @@ export class LocalRuntimeStore {
   private readonly ready: Promise<void>;
 
   constructor(private readonly options: LocalRuntimeStoreOptions = {}) {
-    const sqlite = new SQLite(getSqliteFilename(options.runtime));
+    const sqliteFilename = getSqliteFilename(options.runtime);
+    const storageMode = sqliteFilename === ":memory:" ? "memory" : "file";
+    const sqlite = new SQLite(sqliteFilename);
 
     this.portalId = getRuntimePortalId(options.runtime);
     this.portalVersion = getRuntimeVersion(options.runtime);
     this.basePath = getRuntimeBasePath(options.runtime);
+    options.loggers?.system.info(
+      {
+        basePath: this.basePath,
+        portalId: this.portalId,
+        portalVersion: this.portalVersion,
+        sqliteFilename: storageMode === "file" ? sqliteFilename : undefined,
+        storageMode,
+      },
+      "Local runtime store initialized",
+    );
     this.cache = createCache({
       ttl: 30_000,
       cacheId: `portal:${this.portalId}:v${this.portalVersion}`,
@@ -85,7 +97,30 @@ export class LocalRuntimeStore {
         database: sqlite,
       }),
     });
-    this.ready = this.bootstrapDatabase();
+    const startedAt = Date.now();
+    this.ready = this.bootstrapDatabase()
+      .then(() => {
+        options.loggers?.system.info(
+          {
+            elapsedMs: Date.now() - startedAt,
+            portalId: this.portalId,
+            portalVersion: this.portalVersion,
+          },
+          "Local runtime store database ready",
+        );
+      })
+      .catch((error) => {
+        options.loggers?.system.error(
+          {
+            elapsedMs: Date.now() - startedAt,
+            err: error,
+            portalId: this.portalId,
+            portalVersion: this.portalVersion,
+          },
+          "Local runtime store database bootstrap failed",
+        );
+        throw error;
+      });
 
     registerLoggedDisposer(
       options.runtime?.scope,
