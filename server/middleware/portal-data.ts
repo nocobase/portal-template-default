@@ -1,5 +1,5 @@
 import type { Context, MiddlewareHandler } from "hono";
-import { config, readServerEnv } from "../config.js";
+import { config } from "../config.js";
 import { NocoBaseUpstreamClient } from "../clients/nocobase-upstream-client.js";
 import { PortalDataCapabilityClient } from "../clients/portal-data-capability-client.js";
 import type { ServerRuntimeContext } from "../runtime.js";
@@ -27,12 +27,7 @@ export const createServerRequestContext = (ctx: Context) => ({
 const deriveEmbeddedTarget = (ctx: Context, runtime?: ServerRuntimeContext) => {
   if (runtime?.mode !== "embedded") return undefined;
 
-  const appPort = readServerEnv("APP_PORT");
-  const forwardedHost =
-    ctx.req.header("x-forwarded-host") ||
-    (appPort && Number.isInteger(Number(appPort))
-      ? `127.0.0.1:${appPort}`
-      : undefined);
+  const forwardedHost = ctx.req.header("x-forwarded-host");
   if (!forwardedHost) return undefined;
 
   const forwardedProto = ctx.req.header("x-forwarded-proto") || "http";
