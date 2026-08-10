@@ -103,7 +103,7 @@ const renderPortalBuiltUrl: RenderBuiltAssetUrl = (
 
   if (hostType === "js") {
     return {
-      runtime: `new URL(${JSON.stringify(filename)}, new URL(window.__NOCOBASE_PORTAL_ENV__?.NOCOBASE_PORTAL_BASE || "/", window.location.origin)).href`,
+      runtime: `new URL(${JSON.stringify(filename)}, new URL(String(window.__NOCOBASE_PORTAL_ENV__?.NOCOBASE_PORTAL_BASE || "/").replace(/\\/?$/, "/"), window.location.origin)).href`,
     };
   }
 

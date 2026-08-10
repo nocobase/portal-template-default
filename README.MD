@@ -65,6 +65,12 @@ NOCOBASE_PORTAL_NAME=main
 - `NOCOBASE_PORTAL_BASE` is derived as `/x/<NOCOBASE_PORTAL_NAME>` for the
   `main` app, or `/x/apps/<NOCOBASE_APP_NAME>/<NOCOBASE_PORTAL_NAME>` for other
   apps.
+- `pnpm build:html` prefixes generated frontend asset URLs and the injected
+  `NOCOBASE_API_URL`, `NOCOBASE_PORTAL_BASE`, and `NOCOBASE_WS_URL` with the
+  NocoBase public path inferred from `NOCOBASE_API_PROXY_TARGET`. For example,
+  a target ending in `/nocobase/api` emits frontend URLs under
+  `/nocobase/x/<NOCOBASE_PORTAL_NAME>/` and Portal API requests under
+  `/nocobase/portals/<NOCOBASE_PORTAL_NAME>/api`.
 - `NOCOBASE_WS_PROXY_TARGET` and `PORTAL_BASE_PATH` are derived automatically
   from `NOCOBASE_API_PROXY_TARGET`, `NOCOBASE_PORTAL_NAME`, and the generated
   browser API URL.

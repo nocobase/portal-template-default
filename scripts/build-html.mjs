@@ -103,6 +103,22 @@ const getAppNameFromApiProxyTarget = (target) => {
   }
 };
 
+const getAppPublicPathFromApiProxyTarget = (target) => {
+  if (!target) return "/";
+
+  try {
+    const pathname = new URL(target, "http://localhost").pathname;
+    const apiPathMatch = pathname.match(/\/api(?:\/|$)/);
+    const publicPath = apiPathMatch
+      ? pathname.slice(0, apiPathMatch.index)
+      : "";
+
+    return normalizePortalBase(publicPath || "/");
+  } catch {
+    return "/";
+  }
+};
+
 const omitGeneratedServerEnv = (env) => {
   const fileEnv = { ...env };
   delete fileEnv.NOCOBASE_APP_NAME;
@@ -198,6 +214,14 @@ const normalizePortalBase = (base) => {
 
 const getBasePrefix = (base) => base.replace(/\/$/, "");
 
+const prependPublicPath = (base, publicPath) => {
+  const normalizedBase = normalizePortalBase(base);
+  const publicPrefix = getBasePrefix(normalizePortalBase(publicPath));
+
+  if (!publicPrefix) return normalizedBase;
+  return normalizePortalBase(`${publicPrefix}${normalizedBase}`);
+};
+
 const getRawPortalBase = (html) => {
   const moduleScriptPattern =
     /<script\s+[^>]*type=["']module["'][^>]*\bsrc=(["'])([^"']+)\1[^>]*>/i;
@@ -242,8 +266,24 @@ const stripExistingRuntimeConfig = (html) => {
   return html.replace(pattern, "");
 };
 
-const clientEnv = readClientEnv();
-const portalBase = normalizePortalBase(clientEnv.NOCOBASE_PORTAL_BASE);
+const baseClientEnv = readClientEnv();
+const appPublicPath = getAppPublicPathFromApiProxyTarget(
+  readServerEnv("NOCOBASE_API_PROXY_TARGET")
+);
+const portalBase = prependPublicPath(
+  baseClientEnv.NOCOBASE_PORTAL_BASE,
+  appPublicPath
+);
+const apiUrl = prependPublicPath(
+  baseClientEnv.NOCOBASE_API_URL,
+  appPublicPath
+);
+const clientEnv = {
+  ...baseClientEnv,
+  NOCOBASE_API_URL: getBasePrefix(apiUrl) || "/",
+  NOCOBASE_PORTAL_BASE: portalBase,
+  NOCOBASE_WS_URL: deriveWebSocketUrlFromApiUrl(apiUrl),
+};
 
 const sourceIndexPath = fs.existsSync(rawIndexPath) ? rawIndexPath : indexPath;
 
