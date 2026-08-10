@@ -1,4 +1,6 @@
-const getWindowValue = (key: "NOCOBASE_PORTAL_BASE" | "NOCOBASE_API_URL") => {
+const getWindowValue = (
+  key: "NOCOBASE_PORTAL_BASE" | "NOCOBASE_API_URL" | "NOCOBASE_PORTAL_NAME"
+) => {
   if (typeof window === "undefined") return undefined;
   const value = window[key];
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
@@ -22,6 +24,8 @@ export const resolveNocoBasePortalName = (portalBase: string) =>
   portalBase.match(/\/x\/(?:apps\/[^/]+\/)?([^/?#]+)(?:[/?#]|$)/)?.[1];
 
 export const getNocoBasePortalName = () =>
+  getWindowValue("NOCOBASE_PORTAL_NAME") ??
+  import.meta.env?.NOCOBASE_PORTAL_NAME ??
   resolveNocoBasePortalName(getPortalBase());
 
 const getAppNameFromPortalBase = (base: string) =>

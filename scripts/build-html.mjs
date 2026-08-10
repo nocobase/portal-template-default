@@ -5,7 +5,7 @@ import * as util from "node:util";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
-const distDir = path.join(rootDir, "dist");
+const distDir = path.join(rootDir, "dist", "client");
 const rawIndexPath = path.join(distDir, "index.raw.html");
 const indexPath = path.join(distDir, "index.html");
 
@@ -54,9 +54,7 @@ const getEnvFilesForMode = (mode) => {
     );
   }
 
-  return [".env", ".env.local", `.env.${mode}`, `.env.${mode}.local`].map(
-    (file) => path.join(rootDir, file)
-  );
+  return [".env"].map((file) => path.join(rootDir, file));
 };
 
 const loadBuildHtmlEnv = () => {
@@ -135,7 +133,10 @@ const stripExistingRuntimeConfig = (html) => {
 loadBuildHtmlEnv();
 
 const portalBase = normalizePortalBase(process.env.NOCOBASE_PORTAL_BASE);
+const portalName =
+  String(process.env.NOCOBASE_PORTAL_NAME || "main").trim() || "main";
 const apiUrl = String(process.env.NOCOBASE_API_URL || "/api").trim() || "/api";
+const wsUrl = String(process.env.NOCOBASE_WS_URL || "").trim();
 const storagePrefix =
   String(process.env.API_CLIENT_STORAGE_PREFIX || "NOCOBASE_").trim() ||
   "NOCOBASE_";
@@ -146,16 +147,20 @@ const shareToken = /^true$/i.test(
   String(process.env.API_CLIENT_SHARE_TOKEN || "false").trim()
 );
 
-if (!fs.existsSync(rawIndexPath)) {
+const sourceIndexPath = fs.existsSync(rawIndexPath) ? rawIndexPath : indexPath;
+
+if (!fs.existsSync(sourceIndexPath)) {
   throw new Error(
-    `Missing ${path.relative(rootDir, rawIndexPath)}. Run pnpm build first.`
+    `Missing ${path.relative(rootDir, indexPath)}. Run pnpm build:client first.`
   );
 }
 
 const runtimeConfig = `${startMarker}
 <script>
+  window.NOCOBASE_PORTAL_NAME = ${JSON.stringify(portalName)};
   window.NOCOBASE_PORTAL_BASE = ${JSON.stringify(portalBase)};
   window.NOCOBASE_API_URL = ${JSON.stringify(apiUrl)};
+  ${wsUrl ? `window.NOCOBASE_WS_URL = ${JSON.stringify(wsUrl)};\n  ` : ""}
   window.__nocobase_api_client_storage_prefix__ = ${JSON.stringify(storagePrefix)};
   window.__nocobase_api_client_storage_type__ = ${JSON.stringify(storageType)};
   window.__nocobase_api_client_share_token__ = ${JSON.stringify(shareToken)};
@@ -163,7 +168,7 @@ const runtimeConfig = `${startMarker}
 ${endMarker}
 `;
 
-const rawHtml = fs.readFileSync(rawIndexPath, "utf8");
+const rawHtml = fs.readFileSync(sourceIndexPath, "utf8");
 const html = rewriteHtmlFilePaths(
   stripExistingRuntimeConfig(rawHtml),
   portalBase,
@@ -174,7 +179,9 @@ const moduleScriptPattern = /<script\s+[^>]*type=["']module["'][^>]*>/i;
 const moduleScriptMatch = html.match(moduleScriptPattern);
 
 if (moduleScriptMatch?.index === undefined) {
-  throw new Error("Could not find the module script in dist/index.raw.html.");
+  throw new Error(
+    `Could not find the module script in ${path.relative(rootDir, rawIndexPath)}.`
+  );
 }
 
 const outputHtml = `${html.slice(0, moduleScriptMatch.index)}${runtimeConfig}${html.slice(moduleScriptMatch.index)}`;
@@ -184,6 +191,6 @@ fs.writeFileSync(indexPath, outputHtml);
 console.log(
   `Generated ${path.relative(rootDir, indexPath)} from ${path.relative(
     rootDir,
-    rawIndexPath
+    sourceIndexPath
   )}`
 );

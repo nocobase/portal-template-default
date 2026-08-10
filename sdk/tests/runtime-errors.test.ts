@@ -145,6 +145,36 @@ it("the WebSocket URL preserves the server prefix and selects a sub-application"
   }
 });
 
+it("the WebSocket URL derives its Portal path from the runtime API URL", () => {
+  const originalWindow = globalThis.window;
+  try {
+    globalThis.window = {
+      location: { origin: "https://example.com" },
+      NOCOBASE_API_URL: "/portals/main/api",
+    };
+    expect(resolveNocoBaseWebSocketUrl()).toBe(
+      "wss://example.com/portals/main/ws"
+    );
+  } finally {
+    globalThis.window = originalWindow;
+  }
+});
+
+it("the WebSocket URL resolves an explicit client option path under the API URL prefix", () => {
+  const originalWindow = globalThis.window;
+  try {
+    globalThis.window = {
+      location: { origin: "https://example.com" },
+      NOCOBASE_API_URL: "/portals/main/api",
+    };
+    expect(resolveNocoBaseWebSocketUrl({ wsPath: "/ws" })).toBe(
+      "wss://example.com/portals/main/ws"
+    );
+  } finally {
+    globalThis.window = originalWindow;
+  }
+});
+
 it("a stale WebSocket cannot disrupt its replacement", () => {
   const originalWebSocket = globalThis.WebSocket;
   const originalWindow = globalThis.window;

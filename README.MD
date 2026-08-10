@@ -14,6 +14,7 @@ pnpm dev
 ```
 
 The development server starts at `http://localhost:5173` by default.
+`pnpm dev` also starts the Hono BFF at `http://localhost:3000`.
 
 ## Configuration
 
@@ -21,12 +22,19 @@ The minimum local configuration is:
 
 ```env
 NOCOBASE_API_URL=/api
+NOCOBASE_API_PROXY_TARGET=https://example.com/api
+NOCOBASE_PORTAL_NAME=main
 NOCOBASE_PORTAL_BASE=/
 ```
 
 - `NOCOBASE_API_URL` is the NocoBase REST API root and must include `/api`.
-  Same-origin deployments normally use `/api`. During local development, an
-  absolute URL is handled through the Vite proxy.
+  Same-origin deployments normally use `/api`; in this BFF layout the browser
+  should keep using `/api`.
+- `NOCOBASE_API_PROXY_TARGET` is the real NocoBase REST API target used by the
+  Hono BFF. Keep service-only URLs and secrets out of browser-exposed variables.
+- `NOCOBASE_PORTAL_NAME` is the Portal runtime name. Portal-owned APIs use the
+  `/api/_portal/<name>/...` prefix, for example
+  `/api/_portal/main/users/metadata`.
 - `NOCOBASE_PORTAL_BASE` is the public path where the Portal is mounted. Use
   `/` for root development or set the deployment path before building.
 - `NOCOBASE_API_TOKEN` can provide a temporary development token. Never commit
@@ -39,26 +47,40 @@ server customizes it, keep `API_CLIENT_STORAGE_PREFIX`,
 ## Development
 
 ```bash
-# Start the Vite development server
+# Start the Vite development server and Hono BFF
 pnpm dev
 
-# Build the production assets
+# Build the production client assets
+pnpm build:client
+
+# Build the production assets, runtime HTML, and BFF output
 pnpm build
 
-# Serve a production build
+# Start the compiled Hono BFF
 pnpm start
+
+# Serve only a production client build with Refine
+pnpm start:client
 
 # Build a standalone HTML artifact
 pnpm build:html
 ```
 
-Application pages and resources live under `src`. The included Users page is a
+`pnpm build:client` emits browser assets to `dist/client`. `pnpm build:server`
+emits the ESM server build, production package manifest, and server runtime
+dependencies to the `dist` package root.
+
+Server logs are written as JSON lines under `logs/<standalone|embedded>/` with
+dated `system-YYYY-MM-DD.log` and `request-YYYY-MM-DD.log` files. Set
+`PORTAL_LOG_LEVEL` to adjust the Pino log level.
+
+Application pages and resources live under `client`. The included Users page is a
 working example based on the standard NocoBase `users` collection.
 
-Application translations live in `src/locales`. Default locale, available
+Application translations live in `client/locales`. Default locale, available
 locale labels, i18next options, and post-switch behavior remain customizable in
-`src/providers/i18n/runtime.ts`. Shared UI components live in
-`src/components/ui` and follow the shadcn Base UI conventions.
+`client/providers/i18n/runtime.ts`. Shared UI components live in
+`client/components/ui` and follow the shadcn Base UI conventions.
 
 Stable NocoBase runtime behavior is provided by `@nocobase/portal-sdk`.
 The template records its inherited base version in
@@ -68,7 +90,7 @@ range. Application composition and visual source remain owned by this project.
 
 ## Extensions
 
-Installed extensions live in `src/extensions` and are ordinary
+Installed extensions live in `client/extensions` and are ordinary
 application-owned source files. Their providers, resources, routes, login
 adapters, and user-menu items are discovered automatically.
 
@@ -76,7 +98,7 @@ Routes declared with `defineAppRoutes` can use `lazy: () => import(...)` to
 keep page modules out of the initial bundle while preserving synchronous menu,
 resource, and access metadata.
 
-Set `registryRoutesEnabled` to `false` in `src/routes.tsx` when replacing the
+Set `registryRoutesEnabled` to `false` in `client/routes.tsx` when replacing the
 bundled example navigation with application-owned routes. Installed extension
 providers, login adapters, and the `/dev` component showcases remain available.
 
@@ -92,7 +114,7 @@ compatible SDK version in `registry.config.json`.
 
 In this Registry source repository, canonical extension source lives in
 `registry` and is loaded directly by `pnpm dev` and `pnpm build`. The published
-npm template contains the default extensions under `src/extensions` instead.
+npm template contains the default extensions under `client/extensions` instead.
 
 ## Authentication
 
@@ -100,7 +122,7 @@ Basic username or email and password login is built in. The default login page
 also renders enabled NocoBase authentication methods when their frontend
 Registry adapters are installed.
 
-Customize `src/pages/login/index.tsx` to replace the whole login page, or use
+Customize `client/pages/login/index.tsx` to replace the whole login page, or use
 `DefaultSignInPage` to keep dynamic authentication while overriding individual
 authenticator UI.
 
