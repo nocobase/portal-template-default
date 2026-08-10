@@ -1,13 +1,7 @@
-import { getNocoBaseAppName } from "../runtime/config.ts";
+import { getNocoBaseAppName, readClientEnv } from "../runtime/config.ts";
 
 export type AuthStorageType = "localStorage" | "sessionStorage" | "memory";
 export type AuthSessionField = "token" | "auth" | "role" | "locale";
-
-type AuthSessionRuntime = Window & {
-  __nocobase_api_client_storage_prefix__?: string;
-  __nocobase_api_client_storage_type__?: string;
-  __nocobase_api_client_share_token__?: boolean | string;
-};
 
 type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 export type AuthSessionListener = (
@@ -43,11 +37,8 @@ const normalizeStorageType = (value?: string): AuthStorageType => {
   return DEFAULT_STORAGE_TYPE;
 };
 
-const parseBoolean = (value: boolean | string | undefined) =>
-  value === true || (typeof value === "string" && /^true$/i.test(value));
-
-const getRuntimeWindow = () =>
-  typeof window === "undefined" ? undefined : (window as AuthSessionRuntime);
+const parseBoolean = (value?: string) =>
+  typeof value === "string" && /^true$/i.test(value);
 
 const getStorage = (type: AuthStorageType): StorageLike => {
   if (typeof window === "undefined" || type === "memory") {
@@ -98,25 +89,16 @@ export class AuthSession {
   private readonly listeners = new Set<AuthSessionListener>();
 
   constructor(options: AuthSessionOptions = {}) {
-    const runtime = getRuntimeWindow();
     this.appName = options.appName ?? getNocoBaseAppName();
     this.storagePrefix =
       options.storagePrefix ||
-      runtime?.__nocobase_api_client_storage_prefix__ ||
-      import.meta.env?.API_CLIENT_STORAGE_PREFIX ||
+      readClientEnv("API_CLIENT_STORAGE_PREFIX") ||
       DEFAULT_STORAGE_PREFIX;
     this.storageType =
       options.storageType ??
-      normalizeStorageType(
-        runtime?.__nocobase_api_client_storage_type__ ??
-          import.meta.env?.API_CLIENT_STORAGE_TYPE
-      );
+      normalizeStorageType(readClientEnv("API_CLIENT_STORAGE_TYPE"));
     this.shareToken =
-      options.shareToken ??
-      parseBoolean(
-        runtime?.__nocobase_api_client_share_token__ ??
-          import.meta.env?.API_CLIENT_SHARE_TOKEN
-      );
+      options.shareToken ?? parseBoolean(readClientEnv("API_CLIENT_SHARE_TOKEN"));
     this.storage = options.storage ?? getStorage(this.storageType);
   }
 

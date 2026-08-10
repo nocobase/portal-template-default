@@ -53,7 +53,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "concurrently": "^10.0.4",
+    "cross-spawn": "^7.0.6",
     "date-fns": "^4.1.0",
     "dayjs": "^1.10.7",
     "dingtalk-jsapi": "3.1.1",
@@ -105,9 +105,7 @@
     "url": "git+https://github.com/nocobase/portal-template-default.git"
   },
   "scripts": {
-    "dev": "concurrently -k \"pnpm dev:client\" \"pnpm dev:server\"",
-    "dev:client": "vite --host 0.0.0.0",
-    "dev:server": "tsx watch server/standalone.ts",
+    "dev": "node ./scripts/dev.mjs",
     "build:client": "tsc && refine build",
     "build:html": "node ./scripts/build-html.mjs",
     "build:server": "tsc -p tsconfig.server.json && node ./scripts/build-server-dist-package.mjs && npm install --omit=dev --package-lock=false --prefix ./dist && node ./scripts/clean-dist-bin.mjs",

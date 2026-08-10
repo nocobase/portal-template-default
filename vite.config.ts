@@ -2,7 +2,8 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "path";
-import { defineConfig, loadEnv, type ProxyOptions } from "vite";
+import * as util from "node:util";
+import { defineConfig, type ProxyOptions } from "vite";
 import {
   portalRawIndexHtmlPlugin,
   portalSdkCompatibilityPlugin,
@@ -11,6 +12,201 @@ import {
 const portalTemplate = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, "package.json"), "utf8")
 ) as { displayName: string; version: string };
+let clientEnvMode = process.env.MODE || process.env.NODE_ENV || "development";
+
+const parseEnvFile = (file: string) => {
+  if (!fs.existsSync(file)) return {};
+  const parseEnv = (
+    util as typeof util & {
+      parseEnv?: (content: string) => Record<string, string>;
+    }
+  ).parseEnv;
+
+  if (typeof parseEnv === "function") {
+    return parseEnv(fs.readFileSync(file, "utf8"));
+  }
+
+  return Object.fromEntries(
+    fs
+      .readFileSync(file, "utf8")
+      .split(/\r?\n/)
+      .map((line) =>
+        line.match(
+          /^\s*(?:export\s+)?([\w.-]+)\s*=\s*('(?:\\'|[^'])*'|"(?:\\"|[^"])*"|[^#\r\n]*)?\s*(?:#.*)?$/
+        )
+      )
+      .filter((match): match is RegExpMatchArray => Boolean(match))
+      .map((match) => {
+        const key = match[1];
+        const rawValue = match[2] ?? "";
+        const quote = rawValue[0];
+        let value = rawValue.trim();
+
+        if (
+          (quote === '"' || quote === "'") &&
+          value.endsWith(quote) &&
+          value.length >= 2
+        ) {
+          value = value.slice(1, -1);
+        }
+
+        return [key, value.replace(/\\n/g, "\n").replace(/\\r/g, "\r")];
+      })
+  );
+};
+
+const expandEnvValue = (value: string, env: Record<string, string>) =>
+  value.replace(/\\?\${?([A-Za-z_][A-Za-z0-9_]*)}?/g, (match, key) => {
+    if (match.startsWith("\\")) return match.slice(1);
+    return env[key] ?? "";
+  });
+
+const getModeAlias = (mode: string) => {
+  if (mode === "local" || mode === "development") return "dev";
+  if (mode === "production") return "prod";
+  return mode;
+};
+
+const readEnvFiles = (scope: "client" | "server", mode: string): Record<string, string> => {
+  const modeAlias = getModeAlias(mode);
+  const envDirs = [path.resolve(__dirname, ".."), __dirname];
+  const env = envDirs.reduce<Record<string, string>>(
+    (values, dir) => ({
+      ...values,
+      ...parseEnvFile(path.resolve(dir, `.env.${scope}.${modeAlias}`)),
+    }),
+    {}
+  );
+  const expansionEnv = {
+    ...env,
+    ...Object.fromEntries(
+      Object.entries(process.env).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string"
+      )
+    ),
+  };
+
+  for (const [key, value] of Object.entries(env)) {
+    env[key] = expandEnvValue(value, expansionEnv);
+  }
+
+  return env;
+};
+
+const normalizeName = (value?: string) =>
+  String(value || "")
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "") || undefined;
+
+const getAppNameFromApiProxyTarget = (target?: string) => {
+  if (!target) return undefined;
+
+  try {
+    const pathname = new URL(target, "http://localhost").pathname;
+    const match = pathname.match(/\/api\/__app\/([^/?#]+)(?:[/?#]|$)/);
+    return match?.[1] ? decodeURIComponent(match[1]) : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const pickClientEnvConfig = (env: Record<string, string>) =>
+  Object.fromEntries(
+    [
+      "API_CLIENT_STORAGE_PREFIX",
+      "API_CLIENT_STORAGE_TYPE",
+      "API_CLIENT_SHARE_TOKEN",
+    ]
+      .filter((key) => env[key])
+      .map((key) => [key, env[key]])
+  );
+
+const deriveWebSocketUrlFromApiUrl = (apiUrl?: string) => {
+  try {
+    const url = new URL(apiUrl || "/api", "http://localhost");
+    const apiPathMatch = url.pathname.match(/\/api(?:\/|$)/);
+    const serverBasePath = apiPathMatch
+      ? url.pathname.slice(0, apiPathMatch.index)
+      : "";
+    url.pathname = `${serverBasePath}/ws`.replace(/\/+/g, "/");
+    url.search = "";
+    url.hash = "";
+
+    if (!apiUrl || apiUrl.startsWith("/")) {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+
+    if (url.protocol === "http:") url.protocol = "ws:";
+    if (url.protocol === "https:") url.protocol = "wss:";
+    return url.toString();
+  } catch {
+    return "/ws";
+  }
+};
+
+function readServerEnv(): Record<string, string>;
+function readServerEnv(name: string): string | undefined;
+function readServerEnv(name?: string) {
+  const env = readEnvFiles("server", clientEnvMode);
+  const appName =
+    normalizeName(env.NOCOBASE_APP_NAME) ??
+    normalizeName(getAppNameFromApiProxyTarget(env.NOCOBASE_API_PROXY_TARGET)) ??
+    "main";
+  const portalName = normalizeName(env.NOCOBASE_PORTAL_NAME) ?? "main";
+  const portalPublicPath =
+    appName === "main"
+      ? `/portals/${portalName}`
+      : `/apps/${appName}/portals/${portalName}`;
+  const portalBase =
+    appName === "main"
+      ? `/x/${portalName}`
+      : `/x/apps/${appName}/${portalName}`;
+  const serverEnv = {
+    ...env,
+    NOCOBASE_APP_NAME: appName,
+    NOCOBASE_PORTAL_NAME: portalName,
+    NOCOBASE_API_URL: env.NOCOBASE_API_URL || `${portalPublicPath}/api`,
+    NOCOBASE_PORTAL_BASE: env.NOCOBASE_PORTAL_BASE || portalBase,
+  };
+
+  return name ? serverEnv[name] : serverEnv;
+}
+
+function readClientEnv(): Record<string, string>;
+function readClientEnv(name: string): string | undefined;
+function readClientEnv(name?: string) {
+  const serverEnv = readServerEnv();
+  const env = {
+    ...pickClientEnvConfig(readEnvFiles("client", clientEnvMode)),
+    NOCOBASE_APP_NAME: serverEnv.NOCOBASE_APP_NAME,
+    NOCOBASE_PORTAL_NAME: serverEnv.NOCOBASE_PORTAL_NAME,
+    NOCOBASE_API_URL: serverEnv.NOCOBASE_API_URL,
+    NOCOBASE_PORTAL_BASE: serverEnv.NOCOBASE_PORTAL_BASE,
+    NOCOBASE_WS_URL:
+      serverEnv.NOCOBASE_WS_URL ||
+      deriveWebSocketUrlFromApiUrl(serverEnv.NOCOBASE_API_URL),
+    NOCOBASE_AUTHENTICATOR:
+      serverEnv.NOCOBASE_AUTHENTICATOR || "basic",
+  };
+  const clientEnv = {
+    ...env,
+    API_CLIENT_STORAGE_PREFIX:
+      env.API_CLIENT_STORAGE_PREFIX || "NOCOBASE_",
+    API_CLIENT_STORAGE_TYPE:
+      env.API_CLIENT_STORAGE_TYPE || "localStorage",
+    API_CLIENT_SHARE_TOKEN:
+      env.API_CLIENT_SHARE_TOKEN || "false",
+  };
+
+  return name ? clientEnv[name] : clientEnv;
+};
+
+const getDevServerTarget = (url?: string, port?: string) => {
+  const normalizedPort = String(port || "3000").trim() || "3000";
+  const normalized = String(url || `http://localhost:${normalizedPort}`).trim();
+  return normalized || "http://localhost:3000";
+};
 
 const getDefaultProxyTarget = (apiUrl?: string) => {
   if (!apiUrl || apiUrl.startsWith("/")) return undefined;
@@ -33,11 +229,34 @@ const getNocoBaseProxyPath = (apiUrl?: string) => {
   }
 };
 
-const getAppServerTarget = (url?: string, port?: string) => {
-  const normalizedPort = String(port || "3000").trim() || "3000";
-  const normalized = String(url || `http://localhost:${normalizedPort}`).trim();
-  return normalized || "http://localhost:3000";
+const getAppName = (env: Record<string, string>) =>
+  String(env.NOCOBASE_APP_NAME || "main").trim() || "main";
+
+const getPortalName = (env: Record<string, string>) =>
+  String(env.NOCOBASE_PORTAL_NAME || "main").trim() || "main";
+
+const getPortalPublicPath = (env: Record<string, string>) => {
+  const appName = getAppName(env);
+  const portalName = getPortalName(env);
+  return appName === "main"
+    ? `/portals/${portalName}`
+    : `/apps/${appName}/portals/${portalName}`;
 };
+
+const getDefaultPortalBase = (env: Record<string, string>) => {
+  const appName = getAppName(env);
+  const portalName = getPortalName(env);
+  return appName === "main"
+    ? `/x/${portalName}`
+    : `/x/apps/${appName}/${portalName}`;
+};
+
+const getPortalApiUrl = (env: Record<string, string>) =>
+  String(env.NOCOBASE_API_URL || "").trim() ||
+  `${getPortalPublicPath(env)}/api`;
+
+const getPortalBase = (env: Record<string, string>) =>
+  String(env.NOCOBASE_PORTAL_BASE || "").trim() || getDefaultPortalBase(env);
 
 const normalizeBase = (base?: string) => {
   const normalized = String(base || "/").trim();
@@ -60,7 +279,7 @@ const getPortalScopedWebSocketProxyPath = (apiUrl?: string) => {
 
 const createRelativeNocoBaseApiProxy = (
   apiUrl: string | undefined,
-  appServerTarget: string
+  devServerTarget: string
 ): Record<string, ProxyOptions> => {
   if (!apiUrl?.startsWith("/")) return {};
 
@@ -69,7 +288,7 @@ const createRelativeNocoBaseApiProxy = (
 
   return {
     [proxyPath]: {
-      target: appServerTarget,
+      target: devServerTarget,
       changeOrigin: true,
     },
   };
@@ -77,12 +296,12 @@ const createRelativeNocoBaseApiProxy = (
 
 const createPortalApiProxy = (
   apiUrl: string | undefined,
-  appServerTarget: string
+  devServerTarget: string
 ): Record<string, ProxyOptions> => {
   const proxyPath = `${normalizeProxyPath(getNocoBaseProxyPath(apiUrl))}/_portal`;
   return {
     [proxyPath]: {
-      target: appServerTarget,
+      target: devServerTarget,
       changeOrigin: true,
     },
   };
@@ -90,12 +309,15 @@ const createPortalApiProxy = (
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
-  const appServerTarget = getAppServerTarget(
-    env.APP_SERVER_URL,
-    env.APP_SERVER_PORT ?? env.NOCOBASE_PORTAL_PORT
+  clientEnvMode = mode;
+  const env = readClientEnv();
+  const portalApiUrl = getPortalApiUrl(env);
+  const portalBase = normalizeBase(getPortalBase(env));
+  const devServerTarget = getDevServerTarget(
+    process.env.DEV_SERVER_URL,
+    process.env.DEV_SERVER_PORT
   );
-  const proxyTarget = getDefaultProxyTarget(env.NOCOBASE_API_URL);
+  const proxyTarget = getDefaultProxyTarget(portalApiUrl);
   const proxyOrigin = proxyTarget
     ? (() => {
         try {
@@ -106,22 +328,21 @@ export default defineConfig(({ mode }) => {
       })()
     : undefined;
 
-  const portalBase = normalizeBase(env.NOCOBASE_PORTAL_BASE);
   const registrySourceRoot = path.resolve(__dirname, "./registry");
   const extensionsRoot = fs.existsSync(registrySourceRoot)
     ? registrySourceRoot
     : path.resolve(__dirname, "./client/extensions");
-  const nocobaseProxyPath = getNocoBaseProxyPath(env.NOCOBASE_API_URL);
+  const nocobaseProxyPath = getNocoBaseProxyPath(portalApiUrl);
   const relativeNocoBaseApiProxy = createRelativeNocoBaseApiProxy(
-    env.NOCOBASE_API_URL,
-    appServerTarget
+    portalApiUrl,
+    devServerTarget
   );
   const portalApiProxy = createPortalApiProxy(
-    env.NOCOBASE_API_URL,
-    appServerTarget
+    portalApiUrl,
+    devServerTarget
   );
   const portalScopedWebSocketProxyPath = getPortalScopedWebSocketProxyPath(
-    env.NOCOBASE_API_URL
+    portalApiUrl
   );
   const legacyNocoBaseProxy: Record<string, ProxyOptions> =
     proxyTarget && nocobaseProxyPath !== "/api"
@@ -184,11 +405,11 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         "/api": {
-          target: appServerTarget,
+          target: devServerTarget,
           changeOrigin: true,
         },
         [portalScopedWebSocketProxyPath]: {
-          target: appServerTarget,
+          target: devServerTarget,
           changeOrigin: true,
           secure: false,
           ws: true,

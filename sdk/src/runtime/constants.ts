@@ -1,4 +1,4 @@
-import { getRuntimeApiUrl } from "./config.ts";
+import { getRuntimeApiUrl, readClientEnv } from "./config.ts";
 
 const rawApiUrl =
   getRuntimeApiUrl() ?? "http://127.0.0.1:13000/api";
@@ -37,4 +37,4 @@ const toProxyRelativeUrl = (url: string, target?: string) => {
 export const API_URL = toProxyRelativeUrl(rawApiUrl, proxyTarget);
 export const API_ORIGIN = getDefaultProxyTarget(rawApiUrl);
 export const NOCOBASE_AUTHENTICATOR =
-  import.meta.env?.NOCOBASE_AUTHENTICATOR ?? "basic";
+  readClientEnv("NOCOBASE_AUTHENTICATOR") ?? "basic";

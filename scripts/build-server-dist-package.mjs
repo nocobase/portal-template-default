@@ -6,6 +6,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
 const serverDistDir = path.join(rootDir, "dist");
 const rootPackagePath = path.join(rootDir, "package.json");
+const rootEnvPath = path.join(rootDir, ".env.server.prod");
+const serverDistEnvPath = path.join(serverDistDir, ".env.server.prod");
+const legacyServerDistEnvPaths = [
+  path.join(serverDistDir, ".env"),
+  path.join(serverDistDir, ".env.production"),
+];
 const serverDistPackagePath = path.join(serverDistDir, "package.json");
 const serverRuntimeDirs = ["server", "shared"];
 
@@ -117,6 +123,15 @@ const dependencies = Object.fromEntries(
       return [packageName, version];
     })
 );
+
+if (fs.existsSync(rootEnvPath)) {
+  fs.copyFileSync(rootEnvPath, serverDistEnvPath);
+} else {
+  fs.rmSync(serverDistEnvPath, { force: true });
+}
+for (const legacyEnvPath of legacyServerDistEnvPaths) {
+  fs.rmSync(legacyEnvPath, { force: true });
+}
 
 const serverDistPackage = {
   version: rootPackage.version ?? "1.0.0",

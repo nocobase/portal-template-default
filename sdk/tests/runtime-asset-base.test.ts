@@ -59,8 +59,8 @@ it("resolves lazy chunk dependencies from the runtime Portal base", async () => 
     .join("\n");
   const rawHtml = fs.readFileSync(path.join(root, "dist/index.raw.html"), "utf8");
 
-  expect(scripts).toContain("window.NOCOBASE_PORTAL_BASE");
-  expect(rawHtml).toContain("window.NOCOBASE_PORTAL_NAME");
+  expect(scripts).toContain("window.__NOCOBASE_PORTAL_ENV__");
+  expect(rawHtml).toContain("window.__NOCOBASE_PORTAL_ENV__");
   expect(scripts).toContain("window.location.origin");
   expect(scripts).not.toMatch(/["']\/assets\//);
 });

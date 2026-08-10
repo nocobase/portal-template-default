@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import pino, { type Logger } from "pino";
+import { readServerEnv } from "../config.js";
 import type {
   PortalDisposer,
   PortalScope,
@@ -55,7 +56,7 @@ const createLogger = (
         mode,
         portalName: runtime?.portalName ?? "main",
       },
-      level: process.env.PORTAL_LOG_LEVEL || "info",
+      level: readServerEnv("PORTAL_LOG_LEVEL") ?? "info",
       timestamp: pino.stdTimeFunctions.isoTime,
     },
     createDestination(runtime, channel)

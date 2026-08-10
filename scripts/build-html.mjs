@@ -47,21 +47,27 @@ const expandEnvValue = (value, env) =>
     return env[key] ?? "";
   });
 
-const getEnvFilesForMode = (mode) => {
-  if (mode === "local") {
-    throw new Error(
-      '"local" cannot be used as a mode name because it conflicts with .env.local.'
-    );
-  }
-
-  return [".env"].map((file) => path.join(rootDir, file));
+const getModeAlias = (mode) => {
+  if (mode === "local" || mode === "development") return "dev";
+  if (mode === "production") return "prod";
+  return mode;
 };
 
-const loadBuildHtmlEnv = () => {
-  const mode = process.env.MODE || "production";
+const getEnvFilesForMode = (scope, mode) =>
+  [path.resolve(rootDir, ".."), rootDir].map((dir) =>
+    path.join(dir, `.env.${scope}.${getModeAlias(mode)}`)
+  );
+
+const normalizeName = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "") || undefined;
+
+const readEnvFiles = (scope, mode) => {
   const env = {};
 
-  for (const envFile of getEnvFilesForMode(mode)) {
+  for (const envFile of getEnvFilesForMode(scope, mode)) {
     if (!fs.existsSync(envFile)) continue;
     Object.assign(env, parseEnv(fs.readFileSync(envFile, "utf8")));
   }
@@ -71,11 +77,109 @@ const loadBuildHtmlEnv = () => {
     env[key] = expandEnvValue(value, expansionEnv);
   }
 
-  for (const [key, value] of Object.entries(env)) {
-    if (process.env[key] === undefined) {
-      process.env[key] = value;
-    }
+  return env;
+};
+
+const pickClientEnvConfig = (env) =>
+  Object.fromEntries(
+    [
+      "API_CLIENT_STORAGE_PREFIX",
+      "API_CLIENT_STORAGE_TYPE",
+      "API_CLIENT_SHARE_TOKEN",
+    ]
+      .filter((key) => env[key])
+      .map((key) => [key, env[key]])
+  );
+
+const getAppNameFromApiProxyTarget = (target) => {
+  if (!target) return undefined;
+
+  try {
+    const pathname = new URL(target, "http://localhost").pathname;
+    const match = pathname.match(/\/api\/__app\/([^/?#]+)(?:[/?#]|$)/);
+    return match?.[1] ? decodeURIComponent(match[1]) : undefined;
+  } catch {
+    return undefined;
   }
+};
+
+const deriveWebSocketUrlFromApiUrl = (apiUrl) => {
+  try {
+    const url = new URL(apiUrl || "/api", "http://localhost");
+    const apiPathMatch = url.pathname.match(/\/api(?:\/|$)/);
+    const serverBasePath = apiPathMatch
+      ? url.pathname.slice(0, apiPathMatch.index)
+      : "";
+    url.pathname = `${serverBasePath}/ws`.replace(/\/+/g, "/");
+    url.search = "";
+    url.hash = "";
+
+    if (!apiUrl || apiUrl.startsWith("/")) {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+
+    if (url.protocol === "http:") url.protocol = "ws:";
+    if (url.protocol === "https:") url.protocol = "wss:";
+    return url.toString();
+  } catch {
+    return "/ws";
+  }
+};
+
+const readServerEnv = (name) => {
+  const mode = process.env.MODE || "production";
+  const env = readEnvFiles("server", mode);
+  const appName =
+    normalizeName(env.NOCOBASE_APP_NAME) ??
+    normalizeName(getAppNameFromApiProxyTarget(env.NOCOBASE_API_PROXY_TARGET)) ??
+    "main";
+  const portalName = normalizeName(env.NOCOBASE_PORTAL_NAME) ?? "main";
+  const portalPublicPath =
+    appName === "main"
+      ? `/portals/${portalName}`
+      : `/apps/${appName}/portals/${portalName}`;
+  const portalBase =
+    appName === "main"
+      ? `/x/${portalName}`
+      : `/x/apps/${appName}/${portalName}`;
+  const serverEnv = {
+    ...env,
+    NOCOBASE_APP_NAME: appName,
+    NOCOBASE_PORTAL_NAME: portalName,
+    NOCOBASE_API_URL: env.NOCOBASE_API_URL || `${portalPublicPath}/api`,
+    NOCOBASE_PORTAL_BASE: env.NOCOBASE_PORTAL_BASE || portalBase,
+  };
+
+  return name ? serverEnv[name] : serverEnv;
+};
+
+const readClientEnv = (name) => {
+  const mode = process.env.MODE || "production";
+  const serverEnv = readServerEnv();
+  const clientConfig = pickClientEnvConfig(readEnvFiles("client", mode));
+  const env = {
+    NOCOBASE_APP_NAME: serverEnv.NOCOBASE_APP_NAME,
+    NOCOBASE_PORTAL_NAME: serverEnv.NOCOBASE_PORTAL_NAME,
+    NOCOBASE_API_URL: serverEnv.NOCOBASE_API_URL,
+    NOCOBASE_PORTAL_BASE: serverEnv.NOCOBASE_PORTAL_BASE,
+    NOCOBASE_WS_URL:
+      serverEnv.NOCOBASE_WS_URL ||
+      deriveWebSocketUrlFromApiUrl(serverEnv.NOCOBASE_API_URL),
+    NOCOBASE_AUTHENTICATOR:
+      serverEnv.NOCOBASE_AUTHENTICATOR || "basic",
+    ...clientConfig,
+  };
+  const clientEnv = {
+    ...env,
+    API_CLIENT_STORAGE_PREFIX:
+      env.API_CLIENT_STORAGE_PREFIX || "NOCOBASE_",
+    API_CLIENT_STORAGE_TYPE:
+      env.API_CLIENT_STORAGE_TYPE || "localStorage",
+    API_CLIENT_SHARE_TOKEN:
+      env.API_CLIENT_SHARE_TOKEN || "false",
+  };
+
+  return name ? clientEnv[name] : clientEnv;
 };
 
 const normalizePortalBase = (base) => {
@@ -130,22 +234,8 @@ const stripExistingRuntimeConfig = (html) => {
   return html.replace(pattern, "");
 };
 
-loadBuildHtmlEnv();
-
-const portalBase = normalizePortalBase(process.env.NOCOBASE_PORTAL_BASE);
-const portalName =
-  String(process.env.NOCOBASE_PORTAL_NAME || "main").trim() || "main";
-const apiUrl = String(process.env.NOCOBASE_API_URL || "/api").trim() || "/api";
-const wsUrl = String(process.env.NOCOBASE_WS_URL || "").trim();
-const storagePrefix =
-  String(process.env.API_CLIENT_STORAGE_PREFIX || "NOCOBASE_").trim() ||
-  "NOCOBASE_";
-const storageType =
-  String(process.env.API_CLIENT_STORAGE_TYPE || "localStorage").trim() ||
-  "localStorage";
-const shareToken = /^true$/i.test(
-  String(process.env.API_CLIENT_SHARE_TOKEN || "false").trim()
-);
+const clientEnv = readClientEnv();
+const portalBase = normalizePortalBase(clientEnv.NOCOBASE_PORTAL_BASE);
 
 const sourceIndexPath = fs.existsSync(rawIndexPath) ? rawIndexPath : indexPath;
 
@@ -157,13 +247,7 @@ if (!fs.existsSync(sourceIndexPath)) {
 
 const runtimeConfig = `${startMarker}
 <script>
-  window.NOCOBASE_PORTAL_NAME = ${JSON.stringify(portalName)};
-  window.NOCOBASE_PORTAL_BASE = ${JSON.stringify(portalBase)};
-  window.NOCOBASE_API_URL = ${JSON.stringify(apiUrl)};
-  ${wsUrl ? `window.NOCOBASE_WS_URL = ${JSON.stringify(wsUrl)};\n  ` : ""}
-  window.__nocobase_api_client_storage_prefix__ = ${JSON.stringify(storagePrefix)};
-  window.__nocobase_api_client_storage_type__ = ${JSON.stringify(storageType)};
-  window.__nocobase_api_client_share_token__ = ${JSON.stringify(shareToken)};
+  window.__NOCOBASE_PORTAL_ENV__ = ${JSON.stringify(clientEnv)};
 </script>
 ${endMarker}
 `;

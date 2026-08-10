@@ -1,3 +1,5 @@
+import { readServerEnv } from "./config.js";
+
 export type ServerRunMode = "standalone" | "embedded";
 
 export type PortalDisposer = () => void | Promise<void>;
@@ -25,10 +27,37 @@ export interface ServerRuntimeContext {
   readonly scope?: PortalScope;
 }
 
-const readEnv = (name: string) => {
-  const value = process.env[name];
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+const getAppNameFromApiProxyTarget = () => {
+  const target = readServerEnv("NOCOBASE_API_PROXY_TARGET");
+  if (!target) return undefined;
+
+  try {
+    const pathname = new URL(target, "http://localhost").pathname;
+    const match = pathname.match(/\/api\/__app\/([^/?#]+)(?:[/?#]|$)/);
+    return match?.[1] ? decodeURIComponent(match[1]) : undefined;
+  } catch {
+    return undefined;
+  }
 };
+
+const getAppName = () =>
+  readServerEnv("NOCOBASE_APP_NAME") ??
+  getAppNameFromApiProxyTarget() ??
+  "main";
+
+const getPortalName = () =>
+  readServerEnv("NOCOBASE_PORTAL_NAME") ?? "main";
+
+const getPortalPublicPath = () => {
+  const appName = getAppName();
+  const portalName = getPortalName();
+  return appName === "main"
+    ? `/portals/${portalName}`
+    : `/apps/${appName}/portals/${portalName}`;
+};
+
+const getPortalApiUrl = () =>
+  readServerEnv("NOCOBASE_API_URL") ?? `${getPortalPublicPath()}/api`;
 
 const normalizeBasePath = (value?: string) => {
   if (!value) return undefined;
@@ -60,16 +89,19 @@ const parseScopeId = (id: string) => {
   };
 };
 
-export const createStandaloneRuntimeContext = (): ServerRuntimeContext => ({
-  mode: "standalone",
-  appName: readEnv("NOCOBASE_APP_NAME") ?? readEnv("APP_NAME") ?? "main",
-  portalName:
-    readEnv("NOCOBASE_PORTAL_NAME") ?? readEnv("PORTAL_NAME") ?? readEnv("APP_NAME") ?? "main",
-  basePath:
-    normalizeBasePath(readEnv("PORTAL_BASE_PATH")) ??
-    deriveBasePathFromApiUrl(readEnv("NOCOBASE_API_URL")) ??
-    "/",
-});
+export const createStandaloneRuntimeContext = (): ServerRuntimeContext => {
+  const portalApiUrl = getPortalApiUrl();
+
+  return {
+    mode: "standalone",
+    appName: getAppName(),
+    portalName: getPortalName(),
+    basePath:
+      normalizeBasePath(readServerEnv("PORTAL_BASE_PATH")) ??
+      deriveBasePathFromApiUrl(portalApiUrl) ??
+      "/",
+  };
+};
 
 export const createEmbeddedRuntimeContext = (
   scope: PortalScope

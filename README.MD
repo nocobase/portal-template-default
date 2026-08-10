@@ -9,37 +9,63 @@ NocoBase.
 
 ```bash
 pnpm install
-cp .env.example .env.local
+cp .env.client.example .env.client.dev
+cp .env.server.example .env.server.dev
 pnpm dev
 ```
 
 The development server starts at `http://localhost:5173` by default.
-`pnpm dev` also starts the Hono BFF at `http://localhost:3000`.
+`pnpm dev` also starts the Portal dev server at `http://localhost:3000`.
 
 ## Configuration
 
-The minimum local configuration is:
+The Portal uses separate client-visible and server-only env files:
 
-```env
-NOCOBASE_API_URL=/api
-NOCOBASE_API_PROXY_TARGET=https://example.com/api
-NOCOBASE_PORTAL_NAME=main
-NOCOBASE_PORTAL_BASE=/
+```txt
+.env.client.dev
+.env.server.dev
+.env.client.prod
+.env.server.prod
 ```
 
-- `NOCOBASE_API_URL` is the NocoBase REST API root and must include `/api`.
-  Same-origin deployments normally use `/api`; in this BFF layout the browser
-  should keep using `/api`.
-- `NOCOBASE_API_PROXY_TARGET` is the real NocoBase REST API target used by the
-  Hono BFF. Keep service-only URLs and secrets out of browser-exposed variables.
-- `NOCOBASE_PORTAL_NAME` is the Portal runtime name. Portal-owned APIs use the
-  `/api/_portal/<name>/...` prefix, for example
-  `/api/_portal/main/users/metadata`.
-- `NOCOBASE_PORTAL_BASE` is the public path where the Portal is mounted. Use
-  `/` for root development or set the deployment path before building.
-- `NOCOBASE_API_TOKEN` can provide a temporary development token. Never commit
-  real tokens.
+Client env has no required configuration. Only API client storage settings are
+configurable there:
 
+```env
+# API_CLIENT_STORAGE_PREFIX=NOCOBASE_
+# API_CLIENT_STORAGE_TYPE=localStorage
+# API_CLIENT_SHARE_TOKEN=false
+```
+
+The minimum server configuration is:
+
+```env
+NOCOBASE_API_PROXY_TARGET=https://example.com/api
+NOCOBASE_PORTAL_NAME=main
+```
+
+- `.env.client.*` contributes only API client storage settings. Portal
+  identity, browser API URL, Portal base, WebSocket URL, and authenticator are
+  generated into `window.__NOCOBASE_PORTAL_ENV__` during dev/build.
+- `.env.server.*` is read only by the Portal server and is not registered onto
+  `process.env`.
+- `NOCOBASE_APP_NAME` is optional in server env. When omitted, it can be
+  derived from `NOCOBASE_API_PROXY_TARGET`, where `/api` means `main`, and
+  `/api/__app/<appName>` means `<appName>`. The derived value is added to
+  `window.__NOCOBASE_PORTAL_ENV__` automatically.
+- `NOCOBASE_PORTAL_NAME` is the Portal runtime name.
+- `NOCOBASE_API_URL` is derived as `/portals/<NOCOBASE_PORTAL_NAME>/api` for
+  the `main` app, or
+  `/apps/<NOCOBASE_APP_NAME>/portals/<NOCOBASE_PORTAL_NAME>/api` for other
+  apps.
+- `NOCOBASE_API_PROXY_TARGET` is the real NocoBase REST API target used by the
+  Portal server. Keep service-only URLs and secrets out of browser-exposed
+  variables.
+- Portal-owned APIs use the derived API prefix plus `/_portal/...`, for example
+  `/portals/main/api/_portal/users/metadata`.
+- `NOCOBASE_PORTAL_BASE` is derived as `/x/<NOCOBASE_PORTAL_NAME>` for the
+  `main` app, or `/x/apps/<NOCOBASE_APP_NAME>/<NOCOBASE_PORTAL_NAME>` for other
+  apps.
 The Portal uses the same authentication storage convention as NocoBase. If the
 server customizes it, keep `API_CLIENT_STORAGE_PREFIX`,
 `API_CLIENT_STORAGE_TYPE`, and `API_CLIENT_SHARE_TOKEN` aligned with the server.
@@ -47,16 +73,16 @@ server customizes it, keep `API_CLIENT_STORAGE_PREFIX`,
 ## Development
 
 ```bash
-# Start the Vite development server and Hono BFF
+# Start the Vite development server and Portal dev server
 pnpm dev
 
 # Build the production client assets
 pnpm build:client
 
-# Build the production assets, runtime HTML, and BFF output
+# Build the production assets, runtime HTML, and server output
 pnpm build
 
-# Start the compiled Hono BFF
+# Start the compiled Portal server
 pnpm start
 
 # Serve only a production client build with Refine
@@ -66,9 +92,12 @@ pnpm start:client
 pnpm build:html
 ```
 
-`pnpm build:client` emits browser assets to `dist/client`. `pnpm build:server`
-emits the ESM server build, production package manifest, and server runtime
-dependencies to the `dist` package root.
+`pnpm build:client` emits browser assets to `dist/client`. `pnpm build:html`
+injects the generated `window.__NOCOBASE_PORTAL_ENV__` runtime config into
+`dist/client/index.html`, using only the three client env storage settings plus
+values derived from server env and defaults. `pnpm build:server` emits the ESM
+server build, production package manifest, `.env.server.prod`, and server
+runtime dependencies to the `dist` package root.
 
 Server logs are written as JSON lines under `logs/<standalone|embedded>/` with
 dated `system-YYYY-MM-DD.log` and `request-YYYY-MM-DD.log` files. Set

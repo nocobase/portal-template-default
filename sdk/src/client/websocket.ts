@@ -1,5 +1,6 @@
 import {
   getNocoBaseAppName,
+  readClientEnv,
   resolveNocoBaseServerUrl,
 } from "../runtime/config.ts";
 import { authSession } from "./auth-session.ts";
@@ -20,29 +21,12 @@ export type NocoBaseWebSocketOptions = {
 type MessageListener = (message: NocoBaseWebSocketMessage) => void;
 type OpenListener = () => void;
 
-type WebSocketRuntime = Window & {
-  NOCOBASE_WS_URL?: string;
-  __nocobase_ws_url__?: string;
-};
-
-const getRuntimeWindow = () =>
-  typeof window === "undefined" ? undefined : (window as WebSocketRuntime);
-
-const getRuntimeWebSocketUrl = () => {
-  const runtime = getRuntimeWindow();
-  return (
-    runtime?.NOCOBASE_WS_URL ??
-    runtime?.__nocobase_ws_url__ ??
-    import.meta.env?.NOCOBASE_WS_URL
-  );
-};
-
 export function resolveNocoBaseWebSocketUrl(
   options: NocoBaseWebSocketOptions = {}
 ) {
   if (typeof window === "undefined") return undefined;
 
-  const configuredUrl = options.url ?? getRuntimeWebSocketUrl();
+  const configuredUrl = options.url ?? readClientEnv("NOCOBASE_WS_URL");
   const configuredPath = options.wsPath;
   const wsPath = configuredPath ?? "/ws";
   const value = configuredUrl || resolveNocoBaseServerUrl(wsPath);

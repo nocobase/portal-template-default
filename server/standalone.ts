@@ -19,9 +19,11 @@ const server = serve({
       host: config.host,
       port: config.port,
     },
-    "Standalone Portal BFF listening"
+    "Standalone Portal dev server listening"
   );
-  console.info(`BFF listening on http://${config.host}:${config.port}`);
+  console.info(
+    `Portal dev server listening on http://${config.host}:${config.port}`
+  );
 });
 
 server.on(

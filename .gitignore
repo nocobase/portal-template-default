@@ -25,6 +25,15 @@ server-dist
 # Environment variables
 .env
 .env.local
+.env.development
+.env.production
+.env.test
+.env.client.dev
+.env.client.prod
+.env.client.test
+.env.server.dev
+.env.server.prod
+.env.server.test
 .env.e2e
 .env.e2e.local
 

@@ -114,7 +114,10 @@ const createRuntimeApp = (
   app.route("/api/_portal", createLocalDataRouter(localStore));
   app.route("/api/_portal", appApiRouter);
   app.use("/api/*", nocobaseProxyInterceptor);
-  app.route("/api", createNocoBaseProxyRouter(config.nocobaseApiTarget, runtime));
+  app.route(
+    "/api",
+    createNocoBaseProxyRouter(config.nocobaseApiTarget, runtime)
+  );
 
   app.notFound((ctx) => {
     return ctx.json({ error: "Not Found" }, 404);

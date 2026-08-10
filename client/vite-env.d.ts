@@ -4,15 +4,11 @@ declare const __PORTAL_TEMPLATE_NAME__: string;
 declare const __PORTAL_TEMPLATE_VERSION__: string;
 
 interface Window {
-  NOCOBASE_PORTAL_NAME?: string;
-  NOCOBASE_PORTAL_BASE?: string;
-  NOCOBASE_API_URL?: string;
-  __nocobase_api_client_storage_prefix__?: string;
-  __nocobase_api_client_storage_type__?: string;
-  __nocobase_api_client_share_token__?: boolean | string;
+  __NOCOBASE_PORTAL_ENV__?: Record<string, string | undefined>;
 }
 
 interface ImportMetaEnv {
+  readonly NOCOBASE_APP_NAME?: string;
   readonly NOCOBASE_PORTAL_NAME?: string;
   readonly API_CLIENT_STORAGE_PREFIX?: string;
   readonly API_CLIENT_STORAGE_TYPE?: string;

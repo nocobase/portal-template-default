@@ -23,7 +23,9 @@ describe("Portal API paths", () => {
         location: {
           origin: "http://localhost:5173",
         },
-        NOCOBASE_API_URL: "/portals/main/api",
+        __NOCOBASE_PORTAL_ENV__: {
+          NOCOBASE_API_URL: "/portals/main/api",
+        },
       },
     });
 
@@ -40,7 +42,9 @@ describe("Portal API paths", () => {
         location: {
           origin: "http://localhost:5173",
         },
-        NOCOBASE_API_URL: "http://127.0.0.1:64074/portals/main/api",
+        __NOCOBASE_PORTAL_ENV__: {
+          NOCOBASE_API_URL: "http://127.0.0.1:64074/portals/main/api",
+        },
       },
     });
 
