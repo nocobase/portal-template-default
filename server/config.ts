@@ -109,6 +109,22 @@ const getAppNameFromApiProxyTarget = (target?: string) => {
   }
 };
 
+const getAppPublicPathFromApiProxyTarget = (target?: string) => {
+  if (!target) return "";
+
+  try {
+    const pathname = new URL(target, "http://localhost").pathname;
+    const apiPathMatch = pathname.match(/\/api(?:\/|$)/);
+    const publicPath = apiPathMatch
+      ? pathname.slice(0, apiPathMatch.index)
+      : "";
+
+    return publicPath ? `/${publicPath.replace(/^\/+|\/+$/g, "")}` : "";
+  } catch {
+    return "";
+  }
+};
+
 const omitGeneratedServerEnv = (env: EnvValues): EnvValues => {
   const fileEnv = { ...env };
   delete fileEnv.NOCOBASE_APP_NAME;
@@ -130,12 +146,15 @@ const normalizeServerEnv = (env: EnvValues): EnvValues => {
     appName === "main"
       ? `/portals/${portalName}`
       : `/apps/${appName}/portals/${portalName}`;
+  const appPublicPath = getAppPublicPathFromApiProxyTarget(
+    readValue(env, "NOCOBASE_API_PROXY_TARGET")
+  );
 
   return {
     ...omitGeneratedServerEnv(env),
     NOCOBASE_APP_NAME: appName,
     NOCOBASE_PORTAL_NAME: portalName,
-    NOCOBASE_API_URL: `${portalPublicPath}/api`,
+    NOCOBASE_API_URL: `${appPublicPath}${portalPublicPath}/api`,
   };
 };
 

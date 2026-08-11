@@ -104,6 +104,22 @@ const getAppNameFromApiProxyTarget = (target) => {
   }
 };
 
+const getAppPublicPathFromApiProxyTarget = (target) => {
+  if (!target) return "";
+
+  try {
+    const pathname = new URL(target, "http://localhost").pathname;
+    const apiPathMatch = pathname.match(/\/api(?:\/|$)/);
+    const publicPath = apiPathMatch
+      ? pathname.slice(0, apiPathMatch.index)
+      : "";
+
+    return publicPath ? `/${publicPath.replace(/^\/+|\/+$/g, "")}` : "";
+  } catch {
+    return "";
+  }
+};
+
 const omitGeneratedServerEnv = (env) => {
   const fileEnv = { ...env };
   delete fileEnv.NOCOBASE_APP_NAME;
@@ -164,11 +180,17 @@ const readServerEnv = (name) => {
     normalizeName(getAppNameFromApiProxyTarget(env.NOCOBASE_API_PROXY_TARGET)) ??
     "main";
   const portalName = normalizeName(env.NOCOBASE_PORTAL_NAME) ?? "main";
+  const appPublicPath = getAppPublicPathFromApiProxyTarget(
+    env.NOCOBASE_API_PROXY_TARGET
+  );
   const serverEnv = {
     ...omitGeneratedServerEnv(env),
     NOCOBASE_APP_NAME: appName,
     NOCOBASE_PORTAL_NAME: portalName,
-    NOCOBASE_API_URL: `${getPortalPublicPath(appName, portalName)}/api`,
+    NOCOBASE_API_URL: `${appPublicPath}${getPortalPublicPath(
+      appName,
+      portalName
+    )}/api`,
   };
 
   return name ? serverEnv[name] : serverEnv;
@@ -176,12 +198,17 @@ const readServerEnv = (name) => {
 
 const readClientEnv = (serverEnv, name) => {
   const clientConfig = pickClientEnvConfig(loadEnvFiles("client", "dev"));
+  const appPublicPath = getAppPublicPathFromApiProxyTarget(
+    serverEnv.NOCOBASE_API_PROXY_TARGET
+  );
   const env = {
     NOCOBASE_APP_NAME: serverEnv.NOCOBASE_APP_NAME,
     NOCOBASE_PORTAL_NAME: serverEnv.NOCOBASE_PORTAL_NAME,
     NOCOBASE_API_URL: serverEnv.NOCOBASE_API_URL,
-    NOCOBASE_PORTAL_BASE:
-      getPortalBase(serverEnv.NOCOBASE_APP_NAME, serverEnv.NOCOBASE_PORTAL_NAME),
+    NOCOBASE_PORTAL_BASE: `${appPublicPath}${getPortalBase(
+      serverEnv.NOCOBASE_APP_NAME,
+      serverEnv.NOCOBASE_PORTAL_NAME
+    )}`,
     NOCOBASE_WS_URL: deriveWebSocketUrlFromApiUrl(serverEnv.NOCOBASE_API_URL),
     NOCOBASE_AUTHENTICATOR: "basic",
     ...clientConfig,

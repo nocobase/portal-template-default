@@ -57,6 +57,30 @@ describe("server app route mounting", () => {
     ).toBe(200);
   });
 
+  it("serves standalone Portal APIs below a NocoBase public path", async () => {
+    const app = createApp({
+      runtime: {
+        ...standaloneRuntime,
+        basePath: "/nocobase/portals/main",
+      },
+    });
+
+    expect(
+      (
+        await app.request(
+          "http://localhost/nocobase/portals/main/api/_portal/notes/cached",
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await app.request(
+          "http://localhost/portals/main/api/_portal/notes/cached",
+        )
+      ).status,
+    ).toBe(404);
+  });
+
   it("mounts at the path received from portal-host in embedded mode", async () => {
     const app = createApp({
       runtime: createEmbeddedRuntimeContext(createPortalScope()),

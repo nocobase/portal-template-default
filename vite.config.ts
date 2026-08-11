@@ -111,6 +111,22 @@ const getAppNameFromApiProxyTarget = (target?: string) => {
   }
 };
 
+const getAppPublicPathFromApiProxyTarget = (target?: string) => {
+  if (!target) return "";
+
+  try {
+    const pathname = new URL(target, "http://localhost").pathname;
+    const apiPathMatch = pathname.match(/\/api(?:\/|$)/);
+    const publicPath = apiPathMatch
+      ? pathname.slice(0, apiPathMatch.index)
+      : "";
+
+    return publicPath ? `/${publicPath.replace(/^\/+|\/+$/g, "")}` : "";
+  } catch {
+    return "";
+  }
+};
+
 const omitGeneratedServerEnv = (env: Record<string, string>) => {
   const fileEnv = { ...env };
   delete fileEnv.NOCOBASE_APP_NAME;
@@ -173,12 +189,15 @@ function readServerEnv(name?: string) {
     appName === "main"
       ? `/x/${portalName}`
       : `/x/apps/${appName}/${portalName}`;
+  const appPublicPath = getAppPublicPathFromApiProxyTarget(
+    env.NOCOBASE_API_PROXY_TARGET
+  );
   const serverEnv = {
     ...omitGeneratedServerEnv(env),
     NOCOBASE_APP_NAME: appName,
     NOCOBASE_PORTAL_NAME: portalName,
-    NOCOBASE_API_URL: `${portalPublicPath}/api`,
-    NOCOBASE_PORTAL_BASE: portalBase,
+    NOCOBASE_API_URL: `${appPublicPath}${portalPublicPath}/api`,
+    NOCOBASE_PORTAL_BASE: `${appPublicPath}${portalBase}`,
   };
 
   return name ? serverEnv[name] : serverEnv;

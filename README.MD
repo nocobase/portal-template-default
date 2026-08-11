@@ -56,7 +56,9 @@ NOCOBASE_PORTAL_NAME=main
 - `NOCOBASE_API_URL` is derived as `/portals/<NOCOBASE_PORTAL_NAME>/api` for
   the `main` app, or
   `/apps/<NOCOBASE_APP_NAME>/portals/<NOCOBASE_PORTAL_NAME>/api` for other
-  apps.
+  apps. When `NOCOBASE_API_PROXY_TARGET` includes a NocoBase public path before
+  `/api`, such as `/nocobase/api`, that public path is prepended during dev and
+  build.
 - `NOCOBASE_API_PROXY_TARGET` is the real NocoBase REST API target used by the
   Portal server. Keep service-only URLs and secrets out of browser-exposed
   variables.
@@ -64,7 +66,11 @@ NOCOBASE_PORTAL_NAME=main
   `/portals/main/api/_portal/users/metadata`.
 - `NOCOBASE_PORTAL_BASE` is derived as `/x/<NOCOBASE_PORTAL_NAME>` for the
   `main` app, or `/x/apps/<NOCOBASE_APP_NAME>/<NOCOBASE_PORTAL_NAME>` for other
-  apps.
+  apps. The same NocoBase public path is prepended in `pnpm dev`, so
+  `NOCOBASE_API_PROXY_TARGET=http://localhost:64074/nocobase/api` and
+  `NOCOBASE_PORTAL_NAME=test3` serve the dev frontend at `/nocobase/x/test3/`,
+  API requests under `/nocobase/portals/test3/api`, and WebSocket requests under
+  `/nocobase/portals/test3/ws`.
 - `pnpm build:html` prefixes generated frontend asset URLs and the injected
   `NOCOBASE_API_URL`, `NOCOBASE_PORTAL_BASE`, and `NOCOBASE_WS_URL` with the
   NocoBase public path inferred from `NOCOBASE_API_PROXY_TARGET`. For example,

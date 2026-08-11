@@ -199,6 +199,72 @@ describe("server runtime config", () => {
     });
   });
 
+  it("keeps the NocoBase public path in standalone Portal API routing", async () => {
+    delete process.env.NOCOBASE_APP_NAME;
+    delete process.env.NOCOBASE_PORTAL_NAME;
+    delete process.env.NOCOBASE_API_URL;
+    useEnvFiles({
+      [path.join(portalRoot, ".env.server.test")]: [
+        "NOCOBASE_API_PROXY_TARGET=https://pr-10318.v2.test.nocobase.com/nocobase/api",
+        "NOCOBASE_PORTAL_NAME=main",
+      ].join("\n"),
+    });
+
+    expect(readServerEnv("NOCOBASE_API_URL")).toBe(
+      "/nocobase/portals/main/api"
+    );
+    expect(createStandaloneRuntimeContext()).toMatchObject({
+      mode: "standalone",
+      appName: "main",
+      portalName: "main",
+      basePath: "/nocobase/portals/main",
+    });
+
+    vi.resetModules();
+    const { config } = await import("../../server/config");
+
+    expect(config).toMatchObject({
+      portalApiUrl: "/nocobase/portals/main/api",
+      nocobaseApiTarget:
+        "https://pr-10318.v2.test.nocobase.com/nocobase/api",
+      nocobaseWebSocketPath: "/nocobase/portals/main/ws",
+      nocobaseWebSocketTarget:
+        "wss://pr-10318.v2.test.nocobase.com/nocobase/ws",
+    });
+  });
+
+  it("derives dev Portal API and WebSocket paths from a local NocoBase public path", async () => {
+    delete process.env.NOCOBASE_APP_NAME;
+    delete process.env.NOCOBASE_PORTAL_NAME;
+    delete process.env.NOCOBASE_API_URL;
+    useEnvFiles({
+      [path.join(portalRoot, ".env.server.test")]: [
+        "NOCOBASE_API_PROXY_TARGET=http://localhost:64074/nocobase/api",
+        "NOCOBASE_PORTAL_NAME=test3",
+      ].join("\n"),
+    });
+
+    expect(readServerEnv("NOCOBASE_API_URL")).toBe(
+      "/nocobase/portals/test3/api"
+    );
+    expect(createStandaloneRuntimeContext()).toMatchObject({
+      mode: "standalone",
+      appName: "main",
+      portalName: "test3",
+      basePath: "/nocobase/portals/test3",
+    });
+
+    vi.resetModules();
+    const { config } = await import("../../server/config");
+
+    expect(config).toMatchObject({
+      portalApiUrl: "/nocobase/portals/test3/api",
+      nocobaseApiTarget: "http://localhost:64074/nocobase/api",
+      nocobaseWebSocketPath: "/nocobase/portals/test3/ws",
+      nocobaseWebSocketTarget: "ws://localhost:64074/nocobase/ws",
+    });
+  });
+
   it("derives app name, websocket proxy target, and base path without server env overrides", async () => {
     delete process.env.NOCOBASE_APP_NAME;
     delete process.env.NOCOBASE_PORTAL_NAME;
