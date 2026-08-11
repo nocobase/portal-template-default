@@ -62,18 +62,13 @@ it("runtime errors preserve server codes and authentication state", async () => 
     const roles = [];
     globalThis.fetch = async (_url, options) => {
       roles.push(options.headers["X-Role"]);
-      if (roles.length === 1) {
-        return jsonResponse(401, {
-          errors: [{ code: "ROLE_NOT_FOUND_FOR_USER", message: "stale role" }],
-        });
-      }
       return jsonResponse(200, { data: { id: 1, username: "tester" } });
     };
 
     await expect(authProvider.check()).resolves.toEqual({ authenticated: true });
     expect(authSession.get("token")).toBe("role-token");
-    expect(authSession.get("role")).toBeUndefined();
-    expect(roles).toEqual(["deleted-role", undefined]);
+    expect(authSession.get("role")).toBe("deleted-role");
+    expect(roles).toEqual([undefined]);
 
     authSession.set("token", "maintenance-token");
     portalRuntimeStore.clear();

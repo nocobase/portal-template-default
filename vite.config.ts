@@ -245,6 +245,17 @@ const getDefaultProxyTarget = (apiUrl?: string) => {
   }
 };
 
+const getUrlOrigin = (value?: string) => {
+  const target = getDefaultProxyTarget(value);
+  if (!target) return undefined;
+
+  try {
+    return new URL(target).origin;
+  } catch {
+    return undefined;
+  }
+};
+
 const getNocoBaseProxyPath = (apiUrl?: string) => {
   if (!apiUrl) return "/api";
   if (apiUrl.startsWith("/")) return apiUrl;
@@ -306,7 +317,8 @@ const getPortalScopedWebSocketProxyPath = (apiUrl?: string) => {
 
 const createRelativeNocoBaseApiProxy = (
   apiUrl: string | undefined,
-  devServerTarget: string
+  devServerTarget: string,
+  headers?: ProxyOptions["headers"]
 ): Record<string, ProxyOptions> => {
   if (!apiUrl?.startsWith("/")) return {};
 
@@ -317,22 +329,33 @@ const createRelativeNocoBaseApiProxy = (
     [proxyPath]: {
       target: devServerTarget,
       changeOrigin: true,
+      headers,
     },
   };
 };
 
 const createPortalApiProxy = (
   apiUrl: string | undefined,
-  devServerTarget: string
+  devServerTarget: string,
+  headers?: ProxyOptions["headers"]
 ): Record<string, ProxyOptions> => {
   const proxyPath = `${normalizeProxyPath(getNocoBaseProxyPath(apiUrl))}/_portal`;
   return {
     [proxyPath]: {
       target: devServerTarget,
       changeOrigin: true,
+      headers,
     },
   };
 };
+
+const createProxyOriginHeaders = (origin?: string): ProxyOptions["headers"] =>
+  origin
+    ? {
+        origin,
+        referer: `${origin}/`,
+      }
+    : undefined;
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -344,16 +367,11 @@ export default defineConfig(({ mode }) => {
     process.env.DEV_SERVER_URL,
     process.env.DEV_SERVER_PORT
   );
+  const nocoBaseApiProxyTarget = readServerEnv("NOCOBASE_API_PROXY_TARGET");
   const proxyTarget = getDefaultProxyTarget(portalApiUrl);
-  const proxyOrigin = proxyTarget
-    ? (() => {
-        try {
-          return new URL(proxyTarget).origin;
-        } catch {
-          return undefined;
-        }
-      })()
-    : undefined;
+  const proxyOrigin =
+    getUrlOrigin(nocoBaseApiProxyTarget) ?? getUrlOrigin(portalApiUrl);
+  const proxyOriginHeaders = createProxyOriginHeaders(proxyOrigin);
 
   const registrySourceRoot = path.resolve(__dirname, "./registry");
   const extensionsRoot = fs.existsSync(registrySourceRoot)
@@ -362,11 +380,13 @@ export default defineConfig(({ mode }) => {
   const nocobaseProxyPath = getNocoBaseProxyPath(portalApiUrl);
   const relativeNocoBaseApiProxy = createRelativeNocoBaseApiProxy(
     portalApiUrl,
-    devServerTarget
+    devServerTarget,
+    proxyOriginHeaders
   );
   const portalApiProxy = createPortalApiProxy(
     portalApiUrl,
-    devServerTarget
+    devServerTarget,
+    proxyOriginHeaders
   );
   const portalScopedWebSocketProxyPath = getPortalScopedWebSocketProxyPath(
     portalApiUrl
@@ -395,12 +415,7 @@ export default defineConfig(({ mode }) => {
                 proxyResponse.headers["x-accel-buffering"] = "no";
               });
             },
-            headers: proxyOrigin
-              ? {
-                  origin: proxyOrigin,
-                  referer: `${proxyOrigin}/`,
-                }
-              : undefined,
+            headers: proxyOriginHeaders,
           },
         }
       : {};
@@ -434,6 +449,7 @@ export default defineConfig(({ mode }) => {
         "/api": {
           target: devServerTarget,
           changeOrigin: true,
+          headers: proxyOriginHeaders,
         },
         [portalScopedWebSocketProxyPath]: {
           target: devServerTarget,
