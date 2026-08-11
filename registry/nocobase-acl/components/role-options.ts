@@ -34,3 +34,7 @@ export function getRoleOptions({
   }
   return options;
 }
+
+export function canSwitchRoles(roles: Role[], roleMode?: RoleMode) {
+  return roles.length > 1 && roleMode !== "only-use-union";
+}

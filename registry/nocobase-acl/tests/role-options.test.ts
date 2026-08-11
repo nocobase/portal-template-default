@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { getRoleOptions, resolveRoleTitle } from "../components/role-options";
+import {
+  canSwitchRoles,
+  getRoleOptions,
+  resolveRoleTitle,
+} from "../components/role-options";
 
 describe("ACL role options", () => {
   it("builds selectable role options for union and anonymous modes", () => {
@@ -22,5 +26,13 @@ describe("ACL role options", () => {
     expect(resolveRoleTitle({ name: "admin", title: '{{t("Admin")}}' })).toBe(
       "Admin"
     );
+  });
+
+  it("only exposes switching when the role mode and options allow it", () => {
+    const roles = [{ name: "admin" }, { name: "member" }];
+
+    expect(canSwitchRoles(roles, "allow-use-union")).toBe(true);
+    expect(canSwitchRoles(roles, "only-use-union")).toBe(false);
+    expect(canSwitchRoles([{ name: "admin" }])).toBe(false);
   });
 });

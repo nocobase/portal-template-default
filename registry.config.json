@@ -454,6 +454,7 @@
         "@nocobase/acl-ui",
         "button",
         "card",
+        "dropdown-menu",
         "input",
         "label",
         "table",

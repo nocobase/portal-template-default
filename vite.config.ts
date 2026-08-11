@@ -358,7 +358,7 @@ const createProxyOriginHeaders = (origin?: string): ProxyOptions["headers"] =>
     : undefined;
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   clientEnvMode = mode;
   const env = readClientEnv();
   const portalApiUrl = getPortalApiUrl(env);
@@ -427,6 +427,9 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
     },
     define: {
+      __PORTAL_DEV_SOURCE_ROOT__: JSON.stringify(
+        command === "serve" ? path.resolve(__dirname) : ""
+      ),
       __PORTAL_TEMPLATE_NAME__: JSON.stringify(portalTemplate.displayName),
       __PORTAL_TEMPLATE_VERSION__: JSON.stringify(portalTemplate.version),
     },

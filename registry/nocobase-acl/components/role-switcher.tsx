@@ -1,8 +1,20 @@
-import { useGetIdentity, useTranslate } from "@refinedev/core";
+import {
+  useGetIdentity,
+  useNotification,
+  useTranslate,
+} from "@refinedev/core";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -19,7 +31,12 @@ import {
 } from "@nocobase/portal-sdk/acl";
 import { nocobaseClient } from "@nocobase/portal-sdk/client";
 import { cn } from "@/lib/utils";
-import { getRoleOptions, resolveRoleTitle, UNION_ROLE } from "./role-options";
+import {
+  canSwitchRoles,
+  getRoleOptions,
+  resolveRoleTitle,
+  UNION_ROLE,
+} from "./role-options";
 import { resolveRoleSwitcherContext } from "./role-switcher-context";
 
 export type RoleSwitcherProps = {
@@ -29,19 +46,10 @@ export type RoleSwitcherProps = {
   showWhenUnavailable?: boolean;
 };
 
-export function RoleSwitcher({
-  className,
-  triggerClassName,
-  label,
-  showWhenUnavailable = false,
-}: RoleSwitcherProps) {
-  const translate = useTranslate();
+function useRoleSwitcherOptions() {
   const { data: identity, isLoading } = useGetIdentity<AclIdentity>();
   const acl = useAclState();
-  const [switching, setSwitching] = useState(false);
-  const [error, setError] = useState<string>();
   const context = resolveRoleSwitcherContext(acl, nocobaseClient.getRole());
-
   const roles = useMemo(
     () =>
       getRoleOptions({
@@ -51,13 +59,31 @@ export function RoleSwitcher({
       }),
     [context.allowAnonymous, context.roleMode, identity?.roles]
   );
-
   const currentRole =
     context.roleMode === "only-use-union"
       ? UNION_ROLE
       : context.currentRole ?? roles[0]?.name;
-  const canSwitch =
-    roles.length > 1 && context.roleMode !== "only-use-union";
+
+  return {
+    roles,
+    currentRole,
+    canSwitch: canSwitchRoles(roles, context.roleMode),
+    isLoading:
+      isLoading || acl.status === "idle" || acl.status === "loading",
+  };
+}
+
+export function RoleSwitcher({
+  className,
+  triggerClassName,
+  label,
+  showWhenUnavailable = false,
+}: RoleSwitcherProps) {
+  const translate = useTranslate();
+  const [switching, setSwitching] = useState(false);
+  const [error, setError] = useState<string>();
+  const { roles, currentRole, canSwitch, isLoading } =
+    useRoleSwitcherOptions();
 
   const handleRoleChange = async (value: string | null) => {
     if (!value || value === currentRole) return;
@@ -77,7 +103,7 @@ export function RoleSwitcher({
     }
   };
 
-  if (isLoading || acl.status === "idle" || acl.status === "loading") {
+  if (isLoading) {
     return <Loader2 className="size-4 animate-spin text-muted-foreground" />;
   }
   if (!canSwitch && !showWhenUnavailable) return null;
@@ -128,6 +154,84 @@ export function RoleSwitcher({
       </Select>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
+  );
+}
+
+export function RoleSwitcherUserMenuItems() {
+  const translate = useTranslate();
+  const { open } = useNotification();
+  const [switching, setSwitching] = useState(false);
+  const { roles, currentRole, canSwitch, isLoading } =
+    useRoleSwitcherOptions();
+
+  if (isLoading || !canSwitch) return null;
+
+  const handleRoleChange = async (value: string) => {
+    if (!value || value === currentRole || switching) return;
+    setSwitching(true);
+    try {
+      await switchRole(value);
+      window.location.reload();
+    } catch {
+      open?.({
+        type: "error",
+        message: translate(
+          "acl.roleSwitcher.switchFailed",
+          "Unable to switch role"
+        ),
+      });
+      setSwitching(false);
+    }
+  };
+
+  return (
+    <>
+      <DropdownMenuSeparator />
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger className="min-h-9 gap-2 px-2 text-muted-foreground focus:text-foreground">
+          {switching ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
+          <span>
+            {translate("acl.roleSwitcher.switchRole", "Switch role")}
+          </span>
+        </DropdownMenuSubTrigger>
+        <DropdownMenuSubContent className="min-w-44">
+          <DropdownMenuRadioGroup
+            value={currentRole}
+            onValueChange={(value) => void handleRoleChange(value)}
+          >
+            {roles.map((role, index) => (
+              <RoleMenuOption
+                key={role.name}
+                role={role}
+                disabled={switching}
+                showSeparator={
+                  index === 1 && roles[0]?.name === UNION_ROLE
+                }
+              />
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
+    </>
+  );
+}
+
+function RoleMenuOption({
+  role,
+  disabled,
+  showSeparator,
+}: {
+  role: Role;
+  disabled: boolean;
+  showSeparator: boolean;
+}) {
+  return (
+    <>
+      {showSeparator ? <DropdownMenuSeparator /> : null}
+      <DropdownMenuRadioItem value={role.name} disabled={disabled}>
+        {resolveRoleTitle(role)}
+      </DropdownMenuRadioItem>
+    </>
   );
 }
 

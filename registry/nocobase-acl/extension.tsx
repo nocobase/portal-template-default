@@ -1,9 +1,11 @@
 import type { AppExtension } from "@nocobase/portal-sdk/extensions";
 import { defineAppRoutes } from "@nocobase/portal-sdk/routing";
 import { Blocks, PanelsTopLeft, ShieldCheck } from "lucide-react";
+import { RoleSwitcherUserMenuItems } from "./components/role-switcher";
 
 const nocobaseAclExtension: AppExtension = {
   id: "nocobase-acl",
+  UserMenuItems: RoleSwitcherUserMenuItems,
   dev: {
     resources: [
       {
