@@ -81,6 +81,34 @@ describe("server app route mounting", () => {
     ).toBe(404);
   });
 
+  it("runs NocoBase proxy interceptors after stripping the standalone base path", async () => {
+    const app = createApp({
+      runtime: {
+        ...standaloneRuntime,
+        basePath: "/nocobase/portals/main",
+      },
+    });
+    const response = await app.request(
+      "http://localhost/nocobase/portals/main/api/users:create",
+      {
+        body: JSON.stringify({
+          email: "aaa33e@blocked.example",
+          password: "1212",
+          username: "bcc",
+        }),
+        headers: {
+          "content-type": "application/json",
+        },
+        method: "POST",
+      },
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: "This email domain is blocked by Portal proxy interceptor",
+    });
+  });
+
   it("mounts at the path received from portal-host in embedded mode", async () => {
     const app = createApp({
       runtime: createEmbeddedRuntimeContext(createPortalScope()),

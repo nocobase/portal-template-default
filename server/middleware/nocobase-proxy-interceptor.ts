@@ -1,5 +1,6 @@
 import type { Context, MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
+import type { ServerRuntimeContext } from "../runtime.js";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -56,11 +57,31 @@ const replaceJsonRequestBody = (ctx: Context, body: unknown) => {
   ctx.req.bodyCache = {};
 };
 
+const stripRuntimeBasePath = (
+  pathname: string,
+  runtime?: ServerRuntimeContext
+) => {
+  const basePath = runtime?.basePath.replace(/\/+$/, "");
+  if (!basePath || basePath === "/") return pathname;
+
+  return pathname === basePath
+    ? "/"
+    : pathname.startsWith(`${basePath}/`)
+      ? pathname.slice(basePath.length)
+      : pathname;
+};
+
+const getRuntime = (ctx: Context) =>
+  ctx.get("runtime" as never) as ServerRuntimeContext | undefined;
+
 export const nocobaseProxyInterceptor: MiddlewareHandler = async (
   ctx,
   next
 ) => {
-  const pathname = new URL(ctx.req.url).pathname;
+  const pathname = stripRuntimeBasePath(
+    new URL(ctx.req.url).pathname,
+    getRuntime(ctx)
+  );
   if (ctx.req.method !== "POST" || pathname !== "/api/users:create") {
     await next();
     return;
