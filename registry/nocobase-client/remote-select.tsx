@@ -165,7 +165,7 @@ function RemoteSelectInner<TOption>(
         align="start"
         side={popupSide}
         sideOffset={8}
-        positionerClassName="z-[70]"
+        positionerClassName="pointer-events-auto z-[70]"
         className="w-(--anchor-width) gap-0 overflow-hidden p-0"
       >
         <Command shouldFilter={false}>

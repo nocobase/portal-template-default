@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Drawer as DrawerPrimitive } from "@base-ui/react/drawer";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState, type ReactElement } from "react";
@@ -107,6 +108,40 @@ describe("RemoteSelect", () => {
     expect(
       option.closest("[data-side]")?.parentElement?.classList.contains("z-[70]")
     ).toBe(true);
+  });
+
+  it("keeps portaled options interactive inside a route-style drawer", async () => {
+    const loadOptions = vi.fn(async () => ({
+      items: [{ id: 1, label: "Selectable role" }],
+      hasMore: false,
+    }));
+    const user = userEvent.setup();
+
+    renderRemoteSelect(
+      <>
+        <style>{`.pointer-events-auto { pointer-events: auto; }`}</style>
+        <DrawerPrimitive.Root open>
+          <DrawerPrimitive.Portal style={{ pointerEvents: "none" }}>
+            <DrawerPrimitive.Viewport>
+              <DrawerPrimitive.Popup style={{ pointerEvents: "auto" }}>
+                <DrawerPrimitive.Title>Manage user</DrawerPrimitive.Title>
+                <DrawerPrimitive.Content>
+                  <RemoteMultiSelect loadOptions={loadOptions} />
+                </DrawerPrimitive.Content>
+              </DrawerPrimitive.Popup>
+            </DrawerPrimitive.Viewport>
+          </DrawerPrimitive.Portal>
+        </DrawerPrimitive.Root>
+      </>
+    );
+
+    const trigger = screen.getByRole("combobox");
+    await user.click(trigger);
+    await user.click(
+      await screen.findByRole("option", { name: "Selectable role" })
+    );
+
+    expect(trigger.textContent).toContain("Selectable role");
   });
 
   it("delegates debounced searching to the loader", async () => {
