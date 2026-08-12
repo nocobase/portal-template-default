@@ -465,6 +465,109 @@
         "target": "src/extensions/nocobase-acl",
         "include": ["demo", "extension.tsx"]
       }
+    },
+    {
+      "name": "ai-knowledge-base-providers",
+      "type": "registry:lib",
+      "title": "NocoBase AI Knowledge Base Providers",
+      "description": "User-side DTOs, injected Portal-safe service contract, response normalization, and stale-safe data hooks.",
+      "dependencies": [
+        "@nocobase/portal-sdk@^2.0.0"
+      ],
+      "docs": "Providers only: no UI, routes, demos, extension, generic management API client, or tests. Requires a Portal-owned server adapter with current-user authorization, LOCAL write enforcement, and response allowlists.",
+      "source": {
+        "root": "registry/nocobase-ai-knowledge-base",
+        "target": "src/extensions/nocobase-ai-knowledge-base",
+        "include": [
+          "providers",
+          "hooks"
+        ]
+      }
+    },
+    {
+      "name": "ai-knowledge-base-components",
+      "type": "registry:block",
+      "title": "NocoBase AI Knowledge Base Components",
+      "description": "Controlled knowledge-base, document, retrieval, segment, and upload components for composition in Portal pages.",
+      "dependencies": [
+        "@nocobase/portal-sdk@^2.0.0",
+        "lucide-react@^0.487.0"
+      ],
+      "registryDependencies": [
+        "@nocobase/ai-knowledge-base-providers",
+        "alert",
+        "avatar",
+        "badge",
+        "button",
+        "card",
+        "dialog",
+        "empty",
+        "input",
+        "item",
+        "popover",
+        "select",
+        "skeleton",
+        "switch",
+        "table",
+        "tabs",
+        "textarea",
+        "toggle-group"
+      ],
+      "docs": "Pure controlled UI only. Install ai-knowledge-base-providers first (installed through registry dependencies); inject data, callbacks, route behavior, and authorization experience from the application.",
+      "source": {
+        "root": "registry/nocobase-ai-knowledge-base",
+        "target": "src/extensions/nocobase-ai-knowledge-base",
+        "include": [
+          "components",
+          "locales"
+        ]
+      }
+    },
+    {
+      "name": "ai-knowledge-base",
+      "type": "registry:block",
+      "title": "NocoBase AI Knowledge Base Components and Dev Workspace",
+      "description": "Complete AI Knowledge Base Registry integration with five deterministic development workflows, a Portal-safe Live Workspace, URL-backed result and segment drawers, resource hooks, and consolidated documentation.",
+      "dependencies": [
+        "@nocobase/portal-sdk@^2.0.0",
+        "@refinedev/core@^5.0.8",
+        "lucide-react@^0.487.0",
+        "react-router@^7.0.2"
+      ],
+      "registryDependencies": [
+        "@nocobase/ai-knowledge-base-components",
+        "@nocobase/route-surfaces",
+        "alert",
+        "alert-dialog",
+        "badge",
+        "button",
+        "card",
+        "dialog",
+        "empty",
+        "input",
+        "item",
+        "skeleton",
+        "sheet",
+        "switch",
+        "table",
+        "tabs",
+        "textarea",
+        "toggle-group"
+      ],
+      "docs": "Contributes development-only /dev/ai-knowledge-base routes and menu resources, never production routes. Deterministic demos require no backend; /live uses the default user-side KnowledgeBaseService or an explicitly supplied compatible override. README.md is the consolidated integration, component, recipe, security, and verification reference.",
+      "source": {
+        "root": "registry/nocobase-ai-knowledge-base",
+        "target": "src/extensions/nocobase-ai-knowledge-base",
+        "include": [
+          "demo",
+          "live",
+          "locales",
+          "extension.tsx",
+          "index.ts",
+          "routes.ts",
+          "README.md"
+        ]
+      }
     }
   ]
 }
