@@ -121,5 +121,66 @@ describe("build-html", () => {
     expect(html).toContain('"NOCOBASE_API_URL":"/nocobase/portals/main/api"');
     expect(html).toContain('"NOCOBASE_PORTAL_BASE":"/nocobase/x/main/"');
     expect(html).toContain('"NOCOBASE_WS_URL":"/nocobase/portals/main/ws"');
+    expect(html).toContain(
+      '"NOCOBASE_SETTINGS_URL":"https://pr-10318.v2.test.nocobase.com/nocobase/settings/"'
+    );
+  });
+
+  it("injects an app-scoped settings URL from the API proxy target", () => {
+    const rootServerEnv = path.join(portalRoot, `.env.server.${buildHtmlMode}`);
+    const parentServerEnv = path.join(
+      portalParent,
+      `.env.server.${buildHtmlMode}`
+    );
+    const rootClientEnv = path.join(portalRoot, `.env.client.${buildHtmlMode}`);
+    const parentClientEnv = path.join(
+      portalParent,
+      `.env.client.${buildHtmlMode}`
+    );
+    const rawIndexPath = path.join(distClientDir, "index.raw.html");
+    const indexPath = path.join(distClientDir, "index.html");
+
+    for (const file of [
+      rootServerEnv,
+      parentServerEnv,
+      rootClientEnv,
+      parentClientEnv,
+      rawIndexPath,
+      indexPath,
+    ]) {
+      preserveFile(file);
+      fs.rmSync(file, { force: true });
+    }
+
+    writeFile(
+      rootServerEnv,
+      [
+        "NOCOBASE_API_PROXY_TARGET=http://localhost:64074/nocobase/api/__app/app1",
+        "NOCOBASE_PORTAL_NAME=main",
+      ].join("\n")
+    );
+    writeFile(
+      rawIndexPath,
+      [
+        "<!doctype html>",
+        "<html>",
+        "  <head></head>",
+        "  <body>",
+        '    <script type="module" crossorigin src="/x/apps/app1/main/assets/index-zHBN7rCN.js"></script>',
+        "  </body>",
+        "</html>",
+      ].join("\n")
+    );
+
+    runBuildHtml();
+
+    const html = fs.readFileSync(indexPath, "utf8");
+
+    expect(html).toContain(
+      '"NOCOBASE_API_URL":"/nocobase/apps/app1/portals/main/api"'
+    );
+    expect(html).toContain(
+      '"NOCOBASE_SETTINGS_URL":"http://127.0.0.1:64074/nocobase/settings/apps/app1/"'
+    );
   });
 });

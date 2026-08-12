@@ -118,6 +118,26 @@ describe("Portal authentication session", () => {
     expect(session.shareToken).toBe(true);
   });
 
+  it("prefers the generated NocoBase settings URL", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        location: { origin: "http://localhost:5173" },
+        __NOCOBASE_PORTAL_ENV__: {
+          NOCOBASE_API_URL: "/nocobase/apps/app1/portals/main/api",
+          NOCOBASE_APP_NAME: "app1",
+          NOCOBASE_PORTAL_BASE: "/nocobase/x/apps/app1/main/",
+          NOCOBASE_SETTINGS_URL:
+            "http://127.0.0.1:64074/nocobase/settings/apps/app1/",
+        },
+      },
+    });
+
+    expect(resolveNocoBaseSettingsUrl()).toBe(
+      "http://127.0.0.1:64074/nocobase/settings/apps/app1/"
+    );
+  });
+
   it("uses the SDK storage convention for main and sub-app sessions", () => {
     const main = new AuthSession({ appName: "main", storage: createStorage() });
     expect(main.getStorageKey("token")).toBe("NOCOBASE_TOKEN");

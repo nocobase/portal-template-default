@@ -118,6 +118,9 @@ export const resolveNocoBaseServerUrl = (path = "/") => {
 };
 
 export const resolveNocoBaseSettingsUrl = () => {
+  const settingsUrl = readClientEnv("NOCOBASE_SETTINGS_URL");
+  if (settingsUrl) return settingsUrl;
+
   const appName = getNocoBaseAppName();
   const settingsPath =
     appName === "main"

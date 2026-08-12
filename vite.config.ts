@@ -127,12 +127,39 @@ const getAppPublicPathFromApiProxyTarget = (target?: string) => {
   }
 };
 
+const getSettingsUrlFromApiProxyTarget = (target?: string, appName = "main") => {
+  if (!target || target.startsWith("/")) return undefined;
+
+  try {
+    const url = new URL(target);
+    const apiPathMatch = url.pathname.match(/\/api(?:\/|$)/);
+    const publicPath = apiPathMatch
+      ? url.pathname.slice(0, apiPathMatch.index)
+      : "";
+    const settingsPath =
+      appName === "main"
+        ? "/settings/"
+        : `/settings/apps/${encodeURIComponent(appName)}/`;
+
+    if (url.hostname === "localhost") {
+      url.hostname = "127.0.0.1";
+    }
+    url.pathname = `${publicPath}${settingsPath}`.replace(/\/+/g, "/");
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+};
+
 const omitGeneratedServerEnv = (env: Record<string, string>) => {
   const fileEnv = { ...env };
   delete fileEnv.NOCOBASE_APP_NAME;
   delete fileEnv.NOCOBASE_API_URL;
   delete fileEnv.NOCOBASE_PORTAL_BASE;
   delete fileEnv.NOCOBASE_WS_URL;
+  delete fileEnv.NOCOBASE_SETTINGS_URL;
   delete fileEnv.NOCOBASE_AUTHENTICATOR;
   delete fileEnv.NOCOBASE_WS_PROXY_TARGET;
   delete fileEnv.PORTAL_BASE_PATH;
@@ -192,12 +219,17 @@ function readServerEnv(name?: string) {
   const appPublicPath = getAppPublicPathFromApiProxyTarget(
     env.NOCOBASE_API_PROXY_TARGET
   );
+  const settingsUrl = getSettingsUrlFromApiProxyTarget(
+    env.NOCOBASE_API_PROXY_TARGET,
+    appName
+  );
   const serverEnv = {
     ...omitGeneratedServerEnv(env),
     NOCOBASE_APP_NAME: appName,
     NOCOBASE_PORTAL_NAME: portalName,
     NOCOBASE_API_URL: `${appPublicPath}${portalPublicPath}/api`,
     NOCOBASE_PORTAL_BASE: `${appPublicPath}${portalBase}`,
+    ...(settingsUrl ? { NOCOBASE_SETTINGS_URL: settingsUrl } : {}),
   };
 
   return name ? serverEnv[name] : serverEnv;
@@ -213,6 +245,9 @@ function readClientEnv(name?: string) {
     NOCOBASE_PORTAL_NAME: serverEnv.NOCOBASE_PORTAL_NAME,
     NOCOBASE_API_URL: serverEnv.NOCOBASE_API_URL,
     NOCOBASE_PORTAL_BASE: serverEnv.NOCOBASE_PORTAL_BASE,
+    ...(serverEnv.NOCOBASE_SETTINGS_URL
+      ? { NOCOBASE_SETTINGS_URL: serverEnv.NOCOBASE_SETTINGS_URL }
+      : {}),
     NOCOBASE_WS_URL: deriveWebSocketUrlFromApiUrl(serverEnv.NOCOBASE_API_URL),
     NOCOBASE_AUTHENTICATOR: "basic",
   };

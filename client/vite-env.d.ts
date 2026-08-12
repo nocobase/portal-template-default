@@ -10,6 +10,7 @@ interface Window {
 interface ImportMetaEnv {
   readonly NOCOBASE_APP_NAME?: string;
   readonly NOCOBASE_PORTAL_NAME?: string;
+  readonly NOCOBASE_SETTINGS_URL?: string;
   readonly API_CLIENT_STORAGE_PREFIX?: string;
   readonly API_CLIENT_STORAGE_TYPE?: string;
   readonly API_CLIENT_SHARE_TOKEN?: string;
