@@ -8,9 +8,9 @@ import {
   liveLocationPath,
   liveReturnTo,
   isLiveSegmentDrawerState,
-  liveWorkspaceSearch,
+  knowledgeBaseWorkspaceSearch,
   parseLiveListState,
-  parseLiveWorkspaceState,
+  parseKnowledgeBaseWorkspaceState,
 } from "../live/url-state.ts";
 
 const registryRoot = path.resolve("registry/nocobase-ai-knowledge-base");
@@ -32,16 +32,54 @@ test("demo and live routes are distinct, URL-backed, and safely encode record id
   );
 });
 
-test("list and workspace URL state preserve valid settings", () => {
+test("the generic plugin prerequisite gates only the Knowledge base workspace route tree", () => {
+  const extension = fs.readFileSync(path.join(registryRoot, "extension.tsx"), "utf8");
+  const prerequisiteRoute = fs.readFileSync(
+    path.join(registryRoot, "live/plugin-prerequisite-route.tsx"),
+    "utf8",
+  );
+  const genericPrerequisite = fs.readFileSync(
+    path.resolve("src/components/prerequisites/nocobase-plugin-prerequisite.ts"),
+    "utf8",
+  );
+  const genericGate = fs.readFileSync(
+    path.resolve("src/components/prerequisites/nocobase-plugin-prerequisite-gate.tsx"),
+    "utf8",
+  );
+  assert.match(
+    extension,
+    /path: "live"[\s\S]*?\.\/live\/plugin-prerequisite-route[\s\S]*?index: true[\s\S]*?\.\/live\/knowledge-bases-page[\s\S]*?path: ":knowledgeBaseKey"[\s\S]*?\.\/live\/knowledge-base-workspace-page/,
+  );
+  assert.match(prerequisiteRoute, /NocoBasePluginPrerequisiteGate/);
+  assert.match(prerequisiteRoute, /@nocobase\/plugin-ai-knowledge-base/);
+  assert.match(
+    prerequisiteRoute,
+    /probe: \{[\s\S]*?resource: "aiKnowledgeBase"[\s\S]*?action: "list"[\s\S]*?pageSize: 1/,
+  );
+  assert.match(prerequisiteRoute, /<Outlet \/>/);
+  assert.equal(extension.match(/plugin-prerequisite-route/g)?.length, 1);
+  assert.match(
+    genericPrerequisite,
+    /action<unknown>\("pm", action, \{ method: "GET" \}\)/,
+  );
+  assert.match(genericPrerequisite, /"listEnabledV2" : "listEnabled"/);
+  assert.match(genericGate, /LoadingState/);
+  assert.match(genericGate, /PlugZap/);
+  assert.match(genericGate, /messages\.retryLabel/);
+});
+
+test("list and Knowledge base workspace URL state preserve valid settings", () => {
   const list = parseLiveListState(new URLSearchParams("view=list&page=3&q=handbook&pageSize=20"));
   assert.deepEqual(list, { view: "list", page: 3, query: "handbook", pageSize: 20 });
   assert.equal(liveListSearch({ view: "cards", page: 1, query: "", pageSize: 10 }), "");
   assert.equal(liveListSearch(list), "?page=3&q=handbook&view=list&pageSize=20");
-  const defaultWorkspace = parseLiveWorkspaceState(new URLSearchParams());
+  const defaultWorkspace = parseKnowledgeBaseWorkspaceState(
+    new URLSearchParams(),
+  );
   assert.equal(defaultWorkspace.topK, 4);
   assert.equal(defaultWorkspace.score, 0.6);
 
-  const workspace = parseLiveWorkspaceState(
+  const workspace = parseKnowledgeBaseWorkspaceState(
     new URLSearchParams("documentsPage=2&documentPageSize=30&query=retention&topK=7&score=0.8&segmentsDocument=204"),
   );
   assert.deepEqual(workspace, {
@@ -53,7 +91,7 @@ test("list and workspace URL state preserve valid settings", () => {
     segmentDocumentId: "204",
   });
   assert.equal(
-    liveWorkspaceSearch(workspace),
+    knowledgeBaseWorkspaceSearch(workspace),
     "?documentsPage=2&documentPageSize=30&query=retention&topK=7&score=0.8&segmentsDocument=204",
   );
 });
@@ -110,7 +148,7 @@ test("Knowledge Base translations use English source text as keys", () => {
   assert.doesNotMatch(zhCN, /^\s*["'](?:navigation|development|demo|common|components|live)\./m);
 });
 
-test("published payload layers isolate tests and include a working user-side Live Workspace adapter", () => {
+test("published payload layers isolate tests and include a working user-side Knowledge base workspace adapter", () => {
   const config = JSON.parse(fs.readFileSync(path.resolve("registry.config.json"), "utf8"));
   const providers = config.items.find((item: { name: string }) => item.name === "ai-knowledge-base-providers");
   const components = config.items.find((item: { name: string }) => item.name === "ai-knowledge-base-components");
@@ -132,7 +170,10 @@ test("published payload layers isolate tests and include a working user-side Liv
   const implementation = fs.readFileSync(path.join(registryRoot, "providers/service/index.ts"), "utf8");
   const context = fs.readFileSync(path.join(registryRoot, "providers/context.tsx"), "utf8");
   const providersIndex = fs.readFileSync(path.join(registryRoot, "providers/index.ts"), "utf8");
-  const workspacePage = fs.readFileSync(path.join(registryRoot, "live/workspace-page.tsx"), "utf8");
+  const workspacePage = fs.readFileSync(
+    path.join(registryRoot, "live/knowledge-base-workspace-page.tsx"),
+    "utf8",
+  );
   const documentPage = fs.readFileSync(path.join(registryRoot, "live/document-page.tsx"), "utf8");
   const providerTypes = fs.readFileSync(path.join(registryRoot, "providers/types.ts"), "utf8");
   const serviceFactory = fs.readFileSync(path.join(registryRoot, "providers/service/knowledge-base-factory.ts"), "utf8");
@@ -214,7 +255,7 @@ test("published payload layers isolate tests and include a working user-side Liv
   assert.match(workspacePage, /<h1 className="text-2xl font-semibold tracking-tight">{base\.data\.name}<\/h1>/);
 });
 
-test("development demos use the Live Workspace component flows in the intended order", () => {
+test("development demos use the Knowledge base workspace component flows in the intended order", () => {
   const demo = fs.readFileSync(path.join(registryRoot, "demo/showcase.tsx"), "utf8");
   const fixtures = fs.readFileSync(path.join(registryRoot, "demo/fixtures/data.ts"), "utf8");
   const extension = fs.readFileSync(path.join(registryRoot, "extension.tsx"), "utf8");
@@ -247,7 +288,7 @@ test("development demos use the Live Workspace component flows in the intended o
   );
   assert.match(
     extension,
-    /"ai-knowledge-base-directory"[\s\S]*?"ai-knowledge-base-documents"[\s\S]*?"ai-knowledge-base-upload"[\s\S]*?"ai-knowledge-base-segments"[\s\S]*?"ai-knowledge-base-hit-tests"/,
+    /"ai-knowledge-base-directory"[\s\S]*?"ai-knowledge-base-documents"[\s\S]*?"ai-knowledge-base-upload"[\s\S]*?"ai-knowledge-base-segments"[\s\S]*?"ai-knowledge-base-hit-tests"[\s\S]*?"ai-knowledge-base-workspace"/,
   );
   assert.match(extension, /i18nKey: "Knowledge base"/);
   for (const key of [
@@ -256,9 +297,25 @@ test("development demos use the Live Workspace component flows in the intended o
     "Document upload",
     "Segments",
     "Hit tests",
-    "Live workspace",
+    "Knowledge base workspace",
   ]) {
     assert.match(extension, new RegExp(`"${key}"`));
+  }
+  assert.match(
+    enUS,
+    /'Knowledge base workspace': 'Knowledge base workspace'/,
+  );
+  assert.match(zhCN, /'Knowledge base workspace': '知识库工作区'/);
+  const deprecatedWorkspaceNames = new RegExp(
+    [
+      `${"Live"} ${"Workspace"}`,
+      `${"Live"} ${"workspace"}`,
+      `${"live"} ${"workspace"}`,
+      `${"实时"}${"工作区"}`,
+    ].join("|"),
+  );
+  for (const source of [extension, enUS, zhCN]) {
+    assert.doesNotMatch(source, deprecatedWorkspaceNames);
   }
   assert.match(
     extension,
@@ -279,7 +336,10 @@ test("development demos use the Live Workspace component flows in the intended o
 
 test("document table matches the NocoBase document-list fields and safe action surface", () => {
   const documents = fs.readFileSync(path.join(registryRoot, "components/documents.tsx"), "utf8");
-  const workspacePage = fs.readFileSync(path.join(registryRoot, "live/workspace-page.tsx"), "utf8");
+  const workspacePage = fs.readFileSync(
+    path.join(registryRoot, "live/knowledge-base-workspace-page.tsx"),
+    "utf8",
+  );
   for (const header of ["ID", "Filename", "Status", "Characters", "Segments", "Created at", "Updated at", "Actions"]) {
     assert.match(documents, new RegExp(`t\\("${header}"`));
   }
@@ -322,11 +382,14 @@ test("document table matches the NocoBase document-list fields and safe action s
   assert.match(documents, /title=\{fullDateTime\}/);
 });
 
-test("Live Workspace composes shared loading and empty-state foundations", () => {
+test("Knowledge base workspace composes shared loading and empty-state foundations", () => {
   const common = fs.readFileSync(path.join(registryRoot, "components/common.tsx"), "utf8");
   const retrieval = fs.readFileSync(path.join(registryRoot, "components/retrieval.tsx"), "utf8");
   const segments = fs.readFileSync(path.join(registryRoot, "components/segments.tsx"), "utf8");
-  const workspace = fs.readFileSync(path.join(registryRoot, "live/workspace-page.tsx"), "utf8");
+  const workspace = fs.readFileSync(
+    path.join(registryRoot, "live/knowledge-base-workspace-page.tsx"),
+    "utf8",
+  );
   const documentPage = fs.readFileSync(path.join(registryRoot, "live/document-page.tsx"), "utf8");
   const upload = fs.readFileSync(path.join(registryRoot, "live/upload-controller.tsx"), "utf8");
   const drawer = fs.readFileSync(path.join(registryRoot, "live/document-segments-drawer.tsx"), "utf8");
@@ -349,7 +412,10 @@ test("Live Workspace composes shared loading and empty-state foundations", () =>
 test("Knowledge Base separates inline read recovery from shared mutation notifications", () => {
   const errors = fs.readFileSync(path.join(registryRoot, "providers/utils.ts"), "utf8");
   const notifications = fs.readFileSync(path.join(registryRoot, "live/notifications.ts"), "utf8");
-  const workspace = fs.readFileSync(path.join(registryRoot, "live/workspace-page.tsx"), "utf8");
+  const workspace = fs.readFileSync(
+    path.join(registryRoot, "live/knowledge-base-workspace-page.tsx"),
+    "utf8",
+  );
   const upload = fs.readFileSync(path.join(registryRoot, "live/upload-controller.tsx"), "utf8");
   const drawer = fs.readFileSync(path.join(registryRoot, "live/document-segments-drawer.tsx"), "utf8");
   const segmentRoute = fs.readFileSync(path.join(registryRoot, "live/segment-route.tsx"), "utf8");
@@ -391,7 +457,10 @@ test("knowledge-base, document, and segment lists share the Users pagination con
     path.join(registryRoot, "components/knowledge-bases.tsx"),
     "utf8",
   );
-  const workspace = fs.readFileSync(path.join(registryRoot, "live/workspace-page.tsx"), "utf8");
+  const workspace = fs.readFileSync(
+    path.join(registryRoot, "live/knowledge-base-workspace-page.tsx"),
+    "utf8",
+  );
   const segments = fs.readFileSync(path.join(registryRoot, "live/document-segments-drawer.tsx"), "utf8");
   assert.match(pagination, /t\("Rows per page"\)/);
   assert.match(pagination, /t\("Page \{\{page\}\} of \{\{pages\}\}"/);
@@ -415,9 +484,12 @@ test("knowledge-base, document, and segment lists share the Users pagination con
   assert.match(segments, /onPageSizeChange=\{\(nextPageSize\)/);
 });
 
-test("live hit tests follow the NocoBase query, settings, and ranked-card flow", () => {
+test("Knowledge base workspace hit tests follow the NocoBase query, settings, and ranked-card flow", () => {
   const retrieval = fs.readFileSync(path.join(registryRoot, "components/retrieval.tsx"), "utf8");
-  const workspacePage = fs.readFileSync(path.join(registryRoot, "live/workspace-page.tsx"), "utf8");
+  const workspacePage = fs.readFileSync(
+    path.join(registryRoot, "live/knowledge-base-workspace-page.tsx"),
+    "utf8",
+  );
   const retrievalRoute = fs.readFileSync(path.join(registryRoot, "live/retrieval-result-route.tsx"), "utf8");
   assert.match(retrieval, /export function KnowledgeBaseHitTests/);
   assert.match(retrieval, /t\("Test the matching between user input and the knowledge base"\)/);
@@ -439,14 +511,20 @@ test("live hit tests follow the NocoBase query, settings, and ranked-card flow",
 });
 
 test("document segments open in a management drawer with caller-owned safe actions", () => {
-  const workspacePage = fs.readFileSync(path.join(registryRoot, "live/workspace-page.tsx"), "utf8");
+  const workspacePage = fs.readFileSync(
+    path.join(registryRoot, "live/knowledge-base-workspace-page.tsx"),
+    "utf8",
+  );
   const drawer = fs.readFileSync(path.join(registryRoot, "live/document-segments-drawer.tsx"), "utf8");
   const segments = fs.readFileSync(path.join(registryRoot, "components/segments.tsx"), "utf8");
   const documentPage = fs.readFileSync(path.join(registryRoot, "live/document-page.tsx"), "utf8");
   const segmentRoute = fs.readFileSync(path.join(registryRoot, "live/segment-route.tsx"), "utf8");
   const extension = fs.readFileSync(path.join(registryRoot, "extension.tsx"), "utf8");
   const segmentHooks = fs.readFileSync(path.join(registryRoot, "hooks/use-knowledge-base-segment.ts"), "utf8");
-  assert.match(extension, /path: "live\/:knowledgeBaseKey"[\s\S]*path: "documents\/:documentId"[\s\S]*path: "segments\/:segmentUid"/);
+  assert.match(
+    extension,
+    /path: "live"[\s\S]*path: ":knowledgeBaseKey"[\s\S]*path: "documents\/:documentId"[\s\S]*path: "segments\/:segmentUid"/,
+  );
   assert.doesNotMatch(extension, /path: "live\/:knowledgeBaseKey\/documents\/:documentId"/);
   assert.match(workspacePage, /setWorkspace\(\{ segmentDocumentId: String\(document\.id\) \}\)/);
   assert.match(workspacePage, /segmentDrawerOpen/);
@@ -495,7 +573,7 @@ test("document segments open in a management drawer with caller-owned safe actio
   assert.match(segmentRoute, /disabled=\{!canMaintainDocument \|\| pending \|\| !!partialSave \|\| !!conflict\}/);
 });
 
-test("adapter and live save flow preserve required upload and content-hash contracts", () => {
+test("adapter and Knowledge base workspace save flow preserve required upload and content-hash contracts", () => {
   const contract = fs.readFileSync(path.join(registryRoot, "providers/service/knowledge-base.ts"), "utf8");
   const adapter = fs.readFileSync(path.join(registryRoot, "providers/service/knowledge-base-factory.ts"), "utf8");
   const segmentRoute = fs.readFileSync(path.join(registryRoot, "live/segment-route.tsx"), "utf8");
@@ -503,7 +581,10 @@ test("adapter and live save flow preserve required upload and content-hash contr
   const upload = fs.readFileSync(path.join(registryRoot, "live/upload-controller.tsx"), "utf8");
   const documentHooks = fs.readFileSync(path.join(registryRoot, "hooks/use-knowledge-base-document.ts"), "utf8");
   const uploadComponents = fs.readFileSync(path.join(registryRoot, "components/upload.tsx"), "utf8");
-  const workspace = fs.readFileSync(path.join(registryRoot, "live/workspace-page.tsx"), "utf8");
+  const workspace = fs.readFileSync(
+    path.join(registryRoot, "live/knowledge-base-workspace-page.tsx"),
+    "utf8",
+  );
   const extension = fs.readFileSync(path.join(registryRoot, "extension.tsx"), "utf8");
   assert.match(contract, /in both the query and FormData/);
   assert.match(adapter, /getZipFilenameEncodingOptions/);
@@ -551,7 +632,7 @@ test("adapter and live save flow preserve required upload and content-hash contr
   assert.match(uploadComponents, /t\("Cancel"\)[\s\S]*?<Button type="submit" form=\{formId\}[\s\S]*?t\("Submit"\)/);
   assert.match(
     extension,
-    /path: "live\/:knowledgeBaseKey"[\s\S]*?children: \[[\s\S]*?path: "upload"/,
+    /path: "live"[\s\S]*?path: ":knowledgeBaseKey"[\s\S]*?children: \[[\s\S]*?path: "upload"/,
   );
   assert.doesNotMatch(extension, /path: "live\/:knowledgeBaseKey\/upload"/);
   assert.match(workspace, /onDocumentsRefresh: documents\.retry/);

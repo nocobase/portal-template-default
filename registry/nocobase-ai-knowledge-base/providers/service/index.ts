@@ -3,5 +3,5 @@ import { createKnowledgeBaseService } from "./knowledge-base-factory";
 
 export { createKnowledgeBaseService } from "./knowledge-base-factory";
 
-/** The default Live Workspace integration for compatible user-side Knowledge Base actions. */
+/** The default Knowledge base workspace integration for compatible user-side Knowledge Base actions. */
 export const knowledgeBaseService = createKnowledgeBaseService(nocobaseClient);

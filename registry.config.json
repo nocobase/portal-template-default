@@ -526,8 +526,8 @@
     {
       "name": "ai-knowledge-base",
       "type": "registry:block",
-      "title": "NocoBase AI Knowledge Base Components and Dev Workspace",
-      "description": "Complete AI Knowledge Base Registry integration with five deterministic development workflows, a Portal-safe Live Workspace, URL-backed result and segment drawers, resource hooks, and consolidated documentation.",
+      "title": "NocoBase AI Knowledge Base Components and Knowledge Base Workspace",
+      "description": "Complete AI Knowledge Base Registry integration with five deterministic development workflows, a Portal-safe Knowledge base workspace, URL-backed result and segment drawers, resource hooks, and consolidated documentation.",
       "dependencies": [
         "@nocobase/portal-sdk@^2.0.0",
         "@refinedev/core@^5.0.8",

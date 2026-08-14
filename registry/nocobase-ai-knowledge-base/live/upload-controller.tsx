@@ -15,7 +15,7 @@ import { knowledgeBaseLiveRoutes } from "../routes";
 import { notifyKnowledgeBaseMutationError } from "./notifications";
 import { liveReturnTo } from "./url-state";
 import { useT } from "../locales";
-import type { LiveWorkspaceOutletContext } from "./workspace-page";
+import type { KnowledgeBaseWorkspaceOutletContext } from "./knowledge-base-workspace-page";
 
 export default function UploadController() {
   const { open: notify } = useNotification();
@@ -23,7 +23,9 @@ export default function UploadController() {
   const { knowledgeBaseKey } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const outletContext = useOutletContext<LiveWorkspaceOutletContext | undefined>();
+  const outletContext = useOutletContext<
+    KnowledgeBaseWorkspaceOutletContext | undefined
+  >();
   const [file, setFile] = useState<File>();
   const [encodings, setEncodings] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);

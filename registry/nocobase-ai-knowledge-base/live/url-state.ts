@@ -7,7 +7,7 @@ export type LiveListState = {
   pageSize: number;
 };
 
-export type LiveWorkspaceState = {
+export type KnowledgeBaseWorkspaceState = {
   documentPage: number;
   documentPageSize: number;
   retrievalQuery: string;
@@ -52,7 +52,9 @@ export function liveListSearch(state: LiveListState) {
   return encoded ? `?${encoded}` : "";
 }
 
-export function parseLiveWorkspaceState(search: URLSearchParams): LiveWorkspaceState {
+export function parseKnowledgeBaseWorkspaceState(
+  search: URLSearchParams,
+): KnowledgeBaseWorkspaceState {
   return {
     documentPage: positive(search.get("documentsPage")),
     documentPageSize: selectedPageSize(search.get("documentPageSize")),
@@ -63,7 +65,9 @@ export function parseLiveWorkspaceState(search: URLSearchParams): LiveWorkspaceS
   };
 }
 
-export function liveWorkspaceSearch(state: LiveWorkspaceState) {
+export function knowledgeBaseWorkspaceSearch(
+  state: KnowledgeBaseWorkspaceState,
+) {
   const params = new URLSearchParams();
   if (state.documentPage > 1) params.set("documentsPage", String(state.documentPage));
   if (state.documentPageSize !== 10) params.set("documentPageSize", String(state.documentPageSize));

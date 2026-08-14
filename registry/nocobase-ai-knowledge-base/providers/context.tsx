@@ -7,7 +7,7 @@ const KnowledgeBaseServiceContext = createContext<KnowledgeBaseService>(
 );
 
 /**
- * The Live Workspace uses the permission-guide-compliant NocoBase resource-client
+ * The Knowledge base workspace uses the permission-guide-compliant NocoBase resource-client
  * implementation by default. Applications may provide this context to replace it
  * with a version-locked proxy or a test service without changing the UI routes.
  */

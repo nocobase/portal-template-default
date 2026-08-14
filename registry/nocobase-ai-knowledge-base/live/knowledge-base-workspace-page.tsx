@@ -45,8 +45,8 @@ import { knowledgeBaseLiveRoutes } from "../routes";
 import {
   liveLocationPath,
   liveReturnTo,
-  liveWorkspaceSearch,
-  parseLiveWorkspaceState,
+  knowledgeBaseWorkspaceSearch,
+  parseKnowledgeBaseWorkspaceState,
 } from "./url-state";
 import { DocumentSegmentsDrawer } from "./document-segments-drawer";
 import { notifyKnowledgeBaseMutationError } from "./notifications";
@@ -54,20 +54,20 @@ import { useT } from "../locales";
 
 type DocumentAction = { kind: "vectorize" | "delete"; documentIds: RecordId[] };
 
-export type LiveWorkspaceOutletContext = {
+export type KnowledgeBaseWorkspaceOutletContext = {
   knowledgeBase: KnowledgeBase;
   retrievalResults: KnowledgeBaseSearchResult[];
   onDocumentsRefresh: () => void;
 };
 
-export default function LiveWorkspacePage() {
+export default function KnowledgeBaseWorkspacePage() {
   const t = useT();
   const { open: notify } = useNotification();
   const { knowledgeBaseKey } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [params] = useSearchParams();
-  const workspace = parseLiveWorkspaceState(params);
+  const workspace = parseKnowledgeBaseWorkspaceState(params);
   const [queryDraft, setQueryDraft] = useState("");
   const [documentAction, setDocumentAction] = useState<DocumentAction>();
   const [segmentDocument, setSegmentDocument] = useState<KnowledgeBaseDocument>();
@@ -110,7 +110,7 @@ export default function LiveWorkspacePage() {
     navigate(
       {
         pathname: location.pathname,
-        search: liveWorkspaceSearch({ ...workspace, ...next }),
+        search: knowledgeBaseWorkspaceSearch({ ...workspace, ...next }),
         hash: location.hash,
       },
       { replace },
@@ -224,7 +224,9 @@ export default function LiveWorkspacePage() {
       );
     }
   };
-  const outletContext = useMemo<LiveWorkspaceOutletContext | undefined>(
+  const outletContext = useMemo<
+    KnowledgeBaseWorkspaceOutletContext | undefined
+  >(
     () =>
       base.data
         ? {

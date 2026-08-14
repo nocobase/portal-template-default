@@ -6,7 +6,7 @@ A development-only Portal Registry integration for the user-facing NocoBase AI K
 - URL-independent resource hooks for knowledge bases, documents, and segments;
 - controlled directory, document, retrieval, segment, and upload components;
 - five deterministic, API-free development workflows; and
-- a real Live Workspace example with URL-addressable document, retrieval, upload, and nested segment surfaces.
+- a real Knowledge base workspace example with URL-addressable document, retrieval, upload, and nested segment surfaces.
 
 It does **not** add production routes, configure AI providers, embedding models, storage engines, or vector databases, and it does not make client-side authorization authoritative.
 
@@ -18,7 +18,7 @@ Choose the smallest Registry item that fits the consuming Portal:
 | --- | --- | --- |
 | `@nocobase/ai-knowledge-base-providers` | Build a Portal-owned integration or custom page | `providers/` and `hooks/` |
 | `@nocobase/ai-knowledge-base-components` | Compose controlled Knowledge Base UI into an existing page | `components/` and `locales/`; installs the provider item |
-| `@nocobase/ai-knowledge-base` | Install the complete development experience | Demo and Live pages, development extension/routes, locales, this README; installs the component item |
+| `@nocobase/ai-knowledge-base` | Install the complete development experience | Demo and Knowledge base workspace pages, development extension/routes, locales, this README; installs the component item |
 
 ```bash
 pnpm exec shadcn add @nocobase/ai-knowledge-base-providers
@@ -48,7 +48,7 @@ registry/nocobase-ai-knowledge-base/
 │   └── shared.ts                      # Service identity and stale-safe requests
 ├── components/                        # Controlled UI components
 ├── demo/                              # Deterministic API-free workflows
-├── live/                              # Real user-side Live Workspace
+├── live/                              # Real user-side Knowledge base workspace
 ├── locales/                           # Namespace catalogs and useT()
 ├── extension.tsx                      # Development resources and routes
 ├── routes.ts                          # Reusable encoded route builders
@@ -233,7 +233,7 @@ The browser UI and TypeScript DTOs are defense in depth, not authorization. A co
 4. returning only approved response fields; and
 5. validating file extension, MIME type, size, content, and upload ownership.
 
-The Live Workspace calls only user-side actions. It must never call administrator vector-database, provider, embedding, or configuration actions.
+The Live prerequisite route first calls the public `pm:listEnabledV2` action to confirm that `@nocobase/plugin-ai-knowledge-base` is enabled. A source/dev plugin can be loaded without a built client-v2 manifest entry, so a missing manifest match is confirmed with one read-only `aiKnowledgeBase:list` probe (`pageSize: 1`); a successful response means available, while a missing resource action means unavailable. After that check, Live business data and mutations call only user-side `aiKnowledgeBase*` actions. They must never call administrator vector-database, provider, embedding, storage, or configuration actions.
 
 `canMaintainKnowledgeBaseDocuments()`, `canMaintainKnowledgeBaseDocument()`, `isLocalKnowledgeBase()`, and `isKnowledgeBaseDocumentProcessing()` are UX helpers only. They control what the user sees or can attempt; they do not grant permission.
 
@@ -278,7 +278,7 @@ The Live table uses caller-supplied callbacks for Segments, Download, Re-index, 
 
 Supporting exports include result cards/grids/rows, ranked and grouped lists, split view, detail view, score badge, matched-question rendering, and `groupRetrievalResults()`.
 
-The Live Workspace defaults to Top K `4` and Score `0.6`. Scores render with three decimals and change in `0.1` steps. Re-entering Hit tests resets the initial state. Result order is preserved, matched questions are explicit, and unmodeled metadata is not displayed.
+The Knowledge base workspace defaults to Top K `4` and Score `0.6`. Scores render with three decimals and change in `0.1` steps. Re-entering Hit tests resets the initial state. Result order is preserved, matched questions are explicit, and unmodeled metadata is not displayed.
 
 ### Segments
 
@@ -308,13 +308,13 @@ The client experience allowlist includes `.doc`, `.docx`, `.md`, `.pdf`, `.txt`,
 
 Use the host `LoadingState` for full-page and first-load states. Use shared `Empty` primitives for blank and unavailable states. Knowledge-base card skeletons may preserve the directory layout during initial loading. Do not add one-off spinners or ordinary dashed empty placeholders.
 
-Failed reads stay in context with Retry using `KnowledgeBaseDirectoryError`, form alerts, or drawer alerts. User-triggered terminal mutations use Refine's `notificationProvider` through `notifyKnowledgeBaseMutationError()`; Live code must not import Sonner directly.
+Failed reads stay in context with Retry using `KnowledgeBaseDirectoryError`, form alerts, or drawer alerts. User-triggered terminal mutations use Refine's `notificationProvider` through `notifyKnowledgeBaseMutationError()`; Knowledge base workspace code must not import Sonner directly.
 
 Do not show a toast and a generic inline error for the same terminal mutation. Keep inline state for validation, `409` conflict recovery, partial saves, and errors requiring an in-place user action.
 
 ## Development workflows
 
-The five deterministic development workflows reuse the same controlled component contracts as the Live Workspace and do not import the service layer or call Knowledge Base APIs.
+The five deterministic development workflows reuse the same controlled component contracts as the Knowledge base workspace and do not import the service layer or call Knowledge Base APIs.
 
 The development menu order is:
 
@@ -323,7 +323,7 @@ The development menu order is:
 3. Document upload
 4. Segments
 5. Hit tests
-6. Live workspace
+6. Knowledge base workspace
 
 | Workflow | Route | Current fixture behavior |
 | --- | --- | --- |
@@ -335,9 +335,9 @@ The development menu order is:
 
 The fixture source also provides 24 bases, 37 documents, 12 retrieval results, and 42 segments for pagination and layout coverage. Demo copy must remain business-facing: do not describe fixtures as mocks, explain server implementation, or announce that requests are not sent. Operations that intentionally do not change Demo business state should remain silent.
 
-## Live Workspace routes and behavior
+## Knowledge base workspace routes and behavior
 
-All routes are development-only under `/dev/ai-knowledge-base`.
+All routes are development-only under `/dev/ai-knowledge-base`. The shared `live` parent route uses the template-level `NocoBasePluginPrerequisiteGate` before rendering any Knowledge base workspace child. It checks the public `pm:listEnabledV2` response for `@nocobase/plugin-ai-knowledge-base`, reuses the shared manifest/probe caches and in-flight requests, and falls back to a read-only `aiKnowledgeBase:list` probe when a source/dev plugin has no built client-v2 entry. A successful missing-plugin result is distinct from a network/server error, and both states offer a manual retry. Demo routes remain API-free and are not gated.
 
 | Surface | Route |
 | --- | --- |

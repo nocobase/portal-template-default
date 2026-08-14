@@ -18,7 +18,7 @@ import {
 import { knowledgeBaseLiveRoutes } from "../routes";
 import { isLiveSegmentDrawerState, liveLocationPath, liveReturnTo } from "./url-state";
 import { useT } from "../locales";
-import type { LiveWorkspaceOutletContext } from "./workspace-page";
+import type { KnowledgeBaseWorkspaceOutletContext } from "./knowledge-base-workspace-page";
 
 export type LiveDocumentOutletContext = {
   knowledgeBase: KnowledgeBase;
@@ -28,7 +28,9 @@ export type LiveDocumentOutletContext = {
 
 export default function LiveDocumentPage() {
   const t = useT();
-  const workspaceContext = useOutletContext<LiveWorkspaceOutletContext | undefined>();
+  const workspaceContext = useOutletContext<
+    KnowledgeBaseWorkspaceOutletContext | undefined
+  >();
   const { knowledgeBaseKey, documentId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
