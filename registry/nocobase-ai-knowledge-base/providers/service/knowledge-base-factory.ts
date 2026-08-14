@@ -117,6 +117,9 @@ function toDocument(value: unknown): KnowledgeBaseDocument {
     ...(boolean(item.enabled) !== undefined ? { enabled: boolean(item.enabled) } : {}),
     ...(text(item.indexStatus) ? { indexStatus: text(item.indexStatus) } : {}),
     ...(text(item.errorMessage) ? { errorMessage: text(item.errorMessage) } : {}),
+    ...(item.accessAbility === "readOnly" || item.accessAbility === "readWrite"
+      ? { accessAbility: item.accessAbility }
+      : {}),
     ...(recordId(item.createdById) !== undefined ? { createdById: recordId(item.createdById) } : {}),
     ...(optionalDate(item.createdAt) ? { createdAt: optionalDate(item.createdAt) } : {}),
     ...(optionalDate(item.updatedAt) ? { updatedAt: optionalDate(item.updatedAt) } : {}),

@@ -39,7 +39,8 @@ export const fixtureDocuments: KnowledgeBaseDocument[] = Array.from({ length: 37
   id: index + 1, knowledgeBaseKey: "library-01", title: index % 4 === 0 ? undefined : `Knowledge document ${index + 1}`,
   filename: `source-${index + 1}.${index % 5 === 0 ? "zip" : "pdf"}`, characterCount: 1200 + index * 217,
   segmentCount: 1 + (index % 9), size: 2048 + index * 1000, indexStatus: ["PENDING", "PROCESSING", "SUCCESS", "FAILED"][index % 4],
-  errorMessage: index % 4 === 3 ? "Indexing failed in the fixture state." : undefined, createdById: index % 3 === 0 ? "me" : "teammate",
+  errorMessage: index % 4 === 3 ? "Indexing failed in the fixture state." : undefined, accessAbility: index % 3 === 0 ? "readWrite" : "readOnly",
+  createdById: index % 3 === 0 ? "me" : "teammate",
   createdAt: `2026-07-${String((index % 27) + 1).padStart(2, "0")}T08:30:00.000Z`,
   updatedAt: `2026-07-${String((index % 27) + 1).padStart(2, "0")}T10:00:00.000Z`,
 }));

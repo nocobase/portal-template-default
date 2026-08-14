@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useGetIdentity, useNotification } from "@refinedev/core";
+import { useNotification } from "@refinedev/core";
 import { Link, Outlet, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { useKnowledgeBase, useKnowledgeBaseDocument } from "../hooks";
 import {
@@ -34,7 +34,7 @@ import {
 } from "../components";
 import {
   isLocalKnowledgeBase,
-  isOwnedDocument,
+  canMaintainKnowledgeBaseDocument,
   normalizeKnowledgeBaseError,
   type KnowledgeBase,
   type KnowledgeBaseDocument,
@@ -69,7 +69,6 @@ export default function LiveWorkspacePage() {
   const [params] = useSearchParams();
   const workspace = parseLiveWorkspaceState(params);
   const [queryDraft, setQueryDraft] = useState("");
-  const { data: identity } = useGetIdentity<{ id?: string | number }>();
   const [documentAction, setDocumentAction] = useState<DocumentAction>();
   const [segmentDocument, setSegmentDocument] = useState<KnowledgeBaseDocument>();
   const [segmentDrawerOpen, setSegmentDrawerOpen] = useState(false);
@@ -174,9 +173,55 @@ export default function LiveWorkspacePage() {
     }
   };
 
-  const downloadDocument = (document: KnowledgeBaseDocument) => {
-    if (document.url) {
-      window.open(nocobaseClient.resolveUrl(document.url), "_blank", "noopener,noreferrer");
+  const downloadDocument = async (record: KnowledgeBaseDocument) => {
+    try {
+      const downloadable =
+        record.url
+          ? record
+          : await service.getDocument({
+              knowledgeBaseKey: record.knowledgeBaseKey,
+              documentId: record.id,
+            });
+      if (!downloadable.url) {
+        throw new Error(t("The document file is unavailable."));
+      }
+
+      const suffix = downloadable.extname
+        ? downloadable.extname.startsWith(".")
+          ? downloadable.extname
+          : `.${downloadable.extname}`
+        : "";
+      const title = downloadable.title || record.title;
+      const filename = title
+        ? `${title}${suffix}`
+        : downloadable.filename || `document-${downloadable.id}${suffix}`;
+      const response = await fetch(nocobaseClient.resolveUrl(downloadable.url), {
+        headers: nocobaseClient.getHeaders({
+          method: "GET",
+          withAclMeta: false,
+          headers: { Accept: "*/*" },
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(t("The document file is unavailable."));
+      }
+
+      const objectUrl = URL.createObjectURL(await response.blob());
+      const link = window.document.createElement("a");
+      link.href = objectUrl;
+      link.download = filename;
+      link.rel = "noopener noreferrer";
+      window.document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+    } catch (error) {
+      notifyKnowledgeBaseMutationError(
+        notify,
+        t("Download failed"),
+        error,
+        t("The document file is unavailable."),
+      );
     }
   };
   const outletContext = useMemo<LiveWorkspaceOutletContext | undefined>(
@@ -277,7 +322,7 @@ export default function LiveWorkspacePage() {
               ) : documents.data?.rows.length ? (
                 <DocumentTable
                   documents={documents.data.rows}
-                  canMaintain={(document) => isOwnedDocument(document, identity?.id)}
+                  canMaintain={canMaintainKnowledgeBaseDocument}
                   onOpen={(document) => {
                     setSegmentDocument(document);
                     setSegmentDrawerOpen(true);
@@ -360,7 +405,7 @@ export default function LiveWorkspacePage() {
         }}
         knowledgeBase={base.data}
         document={segmentDocument}
-        canMaintain={!!segmentDocument && isOwnedDocument(segmentDocument, identity?.id)}
+        canMaintain={!!segmentDocument && canMaintainKnowledgeBaseDocument(segmentDocument)}
         onDocumentRefresh={documents.retry}
         onOpenSegment={(segment) => {
           const activeDocument = segmentDocument;

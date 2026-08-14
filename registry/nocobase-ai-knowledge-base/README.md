@@ -117,7 +117,7 @@ export function AppRoot({ children }: { children: React.ReactNode }) {
 }
 ```
 
-The default adapter calls only user-side `aiKnowledgeBase*` actions. It intentionally excludes administrator vector-store, provider, embedding, storage, and configuration actions. Responses are projected into explicit DTOs, pagination envelopes are normalized, server file URLs remain server-owned, and upload branching between multipart and presigned flows stays inside the adapter.
+The default adapter calls only user-side `aiKnowledgeBase*` actions. It intentionally excludes administrator vector-store, provider, embedding, storage, and configuration actions. Responses are projected into explicit DTOs—including the server-computed document `accessAbility`—pagination envelopes are normalized, server file URLs remain server-owned, and upload branching between multipart and presigned flows stays inside the adapter.
 
 Important payload contracts include:
 
@@ -235,9 +235,9 @@ The browser UI and TypeScript DTOs are defense in depth, not authorization. A co
 
 The Live Workspace calls only user-side actions. It must never call administrator vector-database, provider, embedding, or configuration actions.
 
-`canMaintainKnowledgeBaseDocuments()`, `isOwnedDocument()`, `isLocalKnowledgeBase()`, and `isKnowledgeBaseDocumentProcessing()` are UX helpers only. They control what the user sees or can attempt; they do not grant permission.
+`canMaintainKnowledgeBaseDocuments()`, `canMaintainKnowledgeBaseDocument()`, `isLocalKnowledgeBase()`, and `isKnowledgeBaseDocumentProcessing()` are UX helpers only. They control what the user sees or can attempt; they do not grant permission.
 
-LOCAL knowledge bases expose Documents and Hit tests. READONLY and EXTERNAL knowledge bases expose Hit tests only. Authorized shared users may still view, download, open documents, and inspect segments; ownership only gates maintenance affordances.
+LOCAL knowledge bases expose Documents and Hit tests. READONLY and EXTERNAL knowledge bases expose Hit tests only. For each returned document, the server-computed `accessAbility` controls maintenance affordances: `readWrite` enables them and `readOnly` keeps them unavailable. Authorized shared users may still view, download, open documents, and inspect segments.
 
 ## Controlled component API
 
@@ -260,9 +260,9 @@ The Live directory selects `directory.mode: "infinite"` for cards and uses an in
 
 ### Documents
 
-Core exports include `DocumentTable`, `DocumentList`, `DocumentCardGrid`, `DocumentSplitView`, `PaginatedDocumentTable`, document status/ownership/metric primitives, the management toolbar, and the actions menu.
+Core exports include `DocumentTable`, `DocumentList`, `DocumentCardGrid`, `DocumentSplitView`, `PaginatedDocumentTable`, document status/access/metric primitives, the management toolbar, and the actions menu.
 
-The Live table uses caller-supplied callbacks for Segments, Download, Re-index, and Delete. Download is the second action. Actions progressively move into an overflow menu on narrow widths. There are no bulk re-index or delete controls.
+The Live table uses caller-supplied callbacks for Segments, Download, Re-index, and Delete. Download is the second action. It remains available whenever the host supplies `onDownload`; if a list row omits `url`, the Live host requests document detail first. Because a Portal may run on a different origin from NocoBase, the Live host resolves the server-issued file URL against the NocoBase origin, fetches it with the active authorization, role, and Portal headers, and downloads the resulting Blob URL. The file fetch intentionally omits `credentials: "include"`: the NocoBase file route accepts the Bearer token but may not opt into credentialed CORS. This preserves the NocoBase client's anchor-download behavior without navigating the Portal to a relative file path or making an unauthenticated request. Actions progressively move into an overflow menu on narrow widths. There are no bulk re-index or delete controls.
 
 `canMaintain` is presentation-only. While indexing or segment generation is `PENDING` or `PROCESSING`—case-insensitive across `indexStatus` and `segmentStatus`—maintenance controls remain visible but disabled where required.
 
@@ -361,7 +361,7 @@ A LOCAL Workspace normally loads knowledge-base detail and then its requested do
 - **Bounded card homepage:** pass a bounded item array to `KnowledgeBaseCardDirectory`.
 - **Paginated directory:** combine `useKnowledgeBase({ directory: { mode: "paginated", ... } })` with `PaginatedKnowledgeBaseListDirectory` or the switchable preset.
 - **Infinite card directory:** select `directory.mode: "infinite"`, render accumulated rows, and call `loadMore()` from a sentinel only when `hasMore` is true.
-- **Document management:** gate the document request explicitly with `enabled: isLocal`, then pass the result and ownership-based `canMaintain` callback to `DocumentTable`.
+- **Document management:** gate the document request explicitly with `enabled: isLocal`, then pass the result and an `accessAbility`-based `canMaintain` callback to `DocumentTable`.
 - **Narrow document surface:** use `DocumentList`; for parent-owned selection use `DocumentSplitView`.
 - **Retrieval alternatives:** use `RetrievalRankedList`, `RetrievalSourceGroupedResults`, or `RetrievalSplitView` without reordering the server result array.
 - **Segment drawer:** use `RouteDrawer`, `useRefineUnsavedChangesGuard`, latest-hash writes, explicit conflict recovery, and a questions-only retry after partial save.

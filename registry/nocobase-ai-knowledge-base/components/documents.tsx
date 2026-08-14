@@ -163,7 +163,7 @@ export function DocumentActionsMenu({
     {
       label: t("Download"),
       Icon: Download,
-      disabled: !document.url || !onDownload,
+      disabled: !onDownload,
       onClick: () => onDownload?.(document),
     },
     ...(canMaintain && onVectorize

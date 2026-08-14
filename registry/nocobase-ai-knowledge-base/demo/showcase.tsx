@@ -112,7 +112,7 @@ export function DocumentsPage() {
     >
       <DocumentTable
         documents={fixtureDocuments.slice(0, 8)}
-        canMaintain={(document) => document.createdById === "me"}
+        canMaintain={(document) => document.accessAbility === "readWrite"}
         onOpen={ignoreDemoAction}
         onDownload={ignoreDemoAction}
         onVectorize={ignoreDemoAction}

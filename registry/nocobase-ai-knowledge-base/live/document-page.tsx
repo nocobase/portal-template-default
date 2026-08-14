@@ -1,4 +1,3 @@
-import { useGetIdentity } from "@refinedev/core";
 import { Outlet, useLocation, useNavigate, useOutletContext, useParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/app-shell/loading-state";
@@ -12,7 +11,7 @@ import {
 } from "../components";
 import {
   isLocalKnowledgeBase,
-  isOwnedDocument,
+  canMaintainKnowledgeBaseDocument,
   type KnowledgeBase,
   type KnowledgeBaseDocument,
 } from "../providers";
@@ -31,7 +30,6 @@ export default function LiveDocumentPage() {
   const t = useT();
   const workspaceContext = useOutletContext<LiveWorkspaceOutletContext | undefined>();
   const { knowledgeBaseKey, documentId } = useParams();
-  const { data: identity } = useGetIdentity<{ id?: string | number }>();
   const navigate = useNavigate();
   const location = useLocation();
   const openedFromSegmentDrawer =
@@ -52,7 +50,7 @@ export default function LiveDocumentPage() {
     local &&
     !!document.data &&
     document.data.knowledgeBaseKey === base.data!.key;
-  const canMaintainDocument = !!document.data && isOwnedDocument(document.data, identity?.id);
+  const canMaintainDocument = !!document.data && canMaintainKnowledgeBaseDocument(document.data);
   const segmentState = useKnowledgeBaseSegment({
     knowledgeBaseKey: base.data?.key,
     documentId: document.data?.id,

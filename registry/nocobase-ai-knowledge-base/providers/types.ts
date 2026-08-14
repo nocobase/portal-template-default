@@ -33,7 +33,7 @@ export type KnowledgeBaseDocument = {
   extname?: string;
   size?: number;
   mimetype?: string;
-  /** Server-issued URL. Resolve it with nocobaseClient.resolveUrl() before linking. */
+  /** Server-issued file URL. Resolve it against the NocoBase origin and fetch it with the active auth headers. */
   url?: string;
   preview?: string;
   knowledgeBaseKey: string;
@@ -46,6 +46,7 @@ export type KnowledgeBaseDocument = {
   enabled?: boolean;
   indexStatus?: string;
   errorMessage?: string;
+  accessAbility?: "readOnly" | "readWrite";
   createdById?: RecordId;
   createdAt?: string;
   updatedAt?: string;
@@ -145,9 +146,9 @@ export const isAsyncUploadResult = (
   value: UploadResult,
 ): value is { taskId: RecordId; message?: string } => "taskId" in value;
 
-/** Ownership may tailor an affordance; it never authorizes a request. */
-export const isOwnedDocument = (document: KnowledgeBaseDocument, userId?: RecordId) =>
-  userId !== undefined && document.createdById === userId;
+/** Server-computed access may tailor an affordance; it never authorizes a request. */
+export const canMaintainKnowledgeBaseDocument = (document: KnowledgeBaseDocument) =>
+  document.accessAbility === "readWrite";
 
 const processingDocumentStatuses = new Set(["PENDING", "PROCESSING"]);
 
