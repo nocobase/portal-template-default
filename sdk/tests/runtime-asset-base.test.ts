@@ -57,8 +57,25 @@ it("resolves lazy chunk dependencies from the runtime Portal base", async () => 
     .filter((file) => file.endsWith(".js"))
     .map((file) => fs.readFileSync(path.join(assetsDir, file), "utf8"))
     .join("\n");
+  const rawHtml = fs.readFileSync(path.join(root, "dist/index.raw.html"), "utf8");
 
-  expect(scripts).toContain("window.NOCOBASE_PORTAL_BASE");
+  expect(scripts).toContain("window.__NOCOBASE_PORTAL_ENV__");
+  expect(rawHtml).toContain("window.__NOCOBASE_PORTAL_ENV__");
   expect(scripts).toContain("window.location.origin");
+  expect(scripts).toContain(
+    'String(window.__NOCOBASE_PORTAL_ENV__?.NOCOBASE_PORTAL_BASE || "/").replace(/\\/?$/, "/")'
+  );
   expect(scripts).not.toMatch(/["']\/assets\//);
+
+  const resolvedAssetUrl = new URL(
+    "assets/auto-login-provider-D7j6wOLD.js",
+    new URL(
+      String("/nocobase/x/main").replace(/\/?$/, "/"),
+      "https://pr-10318.v2.test.nocobase.com"
+    )
+  ).href;
+
+  expect(resolvedAssetUrl).toBe(
+    "https://pr-10318.v2.test.nocobase.com/nocobase/x/main/assets/auto-login-provider-D7j6wOLD.js"
+  );
 });

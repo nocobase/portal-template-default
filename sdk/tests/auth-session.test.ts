@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { AuthSession, NocoBaseClient } from "../src/client/index.ts";
 import {
   resolveNocoBaseAppName,
+  getNocoBasePortalName,
   resolveNocoBasePortalName,
   resolveNocoBaseSettingsUrl,
   resolvePortalUrl,
@@ -54,8 +55,10 @@ describe("Portal authentication session", () => {
       configurable: true,
       value: {
         location: { origin: "http://localhost:14000" },
-        NOCOBASE_API_URL: "/api",
-        NOCOBASE_PORTAL_BASE: "/x/demo/",
+        __NOCOBASE_PORTAL_ENV__: {
+          NOCOBASE_API_URL: "/api",
+          NOCOBASE_PORTAL_BASE: "/x/demo/",
+        },
       },
     });
 
@@ -67,13 +70,71 @@ describe("Portal authentication session", () => {
     );
     expect(new NocoBaseClient("/api").getHeaders()["X-Portal"]).toBe("demo");
 
-    window.NOCOBASE_API_URL = "/api/__app/crm";
-    window.NOCOBASE_PORTAL_BASE = "/x/apps/crm/customer/";
+    window.__NOCOBASE_PORTAL_ENV__ = {
+      NOCOBASE_API_URL: "/api/__app/crm",
+      NOCOBASE_PORTAL_BASE: "/x/apps/crm/customer/",
+    };
     expect(resolveNocoBaseSettingsUrl()).toBe(
       "http://localhost:14000/settings/apps/crm"
     );
     expect(new NocoBaseClient("/api").getHeaders()["X-Portal"]).toBe(
       "customer"
+    );
+
+    window.__NOCOBASE_PORTAL_ENV__ = {
+      ...window.__NOCOBASE_PORTAL_ENV__,
+      NOCOBASE_PORTAL_NAME: "ops",
+    };
+    expect(getNocoBasePortalName()).toBe("ops");
+    expect(new NocoBaseClient("/api").getHeaders()["X-Portal"]).toBe("ops");
+  });
+
+  it("prefers window.__NOCOBASE_PORTAL_ENV__ runtime values", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        location: { origin: "http://localhost:14000" },
+        __NOCOBASE_PORTAL_ENV__: {
+          NOCOBASE_API_URL: "/apps/crm/portals/customer/api",
+          NOCOBASE_APP_NAME: "crm",
+          NOCOBASE_PORTAL_BASE: "/x/apps/crm/customer/",
+          NOCOBASE_PORTAL_NAME: "customer",
+          API_CLIENT_SHARE_TOKEN: "true",
+          API_CLIENT_STORAGE_PREFIX: "CUSTOM_",
+          API_CLIENT_STORAGE_TYPE: "sessionStorage",
+        },
+        sessionStorage: createStorage(),
+      },
+    });
+
+    expect(resolveNocoBaseSettingsUrl()).toBe(
+      "http://localhost:14000/apps/crm/portals/customer/settings/apps/crm"
+    );
+    expect(getNocoBasePortalName()).toBe("customer");
+
+    const session = new AuthSession();
+    expect(session.storagePrefix).toBe("CUSTOM_");
+    expect(session.storageType).toBe("sessionStorage");
+    expect(session.shareToken).toBe(true);
+  });
+
+  it("prefers the generated NocoBase settings URL", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        location: { origin: "http://localhost:5173" },
+        __NOCOBASE_PORTAL_ENV__: {
+          NOCOBASE_API_URL: "/nocobase/apps/app1/portals/main/api",
+          NOCOBASE_APP_NAME: "app1",
+          NOCOBASE_PORTAL_BASE: "/nocobase/x/apps/app1/main/",
+          NOCOBASE_SETTINGS_URL:
+            "http://127.0.0.1:64074/nocobase/settings/apps/app1/",
+        },
+      },
+    });
+
+    expect(resolveNocoBaseSettingsUrl()).toBe(
+      "http://127.0.0.1:64074/nocobase/settings/apps/app1/"
     );
   });
 

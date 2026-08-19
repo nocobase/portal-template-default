@@ -17,7 +17,7 @@ try {
     configureReactGrabPicker,
     hideDisabledReactGrabToolbarActions,
   } = await server.ssrLoadModule(
-    "/src/components/development/react-grab-picker-customization.ts"
+    "/client/components/development/react-grab-picker-customization.ts"
   );
 
   assert.deepEqual([...REACT_GRAB_DISABLED_ACTIONS], ["comment", "edit"]);
@@ -3782,7 +3782,7 @@ try {
   }
 
   const appSource = await readFile(
-    new URL("../src/App.tsx", import.meta.url),
+    new URL("../client/App.tsx", import.meta.url),
     "utf8"
   );
   assert.match(appSource, /import\.meta\.env\.DEV/);
@@ -3790,7 +3790,7 @@ try {
 
   const pickerSource = await readFile(
     new URL(
-      "../src/components/development/react-grab-picker.tsx",
+      "../client/components/development/react-grab-picker.tsx",
       import.meta.url
     ),
     "utf8"
@@ -3806,7 +3806,7 @@ try {
   await assert.rejects(
     access(
       new URL(
-        "../src/components/development/react-grab-picker-content.ts",
+        "../client/components/development/react-grab-picker-content.ts",
         import.meta.url
       )
     ),

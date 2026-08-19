@@ -21,3 +21,6 @@ scripts/registry.mjs
 sdk/
 .github/
 !.gitignore
+.nb
+/data
+/server-dist

@@ -100,6 +100,10 @@ const getCurrentUser = async (): Promise<NocoBaseUser> => {
       // A default authenticator header would override the server's
       // authenticator cookie during a Cookie-only SSO session.
       authenticator: token ? undefined : null,
+      // Role cookies can outlive a sign-in and point at a role the current user
+      // does not have. Session checks only need to validate the identity; ACL
+      // loading chooses and repairs the effective role separately.
+      includeRole: false,
     });
     currentUserCache = {
       sessionKey: nocobaseClient.getToken() ?? "cookie",

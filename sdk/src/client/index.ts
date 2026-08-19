@@ -3,7 +3,7 @@ import {
   API_URL,
   NOCOBASE_AUTHENTICATOR,
 } from "../runtime/constants.ts";
-import { getNocoBasePortalName } from "../runtime/config.ts";
+import { getNocoBasePortalName, readClientEnv } from "../runtime/config.ts";
 import { portalRuntimeStore } from "../runtime/store.ts";
 import { authSession } from "./auth-session.ts";
 import {
@@ -118,7 +118,7 @@ export class NocoBaseClient {
   }
 
   getToken() {
-    return authSession.get("token") ?? import.meta.env?.NOCOBASE_API_TOKEN;
+    return authSession.get("token") ?? readClientEnv("NOCOBASE_API_TOKEN");
   }
 
   getStoredAuthenticator() {

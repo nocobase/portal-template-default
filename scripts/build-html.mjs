@@ -5,7 +5,7 @@ import * as util from "node:util";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
-const distDir = path.join(rootDir, "dist");
+const distDir = path.join(rootDir, "dist", "client");
 const rawIndexPath = path.join(distDir, "index.raw.html");
 const indexPath = path.join(distDir, "index.html");
 
@@ -47,23 +47,27 @@ const expandEnvValue = (value, env) =>
     return env[key] ?? "";
   });
 
-const getEnvFilesForMode = (mode) => {
-  if (mode === "local") {
-    throw new Error(
-      '"local" cannot be used as a mode name because it conflicts with .env.local.'
-    );
-  }
-
-  return [".env", ".env.local", `.env.${mode}`, `.env.${mode}.local`].map(
-    (file) => path.join(rootDir, file)
-  );
+const getModeAlias = (mode) => {
+  if (mode === "local" || mode === "development") return "dev";
+  if (mode === "production") return "prod";
+  return mode;
 };
 
-const loadBuildHtmlEnv = () => {
-  const mode = process.env.MODE || "production";
+const getEnvFilesForMode = (scope, mode) =>
+  [path.resolve(rootDir, ".."), rootDir].map((dir) =>
+    path.join(dir, `.env.${scope}.${getModeAlias(mode)}`)
+  );
+
+const normalizeName = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "") || undefined;
+
+const readEnvFiles = (scope, mode) => {
   const env = {};
 
-  for (const envFile of getEnvFilesForMode(mode)) {
+  for (const envFile of getEnvFilesForMode(scope, mode)) {
     if (!fs.existsSync(envFile)) continue;
     Object.assign(env, parseEnv(fs.readFileSync(envFile, "utf8")));
   }
@@ -73,11 +77,168 @@ const loadBuildHtmlEnv = () => {
     env[key] = expandEnvValue(value, expansionEnv);
   }
 
-  for (const [key, value] of Object.entries(env)) {
-    if (process.env[key] === undefined) {
-      process.env[key] = value;
-    }
+  return env;
+};
+
+const pickClientEnvConfig = (env) =>
+  Object.fromEntries(
+    [
+      "API_CLIENT_STORAGE_PREFIX",
+      "API_CLIENT_STORAGE_TYPE",
+      "API_CLIENT_SHARE_TOKEN",
+    ]
+      .filter((key) => env[key])
+      .map((key) => [key, env[key]])
+  );
+
+const getAppNameFromApiProxyTarget = (target) => {
+  if (!target) return undefined;
+
+  try {
+    const pathname = new URL(target, "http://localhost").pathname;
+    const match = pathname.match(/\/api\/__app\/([^/?#]+)(?:[/?#]|$)/);
+    return match?.[1] ? decodeURIComponent(match[1]) : undefined;
+  } catch {
+    return undefined;
   }
+};
+
+const getAppPublicPathFromApiProxyTarget = (target) => {
+  if (!target) return "/";
+
+  try {
+    const pathname = new URL(target, "http://localhost").pathname;
+    const apiPathMatch = pathname.match(/\/api(?:\/|$)/);
+    const publicPath = apiPathMatch
+      ? pathname.slice(0, apiPathMatch.index)
+      : "";
+
+    return normalizePortalBase(publicPath || "/");
+  } catch {
+    return "/";
+  }
+};
+
+const getSettingsUrlFromApiProxyTarget = (target, appName = "main") => {
+  if (!target || target.startsWith("/")) return undefined;
+
+  try {
+    const url = new URL(target);
+    const apiPathMatch = url.pathname.match(/\/api(?:\/|$)/);
+    const publicPath = apiPathMatch
+      ? url.pathname.slice(0, apiPathMatch.index)
+      : "";
+    const settingsPath =
+      appName === "main"
+        ? "/settings/"
+        : `/settings/apps/${encodeURIComponent(appName)}/`;
+
+    if (url.hostname === "localhost") {
+      url.hostname = "127.0.0.1";
+    }
+    url.pathname = `${publicPath}${settingsPath}`.replace(/\/+/g, "/");
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+};
+
+const omitGeneratedServerEnv = (env) => {
+  const fileEnv = { ...env };
+  delete fileEnv.NOCOBASE_APP_NAME;
+  delete fileEnv.NOCOBASE_API_URL;
+  delete fileEnv.NOCOBASE_PORTAL_BASE;
+  delete fileEnv.NOCOBASE_WS_URL;
+  delete fileEnv.NOCOBASE_SETTINGS_URL;
+  delete fileEnv.NOCOBASE_AUTHENTICATOR;
+  delete fileEnv.NOCOBASE_WS_PROXY_TARGET;
+  delete fileEnv.PORTAL_BASE_PATH;
+  return fileEnv;
+};
+
+const deriveWebSocketUrlFromApiUrl = (apiUrl) => {
+  try {
+    const url = new URL(apiUrl || "/api", "http://localhost");
+    const apiPathMatch = url.pathname.match(/\/api(?:\/|$)/);
+    const serverBasePath = apiPathMatch
+      ? url.pathname.slice(0, apiPathMatch.index)
+      : "";
+    url.pathname = `${serverBasePath}/ws`.replace(/\/+/g, "/");
+    url.search = "";
+    url.hash = "";
+
+    if (!apiUrl || apiUrl.startsWith("/")) {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+
+    if (url.protocol === "http:") url.protocol = "ws:";
+    if (url.protocol === "https:") url.protocol = "wss:";
+    return url.toString();
+  } catch {
+    return "/ws";
+  }
+};
+
+const readServerEnv = (name) => {
+  const mode = process.env.MODE || "production";
+  const env = readEnvFiles("server", mode);
+  const appName =
+    normalizeName(getAppNameFromApiProxyTarget(env.NOCOBASE_API_PROXY_TARGET)) ??
+    "main";
+  const portalName = normalizeName(env.NOCOBASE_PORTAL_NAME) ?? "main";
+  const portalPublicPath =
+    appName === "main"
+      ? `/portals/${portalName}`
+      : `/apps/${appName}/portals/${portalName}`;
+  const portalBase =
+    appName === "main"
+      ? `/x/${portalName}`
+      : `/x/apps/${appName}/${portalName}`;
+  const settingsUrl = getSettingsUrlFromApiProxyTarget(
+    env.NOCOBASE_API_PROXY_TARGET,
+    appName
+  );
+  const serverEnv = {
+    ...omitGeneratedServerEnv(env),
+    NOCOBASE_APP_NAME: appName,
+    NOCOBASE_PORTAL_NAME: portalName,
+    NOCOBASE_API_URL: `${portalPublicPath}/api`,
+    NOCOBASE_PORTAL_BASE: portalBase,
+    ...(settingsUrl ? { NOCOBASE_SETTINGS_URL: settingsUrl } : {}),
+  };
+
+  return name ? serverEnv[name] : serverEnv;
+};
+
+const readClientEnv = (name) => {
+  const mode = process.env.MODE || "production";
+  const serverEnv = readServerEnv();
+  const clientConfig = pickClientEnvConfig(readEnvFiles("client", mode));
+  const env = {
+    NOCOBASE_APP_NAME: serverEnv.NOCOBASE_APP_NAME,
+    NOCOBASE_PORTAL_NAME: serverEnv.NOCOBASE_PORTAL_NAME,
+    NOCOBASE_API_URL: serverEnv.NOCOBASE_API_URL,
+    NOCOBASE_PORTAL_BASE: serverEnv.NOCOBASE_PORTAL_BASE,
+    ...(serverEnv.NOCOBASE_SETTINGS_URL
+      ? { NOCOBASE_SETTINGS_URL: serverEnv.NOCOBASE_SETTINGS_URL }
+      : {}),
+    NOCOBASE_WS_URL: deriveWebSocketUrlFromApiUrl(serverEnv.NOCOBASE_API_URL),
+    NOCOBASE_AUTHENTICATOR: "basic",
+    ...clientConfig,
+  };
+  const clientEnv = {
+    ...env,
+    API_CLIENT_STORAGE_PREFIX:
+      env.API_CLIENT_STORAGE_PREFIX || "NOCOBASE_",
+    API_CLIENT_STORAGE_TYPE:
+      env.API_CLIENT_STORAGE_TYPE || "localStorage",
+    API_CLIENT_SHARE_TOKEN:
+      env.API_CLIENT_SHARE_TOKEN || "false",
+  };
+
+  return name ? clientEnv[name] : clientEnv;
 };
 
 const normalizePortalBase = (base) => {
@@ -87,6 +248,14 @@ const normalizePortalBase = (base) => {
 };
 
 const getBasePrefix = (base) => base.replace(/\/$/, "");
+
+const prependPublicPath = (base, publicPath) => {
+  const normalizedBase = normalizePortalBase(base);
+  const publicPrefix = getBasePrefix(normalizePortalBase(publicPath));
+
+  if (!publicPrefix) return normalizedBase;
+  return normalizePortalBase(`${publicPrefix}${normalizedBase}`);
+};
 
 const getRawPortalBase = (html) => {
   const moduleScriptPattern =
@@ -132,38 +301,41 @@ const stripExistingRuntimeConfig = (html) => {
   return html.replace(pattern, "");
 };
 
-loadBuildHtmlEnv();
-
-const portalBase = normalizePortalBase(process.env.NOCOBASE_PORTAL_BASE);
-const apiUrl = String(process.env.NOCOBASE_API_URL || "/api").trim() || "/api";
-const storagePrefix =
-  String(process.env.API_CLIENT_STORAGE_PREFIX || "NOCOBASE_").trim() ||
-  "NOCOBASE_";
-const storageType =
-  String(process.env.API_CLIENT_STORAGE_TYPE || "localStorage").trim() ||
-  "localStorage";
-const shareToken = /^true$/i.test(
-  String(process.env.API_CLIENT_SHARE_TOKEN || "false").trim()
+const baseClientEnv = readClientEnv();
+const appPublicPath = getAppPublicPathFromApiProxyTarget(
+  readServerEnv("NOCOBASE_API_PROXY_TARGET")
 );
+const portalBase = prependPublicPath(
+  baseClientEnv.NOCOBASE_PORTAL_BASE,
+  appPublicPath
+);
+const apiUrl = prependPublicPath(
+  baseClientEnv.NOCOBASE_API_URL,
+  appPublicPath
+);
+const clientEnv = {
+  ...baseClientEnv,
+  NOCOBASE_API_URL: getBasePrefix(apiUrl) || "/",
+  NOCOBASE_PORTAL_BASE: portalBase,
+  NOCOBASE_WS_URL: deriveWebSocketUrlFromApiUrl(apiUrl),
+};
 
-if (!fs.existsSync(rawIndexPath)) {
+const sourceIndexPath = fs.existsSync(rawIndexPath) ? rawIndexPath : indexPath;
+
+if (!fs.existsSync(sourceIndexPath)) {
   throw new Error(
-    `Missing ${path.relative(rootDir, rawIndexPath)}. Run pnpm build first.`
+    `Missing ${path.relative(rootDir, indexPath)}. Run pnpm build:client first.`
   );
 }
 
 const runtimeConfig = `${startMarker}
 <script>
-  window.NOCOBASE_PORTAL_BASE = ${JSON.stringify(portalBase)};
-  window.NOCOBASE_API_URL = ${JSON.stringify(apiUrl)};
-  window.__nocobase_api_client_storage_prefix__ = ${JSON.stringify(storagePrefix)};
-  window.__nocobase_api_client_storage_type__ = ${JSON.stringify(storageType)};
-  window.__nocobase_api_client_share_token__ = ${JSON.stringify(shareToken)};
+  window.__NOCOBASE_PORTAL_ENV__ = ${JSON.stringify(clientEnv)};
 </script>
 ${endMarker}
 `;
 
-const rawHtml = fs.readFileSync(rawIndexPath, "utf8");
+const rawHtml = fs.readFileSync(sourceIndexPath, "utf8");
 const html = rewriteHtmlFilePaths(
   stripExistingRuntimeConfig(rawHtml),
   portalBase,
@@ -174,7 +346,9 @@ const moduleScriptPattern = /<script\s+[^>]*type=["']module["'][^>]*>/i;
 const moduleScriptMatch = html.match(moduleScriptPattern);
 
 if (moduleScriptMatch?.index === undefined) {
-  throw new Error("Could not find the module script in dist/index.raw.html.");
+  throw new Error(
+    `Could not find the module script in ${path.relative(rootDir, rawIndexPath)}.`
+  );
 }
 
 const outputHtml = `${html.slice(0, moduleScriptMatch.index)}${runtimeConfig}${html.slice(moduleScriptMatch.index)}`;
@@ -184,6 +358,6 @@ fs.writeFileSync(indexPath, outputHtml);
 console.log(
   `Generated ${path.relative(rootDir, indexPath)} from ${path.relative(
     rootDir,
-    rawIndexPath
+    sourceIndexPath
   )}`
 );

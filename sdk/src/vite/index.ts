@@ -80,11 +80,15 @@ export const portalSdkCompatibilityPlugin = ({
 
 const defaultRuntimeConfig = `<!-- nocobase-runtime-config:start -->
 <script>
-  window.NOCOBASE_PORTAL_BASE = "/";
-  window.NOCOBASE_API_URL = "/api";
-  window.__nocobase_api_client_storage_prefix__ = window.__nocobase_api_client_storage_prefix__ ?? "NOCOBASE_";
-  window.__nocobase_api_client_storage_type__ = window.__nocobase_api_client_storage_type__ ?? "localStorage";
-  window.__nocobase_api_client_share_token__ = window.__nocobase_api_client_share_token__ ?? false;
+  window.__NOCOBASE_PORTAL_ENV__ = window.__NOCOBASE_PORTAL_ENV__ ?? {
+    NOCOBASE_APP_NAME: "main",
+    NOCOBASE_PORTAL_NAME: "main",
+    NOCOBASE_PORTAL_BASE: "/",
+    NOCOBASE_API_URL: "/api",
+    API_CLIENT_STORAGE_PREFIX: "NOCOBASE_",
+    API_CLIENT_STORAGE_TYPE: "localStorage",
+    API_CLIENT_SHARE_TOKEN: "false"
+  };
 </script>
 <!-- nocobase-runtime-config:end -->
 `;
@@ -99,7 +103,7 @@ const renderPortalBuiltUrl: RenderBuiltAssetUrl = (
 
   if (hostType === "js") {
     return {
-      runtime: `new URL(${JSON.stringify(filename)}, new URL(window.NOCOBASE_PORTAL_BASE || "/", window.location.origin)).href`,
+      runtime: `new URL(${JSON.stringify(filename)}, new URL(String(window.__NOCOBASE_PORTAL_ENV__?.NOCOBASE_PORTAL_BASE || "/").replace(/\\/?$/, "/"), window.location.origin)).href`,
     };
   }
 
