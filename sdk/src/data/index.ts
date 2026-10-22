@@ -57,6 +57,18 @@ type NocoBaseMeta = MetaQuery & {
 
 type NocoBaseFilter = Record<string, unknown>;
 
+// NocoBase has no `$null` / `$notNull` operators. The filter parser treats an
+// unknown `$`-prefixed key as part of the field path, so such filters do not
+// fail; they silently match no records. Map Refine's null checks to NocoBase's
+// `$empty` / `$notEmpty`, which take no operand. The operand is fixed here
+// because callers often omit `value` for these operators, and an `undefined`
+// operand would be dropped by `JSON.stringify`, turning the condition into a
+// no-op.
+const nullCheckFilters: Record<string, NocoBaseFilter> = {
+  null: { $empty: true },
+  nnull: { $notEmpty: true },
+};
+
 const toNocoBaseFilter = (
   filters: GetListParams["filters"] = []
 ): NocoBaseFilter | undefined => {
@@ -75,11 +87,12 @@ const toNocoBaseFilter = (
         containss: "$includes",
         startswith: "$startsWith",
         endswith: "$endsWith",
-        null: "$null",
-        nnull: "$notNull",
         between: "$between",
         nbetween: "$notBetween",
       };
+
+      const nullCheck = nullCheckFilters[filter.operator];
+      if (nullCheck) return [{ [filter.field]: nullCheck }];
 
       const operator = operatorMap[filter.operator] ?? "$eq";
       return [{ [filter.field]: { [operator]: filter.value } }];
